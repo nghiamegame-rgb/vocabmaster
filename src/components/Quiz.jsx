@@ -36,6 +36,25 @@ const QUIZ_MODES = [
 /* Helpers                                                              */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Shuffle the 4 options of a question while keeping correctIndex in sync.
+ * Returns a new question object with shuffled options + updated correctIndex.
+ */
+function shuffleOptions(q) {
+  const correctAnswer = q.options[q.correctIndex];
+  // Fisher-Yates shuffle on a copy
+  const shuffled = [...q.options];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return {
+    ...q,
+    options:      shuffled,
+    correctIndex: shuffled.indexOf(correctAnswer),
+  };
+}
+
 /** Shuffle & filter word pool by selected priority */
 function buildPool(words, priority, count) {
   let pool = [...words];
@@ -472,13 +491,16 @@ function playWordAudio(wordEnglish) {
 }
 
 function QuizGame({ questions, words, onFinish, updateWordLevel }) {
+  // Pre-shuffle all questions once so correct answer is never always at position A
+  const [shuffledQuestions] = useState(() => questions.map(shuffleOptions));
+
   const [current,  setCurrent]  = useState(0);
   const [selected, setSelected] = useState(null);
   const [results,  setResults]  = useState([]);
 
-  const q        = questions[current];
+  const q        = shuffledQuestions[current];
   const answered = selected !== null;
-  const progress = (current / questions.length) * 100;
+  const progress = (current / shuffledQuestions.length) * 100;
 
   // Find the word object for the current question
   const wordObj = words.find(
@@ -492,28 +514,39 @@ function QuizGame({ questions, words, onFinish, updateWordLevel }) {
       ? `https://source.unsplash.com/featured/300x200/?${encodeURIComponent(q.wordEnglish)}`
       : null;
 
-  // Auto-play audio and show image when answer is revealed
+  // Auto-play audio when answer is revealed
   useEffect(() => {
     if (answered && q.wordEnglish) {
       playWordAudio(q.wordEnglish);
     }
   }, [answered, q.wordEnglish]);
 
-  function handleSelect(idx) {
-    if (answered) return;
-    setSelected(idx);
-    const isCorrect = idx === q.correctIndex;
-    setResults(prev => [...prev, { correct: isCorrect, wordEnglish: q.wordEnglish }]);
-    if (q.wordEnglish) updateWordLevel(q.wordEnglish, isCorrect);
-  }
-
   function handleNext() {
-    if (current + 1 >= questions.length) {
+    if (current + 1 >= shuffledQuestions.length) {
       onFinish(results);
     } else {
       setCurrent(c => c + 1);
       setSelected(null);
     }
+  }
+
+  function handleSelect(idx) {
+    if (answered) return;
+    setSelected(idx);
+    const isCorrect = idx === q.correctIndex;
+    const newResults = [...results, { correct: isCorrect, wordEnglish: q.wordEnglish }];
+    setResults(newResults);
+    if (q.wordEnglish) updateWordLevel(q.wordEnglish, isCorrect);
+
+    // Auto-advance after 1.8 s — show feedback briefly then move on
+    setTimeout(() => {
+      if (current + 1 >= shuffledQuestions.length) {
+        onFinish(newResults);
+      } else {
+        setCurrent(c => c + 1);
+        setSelected(null);
+      }
+    }, 1800);
   }
 
   return (
@@ -534,13 +567,46 @@ function QuizGame({ questions, words, onFinish, updateWordLevel }) {
         </div>
       </div>
 
-      {/* Question card */}
+      {/* Question card — image on the right when answered */}
       <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6 mb-5 shadow-xl">
-        <div className="flex items-center gap-2 mb-3">
-          <Brain size={15} className="text-indigo-400" />
-          <span className="text-indigo-400 text-xs font-semibold uppercase tracking-wider">Question</span>
+        <div className={`flex gap-5 ${answered && imageUrl ? 'flex-col sm:flex-row' : ''}`}>
+
+          {/* Left: question text + explanation */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-3">
+              <Brain size={15} className="text-indigo-400" />
+              <span className="text-indigo-400 text-xs font-semibold uppercase tracking-wider">Question</span>
+            </div>
+            <p className="text-white text-xl font-semibold leading-relaxed">{q.question}</p>
+
+            {/* Explanation appears below the question on the left */}
+            {answered && q.explanation && (
+              <div className="mt-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl px-4 py-3 animate-fade-in">
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  <span className="text-indigo-400 font-semibold">💡 </span>
+                  {q.explanation}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Right: vocabulary image — only visible after answering */}
+          {answered && imageUrl && (
+            <div className="animate-fade-in sm:w-56 sm:shrink-0 rounded-2xl overflow-hidden border border-slate-700/50 shadow-lg relative">
+              <img
+                src={imageUrl}
+                alt={q.wordEnglish}
+                className="w-full h-48 sm:h-full object-cover"
+                onError={e => { e.target.style.display = 'none'; }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent" />
+              <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
+                <Volume2 size={13} className="text-white/80" />
+                <span className="text-white font-bold text-sm drop-shadow">{q.wordEnglish}</span>
+              </div>
+            </div>
+          )}
         </div>
-        <p className="text-white text-xl font-semibold leading-relaxed">{q.question}</p>
       </div>
 
       {/* Options */}
@@ -568,50 +634,15 @@ function QuizGame({ questions, words, onFinish, updateWordLevel }) {
         ))}
       </div>
 
-      {/* ── Auto-Media Panel (shown after answering) ───────────────── */}
+      {/* Auto-advancing — show a subtle progress indicator */}
       {answered && (
-        <div className="animate-fade-in mb-4 space-y-3">
-          {/* Word image */}
-          {imageUrl && (
-            <div className="relative rounded-2xl overflow-hidden border border-slate-700/50 shadow-lg">
-              <img
-                src={imageUrl}
-                alt={q.wordEnglish}
-                className="w-full h-40 object-cover"
-                onError={e => { e.target.style.display = 'none'; }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent" />
-              <div className="absolute bottom-3 left-4 flex items-center gap-2">
-                <Volume2 size={14} className="text-white/80" />
-                <span className="text-white font-bold text-base drop-shadow">{q.wordEnglish}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Explanation */}
-          {q.explanation && (
-            <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl px-4 py-3">
-              <p className="text-slate-300 text-sm leading-relaxed">
-                <span className="text-indigo-400 font-semibold">💡 </span>
-                {q.explanation}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Next / Finish */}
-      {answered && (
-        <button
-          id="next-question-btn"
-          onClick={handleNext}
-          className="w-full flex items-center justify-center gap-2 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-semibold transition-colors shadow-lg shadow-indigo-500/20 animate-fade-in"
-        >
-          {current + 1 >= questions.length
-            ? <><Trophy size={18} /> See Results</>
-            : <>Next Question <ChevronRight size={18} /></>
+        <div className="animate-fade-in flex items-center justify-center gap-2 py-2 text-slate-400 text-sm">
+          <div className="w-4 h-4 border-2 border-slate-600 border-t-indigo-400 rounded-full animate-spin" />
+          {current + 1 >= shuffledQuestions.length
+            ? 'Finishing quiz…'
+            : 'Next question in a moment…'
           }
-        </button>
+        </div>
       )}
     </div>
   );

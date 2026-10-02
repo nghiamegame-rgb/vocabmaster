@@ -263,6 +263,8 @@ export default function ListeningReview({ words, updateWordLevel }) {
   const [score,         setScore]         = useState(0);
   const [totalPlayed,   setTotalPlayed]   = useState(0);
   const [isPlaying,     setIsPlaying]     = useState(false);
+  const [listenCount,   setListenCount]   = useState(0);   // how many times Replay was clicked
+  const [typingInput,   setTypingInput]   = useState('');  // user's typed answer
 
   const audioRef = useRef(null);
 
@@ -289,6 +291,8 @@ export default function ListeningReview({ words, updateWordLevel }) {
     setAnswered(false);
     setSelectedWord(null);
     setShowMeanings([false, false, false, false]);
+    setListenCount(0);   // reset hint counter
+    setTypingInput('');  // clear typing field
   }, []);
 
   /* ── Start first round when component mounts or filter changes ── */
@@ -322,6 +326,26 @@ export default function ListeningReview({ words, updateWordLevel }) {
     setIsPlaying(true);
     audioRef.current = playAudio(word);
     setTimeout(() => setIsPlaying(false), 2000);
+  }
+
+  /* ── Handle Replay button click (increment listen counter) ── */
+  function handleReplay() {
+    setListenCount(c => c + 1);
+    triggerAudio(round.correct.english);
+  }
+
+  /* ── Handle typing input change ── */
+  function handleTypingChange(e) {
+    const val = e.target.value;
+    setTypingInput(val);
+    // Auto-advance when user types the exact correct word (case-insensitive)
+    if (
+      round &&
+      !answered &&
+      val.trim().toLowerCase() === round.correct.english.toLowerCase()
+    ) {
+      handleCardClick(round.correct);
+    }
   }
 
   /* ── Handle card click ── */
@@ -474,49 +498,80 @@ export default function ListeningReview({ words, updateWordLevel }) {
       ) : (
         <>
           {/* ── Audio control card ── */}
-          <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-5 mb-5 flex flex-col sm:flex-row items-center gap-4">
+          <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-5 mb-5 flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
 
-            {/* Animated speaker */}
-            <div className={`
-              relative w-16 h-16 rounded-2xl flex items-center justify-center shrink-0
-              bg-gradient-to-br from-indigo-600 to-purple-700 shadow-lg shadow-indigo-500/30
-              transition-transform duration-150
-              ${isPlaying ? 'scale-110 shadow-indigo-500/60' : ''}
-            `}>
-              <Volume2
-                size={28}
-                className={`text-white transition-all duration-300 ${isPlaying ? 'opacity-100' : 'opacity-70'}`}
-              />
-              {isPlaying && (
-                <span className="absolute w-16 h-16 rounded-2xl border-2 border-indigo-400/40 animate-ping" />
-              )}
+              {/* Animated speaker */}
+              <div className={`
+                relative w-16 h-16 rounded-2xl flex items-center justify-center shrink-0
+                bg-gradient-to-br from-indigo-600 to-purple-700 shadow-lg shadow-indigo-500/30
+                transition-transform duration-150
+                ${isPlaying ? 'scale-110 shadow-indigo-500/60' : ''}
+              `}>
+                <Volume2
+                  size={28}
+                  className={`text-white transition-all duration-300 ${isPlaying ? 'opacity-100' : 'opacity-70'}`}
+                />
+                {isPlaying && (
+                  <span className="absolute w-16 h-16 rounded-2xl border-2 border-indigo-400/40 animate-ping" />
+                )}
+              </div>
+
+              <div className="flex-1 text-center sm:text-left">
+                <p className="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1">
+                  Which image matches…
+                </p>
+                {/* Show the word as a hint after 4 listens */}
+                {listenCount > 4 && !answered ? (
+                  <p className="text-amber-300 font-bold text-lg animate-fade-in">
+                    💡 Hint: <span className="underline underline-offset-4">{round.correct.english}</span>
+                  </p>
+                ) : (
+                  <p className="text-white text-lg font-bold">
+                    {isPlaying
+                      ? <span className="text-indigo-400 animate-pulse">♫ Playing audio…</span>
+                      : <span className="text-slate-400 italic text-base">Tap Replay to hear again{listenCount > 0 ? ` (×${listenCount})` : ''}</span>
+                    }
+                  </p>
+                )}
+              </div>
+
+              {/* Replay button */}
+              <button
+                id="replay-audio-btn"
+                onClick={handleReplay}
+                disabled={answered}
+                className="
+                  flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm
+                  bg-indigo-600 hover:bg-indigo-500 active:scale-95 disabled:opacity-50
+                  text-white transition-all duration-200 shadow-md shadow-indigo-500/30 shrink-0
+                "
+              >
+                <Volume2 size={16} />
+                Replay
+              </button>
             </div>
 
-            <div className="flex-1 text-center sm:text-left">
-              <p className="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1">
-                Which image matches…
-              </p>
-              <p className="text-white text-lg font-bold">
-                {isPlaying
-                  ? <span className="text-indigo-400 animate-pulse">♫ Playing audio…</span>
-                  : <span className="text-slate-400 italic text-base">Tap Replay to hear again</span>
-                }
-              </p>
-            </div>
-
-            {/* Replay button */}
-            <button
-              id="replay-audio-btn"
-              onClick={() => triggerAudio(round.correct.english)}
-              className="
-                flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm
-                bg-indigo-600 hover:bg-indigo-500 active:scale-95
-                text-white transition-all duration-200 shadow-md shadow-indigo-500/30 shrink-0
-              "
-            >
-              <Volume2 size={16} />
-              Replay
-            </button>
+            {/* ── Typing input ── */}
+            {!answered && (
+              <div className="flex items-center gap-2">
+                <input
+                  id="listening-type-answer"
+                  type="text"
+                  value={typingInput}
+                  onChange={handleTypingChange}
+                  placeholder="Or type the word here…"
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="
+                    flex-1 bg-slate-900/60 border border-slate-600 rounded-xl
+                    px-4 py-2.5 text-white text-sm placeholder-slate-600
+                    focus:outline-none focus:border-indigo-500 transition-colors
+                  "
+                />
+                <span className="text-slate-600 text-xs whitespace-nowrap">auto-submits</span>
+              </div>
+            )}
           </div>
 
           {/* ── Feedback banner ── */}
