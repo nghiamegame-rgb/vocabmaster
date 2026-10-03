@@ -2,9 +2,10 @@ import { useState, useRef } from 'react';
 import {
   Plus, Trash2, Pencil, Volume2, Download, Upload, X, Check,
   BookOpen, AlertCircle, Image as ImageIcon, CheckSquare, Square,
-  ChevronDown, Tag, Layers,
+  ChevronDown, Tag, Layers, Search,
 } from 'lucide-react';
 import { playAudio } from '../utils/audio';
+import { isDueForReview } from '../hooks/useVocabStore';
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                            */
@@ -45,6 +46,7 @@ function WordCard({ word, onDelete, onUpdate, selected, onToggleSelect }) {
   const level    = LEVEL_COLORS[word.level] || LEVEL_COLORS[1];
   const typeMeta = TYPE_META[word.wordType] || TYPE_META.Word;
   const streak   = word.currentStreak ?? 0;
+  const isDue    = isDueForReview(word);
 
   function speak() {
     playAudio(word.english);
@@ -171,9 +173,14 @@ function WordCard({ word, onDelete, onUpdate, selected, onToggleSelect }) {
               </span>
             </div>
             <p className="text-slate-400 text-sm mb-1">{word.vietnamese}</p>
-            {/* Streak indicator */}
-            <p className="text-slate-600 text-xs mb-3">
-              🔥 Streak: <span className="text-slate-400 font-medium">{streak}</span>
+            {/* Streak + Due indicator */}
+            <p className="text-slate-600 text-xs mb-3 flex items-center gap-2 flex-wrap">
+              <span>🔥 Streak: <span className="text-slate-400 font-medium">{streak}</span></span>
+              {isDue && (
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  ⏰ Due
+                </span>
+              )}
             </p>
 
             <div className="flex items-center gap-1">
@@ -226,13 +233,20 @@ export default function Vocabulary({
   const [selected,    setSelected]    = useState(new Set());
   const [bulkLevel,   setBulkLevel]   = useState('');
   const [showBulkDd,  setShowBulkDd]  = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const fileInputRef = useRef(null);
 
-  // Apply level filter then type filter
+  // Apply level filter, then type filter, then search query
   const afterLevel = vocabFilter ? words.filter(w => w.level === vocabFilter) : words;
-  const filtered   = typeFilter === 'All'
+  const afterType  = typeFilter === 'All'
     ? afterLevel
     : afterLevel.filter(w => (w.wordType || 'Word') === typeFilter);
+  const filtered   = searchQuery.trim()
+    ? afterType.filter(w => {
+        const q = searchQuery.trim().toLowerCase();
+        return w.english.toLowerCase().includes(q) || w.vietnamese.toLowerCase().includes(q);
+      })
+    : afterType;
 
   /* ── Selection helpers ── */
   function toggleSelect(id) {
@@ -434,6 +448,31 @@ export default function Vocabulary({
         </button>
       </form>
 
+      {/* Search Bar */}
+      <div className="relative mb-4">
+        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+        <input
+          id="vocab-search"
+          type="text"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          placeholder="Search by English word or Vietnamese meaning…"
+          autoComplete="off"
+          spellCheck={false}
+          className="w-full bg-slate-800/60 border border-slate-700/50 rounded-xl pl-10 pr-10 py-2.5 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+        />
+        {searchQuery && (
+          <button
+            id="vocab-search-clear"
+            onClick={() => setSearchQuery('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+            title="Clear search"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+
       {/* Level Filter Pills */}
       <div className="flex items-center gap-2 mb-3 flex-wrap">
         {levelFilterOptions.map(opt => (
@@ -542,11 +581,13 @@ export default function Vocabulary({
         <div className="text-center py-20">
           <BookOpen size={56} className="text-slate-700 mx-auto mb-4" />
           <p className="text-slate-400 font-medium text-lg">
-            {vocabFilter || typeFilter !== 'All' ? 'No words match this filter' : 'No words yet'}
+            {vocabFilter || typeFilter !== 'All' || searchQuery
+              ? 'No words match this filter'
+              : 'No words yet'}
           </p>
           <p className="text-slate-500 text-sm mt-2">
-            {vocabFilter || typeFilter !== 'All'
-              ? 'Try a different filter or add more words.'
+            {vocabFilter || typeFilter !== 'All' || searchQuery
+              ? 'Try a different filter or search term.'
               : 'Add your first word using the form above!'}
           </p>
         </div>

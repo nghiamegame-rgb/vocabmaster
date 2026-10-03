@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Headphones, RotateCcw, Eye, EyeOff, Volume2,
-  ChevronRight, Trophy, AlertCircle, CheckCircle2, XCircle,
+  ChevronRight, Trophy, AlertCircle, CheckCircle2, XCircle, Clock,
 } from 'lucide-react';
 import { playAudio } from '../utils/audio';
+import { isDueForReview } from '../hooks/useVocabStore';
 
 /* ------------------------------------------------------------------ */
 /* Constants — mirrored from Vocabulary.jsx                             */
@@ -253,6 +254,7 @@ export default function ListeningReview({ words, updateWordLevel }) {
   /* ── Filter state ── */
   const [levelFilter, setLevelFilter] = useState(null);    // null = All Levels
   const [typeFilter,  setTypeFilter]  = useState('All');   // 'All' | 'Word' | 'Phrase' | 'Family'
+  const [dueOnly,     setDueOnly]     = useState(false);   // spaced-repetition "due today" filter
 
   /* ── Game state ── */
   const [round,         setRound]         = useState(null);
@@ -266,7 +268,8 @@ export default function ListeningReview({ words, updateWordLevel }) {
   const [listenCount,   setListenCount]   = useState(0);   // how many times Replay was clicked
   const [typingInput,   setTypingInput]   = useState('');  // user's typed answer
 
-  const audioRef = useRef(null);
+  const audioRef   = useRef(null);
+  const inputRef   = useRef(null); // ref for the typing input — keeps focus between rounds
 
   /* ── Derived: filtered vocabulary pool ── */
   const filteredPool = (() => {
@@ -275,6 +278,11 @@ export default function ListeningReview({ words, updateWordLevel }) {
       : words;
     if (typeFilter !== 'All') {
       pool = pool.filter(w => (w.wordType || 'Word') === typeFilter);
+    }
+    if (dueOnly) {
+      const due = pool.filter(isDueForReview);
+      // Only apply the "due" filter when it leaves enough words to play
+      if (due.length >= 4) pool = due;
     }
     return pool;
   })();
@@ -307,12 +315,21 @@ export default function ListeningReview({ words, updateWordLevel }) {
     }
     // We deliberately only react to pool identity (length + filters), not every words update.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [levelFilter, typeFilter, hasEnoughWords]);
+  }, [levelFilter, typeFilter, dueOnly, hasEnoughWords]);
 
   /* ── Auto-play audio when a new round's correct word changes ── */
   useEffect(() => {
     if (!round || answered) return;
     const timer = setTimeout(() => triggerAudio(round.correct.english), 400);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [round?.correct?.id]);
+
+  /* ── Re-focus the typing input whenever a fresh round begins ── */
+  useEffect(() => {
+    if (!round || answered) return;
+    // Small delay so the DOM has rendered the input before we focus
+    const timer = setTimeout(() => inputRef.current?.focus(), 50);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [round?.correct?.id]);
@@ -406,6 +423,13 @@ export default function ListeningReview({ words, updateWordLevel }) {
       : base.filter(w => (w.wordType || 'Word') === val).length;
   }
 
+  /** How many words in the current level+type pool are due for review */
+  const dueCount = (() => {
+    let base = levelFilter !== null ? words.filter(w => w.level === levelFilter) : words;
+    if (typeFilter !== 'All') base = base.filter(w => (w.wordType || 'Word') === typeFilter);
+    return base.filter(isDueForReview).length;
+  })();
+
   /* ── Derived answer state ── */
   const isCorrectAnswer = answered && selectedWord?.id === round?.correct?.id;
 
@@ -475,6 +499,39 @@ export default function ListeningReview({ words, updateWordLevel }) {
             ))}
           </div>
         </div>
+
+        {/* Due Today toggle */}
+        <div className="flex items-center justify-between pt-1">
+          <div className="flex items-center gap-2">
+            <Clock size={14} className="text-amber-400" />
+            <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Due for Review</span>
+            {dueCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                {dueCount} due
+              </span>
+            )}
+          </div>
+          <button
+            id="lr-due-toggle"
+            onClick={() => setDueOnly(v => !v)}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none ${
+              dueOnly ? 'bg-amber-500' : 'bg-slate-600'
+            }`}
+            title={dueOnly ? 'Show all words' : 'Show only words due for review'}
+            aria-pressed={dueOnly}
+          >
+            <span
+              className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-200 ${
+                dueOnly ? 'translate-x-4' : 'translate-x-0.5'
+              }`}
+            />
+          </button>
+        </div>
+        {dueOnly && dueCount < 4 && (
+          <p className="text-amber-400/70 text-xs">
+            ⚠ Fewer than 4 words are due — showing full pool instead.
+          </p>
+        )}
       </div>
 
       {/* ── Not enough words for current filters ── */}
@@ -557,6 +614,7 @@ export default function ListeningReview({ words, updateWordLevel }) {
               <div className="flex items-center gap-2">
                 <input
                   id="listening-type-answer"
+                  ref={inputRef}
                   type="text"
                   value={typingInput}
                   onChange={handleTypingChange}

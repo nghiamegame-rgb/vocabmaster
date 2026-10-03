@@ -9,6 +9,25 @@ import { pushToCloud, fetchFromCloud } from '../utils/cloud';
  */
 const LEVEL_UP_THRESHOLD = { 1: 2, 2: 4, 3: 8, 4: 15 };
 
+/**
+ * Forgetting-curve review intervals (days) per mastery level.
+ * A word at a given level should be reviewed again after this many days.
+ * L1: 1 day, L2: 3 days, L3: 7 days, L4: 14 days, L5: 30 days
+ */
+export const REVIEW_INTERVALS = { 1: 1, 2: 3, 3: 7, 4: 14, 5: 30 };
+
+/**
+ * Returns true when a word is due for review today.
+ * A word is "due" if:
+ *   - it has never been reviewed (no lastReviewedDate), OR
+ *   - the time since its last review >= its interval for the current level.
+ */
+export function isDueForReview(word) {
+  if (!word.lastReviewedDate) return true;
+  const intervalMs = (REVIEW_INTERVALS[word.level] ?? 1) * 24 * 60 * 60 * 1000;
+  return Date.now() - word.lastReviewedDate >= intervalMs;
+}
+
 /** Debounce delay (ms) before pushing to the cloud after a local change. */
 const PUSH_DEBOUNCE_MS = 1500;
 
@@ -136,11 +155,16 @@ export function useVocabStore() {
           const newStreak = currentStreak + 1;
           const threshold = LEVEL_UP_THRESHOLD[w.level];
           if (threshold && newStreak >= threshold) {
-            return { ...w, level: Math.min(5, w.level + 1), currentStreak: 0 };
+            return {
+              ...w,
+              level: Math.min(5, w.level + 1),
+              currentStreak: 0,
+              lastReviewedDate: Date.now(),
+            };
           }
-          return { ...w, currentStreak: newStreak };
+          return { ...w, currentStreak: newStreak, lastReviewedDate: Date.now() };
         } else {
-          return { ...w, level: 1, currentStreak: 0 };
+          return { ...w, level: 1, currentStreak: 0, lastReviewedDate: Date.now() };
         }
       })
     );
