@@ -8,13 +8,4 @@
  * 3. Deploy → New deployment → Web App → "Anyone" access → Copy the URL.
  * 4. Replace the empty string below with your deployed Apps Script URL.
  */
-export const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycby3MvOImDFHpL-xM_gQdthaEVLlNvd1XaxLPYOcD453SOLihkfltSX2Kp9sRu-3JeVD5g/exec';
-
-
-
-
-
-
-
-
-
+export const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx4vmBl5pCGg4ou6vQ0BYuBNWote1qSQlca4AVZhXrJH8RkG-B2LN5FvSi5vYZr1YjMLQ/exec';
