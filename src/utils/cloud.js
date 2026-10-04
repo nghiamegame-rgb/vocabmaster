@@ -85,14 +85,11 @@ export async function fetchFromCloud() {
     const bustUrl = `${WEBHOOK_URL}${WEBHOOK_URL.includes('?') ? '&' : '?'}_cb=${Date.now()}`;
 
     const res = await fetch(bustUrl, {
-      method: 'GET',
-      cache:  'no-store',           // tell the browser fetch cache to skip
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma':        'no-cache',
-        'Expires':       '0',
-      },
-      // No 'no-cors' here — we MUST read the response body
+      method:   'GET',
+      redirect: 'follow',  // follow the Apps Script redirect to the final response
+      // No custom headers — they would trigger a CORS preflight OPTIONS request
+      // that Google Apps Script cannot handle. The _cb query-param above is
+      // sufficient to bust any proxy / service-worker cache.
     });
 
     if (!res.ok) return null;
