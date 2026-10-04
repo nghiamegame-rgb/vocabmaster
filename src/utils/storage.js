@@ -13,6 +13,10 @@ export function getWords() {
 export function saveWords(words) {
   localStorage.setItem(LS_WORDS, JSON.stringify(words));
 }
+/** Wipe the words key entirely (used before a hard-sync) */
+export function clearWords() {
+  localStorage.removeItem(LS_WORDS);
+}
 
 // ---------- Stats ----------
 export function getStats() {

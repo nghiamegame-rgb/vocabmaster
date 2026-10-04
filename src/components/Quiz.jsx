@@ -93,48 +93,73 @@ function buildPrompt(words, count, difficulty, mode) {
 Độ khó: ${difficulty}. ${diffNote}
 ${modeNote}
 
-━━━ QUY TẮC BẮT BUỘC — KHÔNG ĐƯỢC VI PHẠM ━━━
+=== QUY TAC TAO CAU — DAY LA PHAN QUAN TRONG NHAT ===
 
-📌 TRƯỜNG "question":
-  ✅ PHẢI là một câu văn TIẾNG VIỆT hoàn chỉnh, mô tả tình huống thực tế (công sở, kinh doanh, logistics, tài chính...).
-  ✅ PHẢI chứa đúng một chỗ trống ký hiệu là [_____] (năm gạch dưới trong ngoặc vuông).
-  ✅ Câu phải có nghĩa và ngữ cảnh rõ ràng để người học hiểu từ cần điền.
-  ❌ TUYỆT ĐỐI KHÔNG viết kiểu "Từ nào có nghĩa là...?" hoặc dạng câu hỏi định nghĩa.
-  ❌ TUYỆT ĐỐI KHÔNG để lộ từ cần điền trong phần câu hỏi.
-  ❌ KHÔNG dùng tiếng Anh trong câu hỏi (trừ ký hiệu [_____]).
+Voi MOI tu vung duoc giao, hay ap dung mau sau de tao cau hoi:
+  Ban la chuyen gia tao de thi TOEIC. Nhiem vu cua ban la tao ra MOT cau tieng Viet tu nhien,
+  co cho trong [_____] phu hop hoan toan voi tu tieng Anh: '{word}' (Nghia: '{meaning}').
 
-📌 TRƯỜNG "options":
-  ✅ Đúng 4 từ/cụm từ TIẾNG ANH.
-  ✅ Chỉ 1 đáp án đúng; 3 còn lại phải thuộc cùng nhóm từ loại (danh từ/động từ/tính từ) để tạo sức gây nhầm.
-  ❌ KHÔNG dùng tiếng Việt.
+  YEU CAU BAT BUOC:
+  1. BOI CANH TOEIC: Cau PHAI mo phong tinh huong thuc te trong TOEIC. Chon ngau nhien
+     cac boi canh nhu: email cong ty, thong bao noi bo HR, phan hoi dich vu khach hang,
+     thong bao san bay/nha ga, dam phan hop dong, quang cao san pham, hoac tin tuc kinh doanh.
+  2. DA DANG: KHONG dung cau truc cau lap di lap lai (vi du: tranh bat dau moi cau bang
+     'Cong ty da...' hay 'Nhan vien can...'). Dung cau bi dong, cau dieu kien, hoac menh de
+     phuc hop khi phu hop.
+  3. NGON NGU TU NHIEN: Ban dich tieng Viet phai nghe chuyen nghiep va tu nhien, giong nhu
+     tai lieu kinh doanh thuc su hoac van phong ban ngu.
+  4. GOI Y NGU CANH: Ngu canh phai cung cap du manh moi logic de suy ra tu can dien ma
+     khong qua don gian.
 
-📌 TRƯỜNG "explanation":
-  ✅ Viết bằng TIẾNG VIỆT.
-  ✅ Giải thích ngắn gọn tại sao từ đúng phù hợp với ngữ cảnh câu.
-  ✅ Có thể nêu nghĩa của từ đúng và lý do các lựa chọn sai không phù hợp.
+=== QUY TAC BAT BUOC VE CAU TRUC JSON ===
 
-📌 TRƯỜNG "wordEnglish":
-  ✅ Từ tiếng Anh chính xác được kiểm tra (đáp án đúng).
+Truong "question":
+  - PHAI la mot cau van TIENG VIET hoan chinh, ap dung dung cac quy tac tao cau phia tren.
+  - PHAI chua dung mot cho trong ky hieu la [_____] (nam gach duoi trong ngoac vuong).
+  - MOI cau PHAI co boi canh KHAC NHAU (email, thong bao, quang cao, hop dong, v.v.).
+  - Dung da dang cau truc cau: chu dong, bi dong, dieu kien, phuc hop.
+  - TUYET DOI KHONG bat dau qua 2 cau bang cung mot chu ngu (Cong ty, Nhan vien, v.v.).
+  - TUYET DOI KHONG viet kieu "Tu nao co nghia la...?" hoac dang cau hoi dinh nghia.
+  - TUYET DOI KHONG de lo tu can dien trong phan cau hoi.
+  - KHONG dung tieng Anh trong cau hoi (tru ky hieu [_____]).
 
-Từ vựng cần dùng: ${wordList}
+Truong "options":
+  - Dung 4 tu/cum tu TIENG ANH.
+  - Chi 1 dap an dung; 3 con lai phai thuoc cung nhom tu loai de tao suc gay nham.
 
-━━━ QUY TẮC ĐẦU RA ━━━
-- Chỉ trả về một mảng JSON hợp lệ. KHÔNG thêm văn xuôi, KHÔNG dùng markdown, KHÔNG dùng code block.
-- Mỗi phần tử có đúng 5 trường: "question", "options", "answerIndex", "explanation", "wordEnglish".
-- "answerIndex": chỉ số 0 của đáp án đúng trong mảng "options" (0=A, 1=B, 2=C, 3=D).
+Truong "explanation":
+  - Viet bang TIENG VIET.
+  - Giai thich ngan gon tai sao tu dung phu hop voi ngu canh cau.
 
-VÍ DỤ MẪU (bắt buộc phải theo đúng định dạng này):
+Truong "wordEnglish":
+  - Tu tieng Anh chinh xac duoc kiem tra (dap an dung).
+
+Tu vung can dung: ${wordList}
+
+=== QUY TAC DAU RA ===
+- Chi tra ve mot mang JSON hop le. KHONG them van xuoi, KHONG dung markdown, KHONG dung code block.
+- Moi phan tu co dung 5 truong: "question", "options", "answerIndex", "explanation", "wordEnglish".
+- "answerIndex": chi so 0 cua dap an dung trong mang "options" (0=A, 1=B, 2=C, 3=D).
+
+VI DU MAU — chu y su DA DANG ve boi canh va cau truc cau:
 [
   {
-    "question": "Để tối ưu hóa thời gian giao hàng, công ty đã thiết lập một [_____] hoàn toàn mới.",
-    "options": ["route", "advantage", "gauge", "competent"],
+    "question": "Hanh khach duoc thong bao rang chuyen bay se khoi hanh theo dung [_____] da dinh.",
+    "options": ["schedule", "advantage", "gauge", "competent"],
     "answerIndex": 0,
-    "explanation": "Từ 'route' (lộ trình) là đáp án chính xác nhất đi với ngữ cảnh giao hàng. 'Advantage' là lợi thế, 'gauge' là thước đo, 'competent' là tính từ — đều không phù hợp.",
-    "wordEnglish": "route"
+    "explanation": "'Schedule' (lich trinh) la dap an chinh xac trong boi canh thong bao san bay. Cac lua chon con lai khong phu hop.",
+    "wordEnglish": "schedule"
+  },
+  {
+    "question": "Neu bao cao tai chinh quy nay khong duoc [_____] truoc thu Sau, hoi dong quan tri se hoan cuoc hop.",
+    "options": ["submitted", "promoted", "allocated", "suspended"],
+    "answerIndex": 0,
+    "explanation": "'Submitted' (nop/trinh) phu hop voi ngu canh bao cao can duoc nop dung han. Cac lua chon con lai khong di voi hanh dong nop tai lieu.",
+    "wordEnglish": "submit"
   }
 ]
 
-Bây giờ hãy tạo chính xác ${count} câu hỏi theo đúng định dạng trên:`;
+Bay gio hay tao chinh xac ${count} cau hoi theo dung dinh dang tren, dam bao MOI cau co boi canh va cau truc KHAC NHAU:`;
 }
 
 /**

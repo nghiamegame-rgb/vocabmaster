@@ -80,8 +80,18 @@ export async function pushToCloud(words) {
 export async function fetchFromCloud() {
   if (!isConfigured()) return null;
   try {
-    const res = await fetch(WEBHOOK_URL, {
+    // Append a timestamp query-param as a last-resort cache buster for
+    // proxies / service workers that ignore Cache-Control headers.
+    const bustUrl = `${WEBHOOK_URL}${WEBHOOK_URL.includes('?') ? '&' : '?'}_cb=${Date.now()}`;
+
+    const res = await fetch(bustUrl, {
       method: 'GET',
+      cache:  'no-store',           // tell the browser fetch cache to skip
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma':        'no-cache',
+        'Expires':       '0',
+      },
       // No 'no-cors' here — we MUST read the response body
     });
 

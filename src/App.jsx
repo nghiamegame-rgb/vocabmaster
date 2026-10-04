@@ -20,6 +20,7 @@ export default function App() {
     bulkUpdateLevel,
     recordQuizResult,
     syncStatus,
+    syncMode,
     syncFromCloud,
   } = useVocabStore();
 
@@ -33,6 +34,7 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={handleSetActiveTab}
         syncStatus={syncStatus}
+        syncMode={syncMode}
         onSync={syncFromCloud}
       />
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getWords, saveWords, getStats, saveStats } from '../utils/storage';
+import { getWords, saveWords, clearWords, getStats, saveStats } from '../utils/storage';
 import { pushToCloud, fetchFromCloud } from '../utils/cloud';
 
 /**
@@ -42,6 +42,8 @@ export function useVocabStore() {
 
   // Cloud sync state — exposed so the Navbar Sync button can reflect it
   const [syncStatus, setSyncStatus] = useState('idle'); // 'idle' | 'syncing' | 'ok' | 'error'
+  // Distinguishes hard (clear + fetch) from soft (fetch only) for the Navbar
+  const [syncMode,   setSyncMode]   = useState('soft'); // 'soft' | 'hard'
 
   // Debounce timer ref for cloud push
   const pushTimerRef = useRef(null);
@@ -76,8 +78,24 @@ export function useVocabStore() {
   }, []); // intentionally runs once on mount
 
   // ── Internal fetch implementation ─────────────────────────────────────────
-  async function _doFetch(trigger) {
+  /**
+   * @param {'auto'|'manual'} trigger  - 'manual' shows error on failure; 'auto' is silent
+   * @param {boolean} hardClear        - when true, wipes LocalStorage + React state first
+   *                                    so the browser cannot serve stale cached data.
+   */
+  async function _doFetch(trigger, hardClear = false) {
+    setSyncMode(hardClear ? 'hard' : 'soft');
     setSyncStatus('syncing');
+
+    if (hardClear) {
+      // 1. Nuke LocalStorage immediately so no stale key survives
+      clearWords();
+      // 2. Clear React state so the UI shows an empty list during the load
+      setWords([]);
+      // 3. Small yield so the browser paints the "clearing" state before we block on fetch
+      await new Promise(r => setTimeout(r, 120));
+    }
+
     try {
       const cloudWords = await fetchFromCloud();
 
@@ -102,10 +120,10 @@ export function useVocabStore() {
   }
 
   /**
-   * Manually pull the latest data from the cloud.
+   * Hard-sync: clear LocalStorage cache first, then pull fresh data from cloud.
    * Exposed so the Sync button in the Navbar can call it.
    */
-  const syncFromCloud = useCallback(() => _doFetch('manual'), []);
+  const syncFromCloud = useCallback(() => _doFetch('manual', true), []);
 
   // ── Vocabulary mutations ───────────────────────────────────────────────────
 
@@ -198,6 +216,7 @@ export function useVocabStore() {
     words,
     stats,
     syncStatus,
+    syncMode,
     addWord,
     deleteWord,
     updateWord,
