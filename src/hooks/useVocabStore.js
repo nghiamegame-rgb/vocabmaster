@@ -182,7 +182,7 @@ export function useVocabStore() {
           }
           return { ...w, currentStreak: newStreak, lastReviewedDate: Date.now() };
         } else {
-          return { ...w, level: 1, currentStreak: 0, lastReviewedDate: Date.now() };
+          return { ...w, level: Math.max(1, w.level - 1), currentStreak: 0, lastReviewedDate: Date.now() };
         }
       })
     );

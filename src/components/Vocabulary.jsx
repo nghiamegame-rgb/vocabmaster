@@ -520,7 +520,7 @@ export default function Vocabulary({
 
       {/* Bulk Action Bar */}
       {selected.size > 0 && (
-        <div className="flex items-center gap-3 mb-4 px-4 py-3 bg-indigo-600/10 border border-indigo-500/30 rounded-xl animate-fade-in">
+        <div className="relative z-10 flex items-center gap-3 mb-4 px-4 py-3 bg-indigo-600/10 border border-indigo-500/30 rounded-xl animate-fade-in">
           <Layers size={16} className="text-indigo-400 shrink-0" />
           <span className="text-indigo-300 text-sm font-medium">
             {selected.size} word{selected.size !== 1 ? 's' : ''} selected
@@ -534,7 +534,7 @@ export default function Vocabulary({
               Change Level <ChevronDown size={13} />
             </button>
             {showBulkDd && (
-              <div className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-20 overflow-hidden min-w-[140px]">
+              <div className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 min-w-[140px] overflow-visible">
                 {[1, 2, 3, 4, 5].map(l => (
                   <button
                     key={l}
