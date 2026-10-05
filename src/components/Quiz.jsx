@@ -3,6 +3,7 @@ import {
   Brain, ChevronRight, CheckCircle, XCircle,
   RotateCcw, AlertCircle, Trophy, Zap,
   Copy, Check, ClipboardPaste, BookOpen, Volume2,
+  Headphones, Type, Send,
 } from 'lucide-react';
 import { playAudio } from '../utils/audio';
 
@@ -27,8 +28,23 @@ const QUIZ_MODES = [
   },
   {
     id:   'toeic',
-    label:'TOEIC Fill-in-the-Blank',
-    desc: 'Câu văn phong TOEIC thực tế bằng tiếng Việt, điền từ tiếng Anh vào chỗ [_____]',
+    label:'TOEIC Part 5 (English)',
+    desc: 'Authentic English TOEIC Part 5 sentence with a [_____] blank — choose or type the correct word',
+  },
+];
+
+const ANSWER_MODES = [
+  {
+    id:    'mc',
+    label: 'Multiple Choice',
+    desc:  'Select from 4 options (A / B / C / D)',
+    icon:  'mc',
+  },
+  {
+    id:    'dictation',
+    label: 'Listening & Typing',
+    desc:  'Listen to the word and type your answer',
+    icon:  'dictation',
   },
 ];
 
@@ -74,65 +90,108 @@ function buildPool(words, priority, count) {
  *   - "explanation" is in Vietnamese explaining why the answer fits
  */
 function buildPrompt(words, count, difficulty, mode) {
+  const wordList = words
+    .slice(0, 40)
+    .map(w => `"${w.english}" (${w.vietnamese})`)
+    .join(', ');
+
+  /* ── TOEIC mode: real English Part 5 sentences ─────────────────────── */
+  if (mode === 'toeic') {
+    const diffNote = {
+      Easy:   'Use simple office/travel contexts. Distractors should be clearly wrong.',
+      Medium: 'Use realistic business/corporate contexts. Distractors should be plausible but wrong.',
+      Hard:   'Use advanced contexts (finance, logistics, HR, legal). Distractors must be very close in meaning or form — near-synonyms, same word-family, or common confusables.',
+    }[difficulty] || '';
+
+    return `You are a TOEIC exam expert. Generate exactly ${count} TOEIC Part 5 fill-in-the-blank questions in English.
+Difficulty: ${difficulty}. ${diffNote}
+
+=== MANDATORY RULES FOR TOEIC PART 5 FORMAT ===
+
+Field "question":
+  - MUST be a complete, grammatically correct ENGLISH sentence.
+  - MUST contain exactly one blank represented as [_____].
+  - The sentence MUST reflect a realistic TOEIC business scenario: corporate email, HR announcement, airline/hotel notice, contract clause, product advertisement, financial report, or business news.
+  - Seamlessly weave in common TOEIC collocations and phrases (e.g., "in accordance with", "prior to", "on behalf of", "subject to", "in conjunction with", "as a result of", "take effect", "comply with", "reach an agreement", "place an order", etc.) naturally into the sentence.
+  - Vary sentence structure: active voice, passive voice, conditional clauses, relative clauses, participial phrases.
+  - NEVER start more than 2 sentences with the same subject.
+  - NEVER write a definition question like "Which word means...?".
+  - NEVER reveal the target word inside the question sentence.
+  - Write ONLY in English (except the [_____] marker).
+
+Field "options":
+  - Exactly 4 ENGLISH words or short phrases.
+  - Exactly 1 correct answer; the 3 distractors must be the same part of speech to create genuine difficulty.
+
+Field "explanation":
+  - Write in VIETNAMESE.
+  - Briefly explain why the correct answer fits the context and why distractors are wrong.
+
+Field "wordEnglish":
+  - The exact English word being tested (the correct answer).
+
+Vocabulary to use: ${wordList}
+
+=== OUTPUT RULES ===
+- Return ONLY a valid JSON array. NO prose, NO markdown, NO code fences.
+- Each element has exactly 5 fields: "question", "options", "answerIndex", "explanation", "wordEnglish".
+- "answerIndex": 0-based index of the correct answer in "options" (0=A, 1=B, 2=C, 3=D).
+
+SAMPLE OUTPUT (note the variety of contexts and structures):
+[
+  {
+    "question": "All employees are required to [_____] the new data-privacy policy prior to accessing the updated client database.",
+    "options": ["acknowledge", "accumulate", "allocate", "accelerate"],
+    "answerIndex": 0,
+    "explanation": "'Acknowledge' (xác nhận) phù hợp với ngữ cảnh nhân viên cần xác nhận đã đọc chính sách. Các lựa chọn còn lại không hợp nghĩa trong bối cảnh này.",
+    "wordEnglish": "acknowledge"
+  },
+  {
+    "question": "The quarterly financial report must be [_____] to the board of directors no later than Friday afternoon.",
+    "options": ["submitted", "promoted", "allocated", "suspended"],
+    "answerIndex": 0,
+    "explanation": "'Submitted' (nộp/trình) phù hợp với ngữ cảnh nộp báo cáo đúng hạn. Các lựa chọn còn lại không đi với hành động nộp tài liệu.",
+    "wordEnglish": "submit"
+  }
+]
+
+Now generate exactly ${count} questions following the format above, ensuring EVERY sentence has a DIFFERENT context and structure:`;
+  }
+
+  /* ── Vietnamese (VN) mode ───────────────────────────────────────────── */
   const diffNote = {
     Easy:   'Dùng ngữ cảnh đơn giản, từ vựng phổ thông, các lựa chọn sai rõ ràng.',
     Medium: 'Dùng ngữ cảnh văn phòng/kinh doanh thực tế, các lựa chọn sai có liên quan.',
     Hard:   'Dùng ngữ cảnh chuyên sâu (tài chính, logistics, HR), các lựa chọn sai rất gần nghĩa, dễ nhầm lẫn.',
   }[difficulty] || '';
 
-  const wordList = words
-    .slice(0, 40)
-    .map(w => `"${w.english}" (${w.vietnamese})`)
-    .join(', ');
-
-  const modeNote = mode === 'toeic'
-    ? 'Ưu tiên tạo câu theo đúng cấu trúc đề thi TOEIC Part 5/6 (câu hoàn chỉnh với chỗ trống).'
-    : 'Tạo câu mô tả ngữ cảnh sử dụng từ đó trong tiếng Việt, có chỗ trống [_____].';
-
   return `Bạn là chuyên gia tạo đề thi TOEIC. Nhiệm vụ: tạo chính xác ${count} câu hỏi điền vào chỗ trống.
 Độ khó: ${difficulty}. ${diffNote}
-${modeNote}
+Tạo câu mô tả ngữ cảnh sử dụng từ đó trong tiếng Việt, có chỗ trống [_____].
 
 === QUY TAC TAO CAU — DAY LA PHAN QUAN TRONG NHAT ===
-
-Voi MOI tu vung duoc giao, hay ap dung mau sau de tao cau hoi:
-  Ban la chuyen gia tao de thi TOEIC. Nhiem vu cua ban la tao ra MOT cau tieng Viet tu nhien,
-  co cho trong [_____] phu hop hoan toan voi tu tieng Anh: '{word}' (Nghia: '{meaning}').
 
   YEU CAU BAT BUOC:
   1. BOI CANH TOEIC: Cau PHAI mo phong tinh huong thuc te trong TOEIC. Chon ngau nhien
      cac boi canh nhu: email cong ty, thong bao noi bo HR, phan hoi dich vu khach hang,
      thong bao san bay/nha ga, dam phan hop dong, quang cao san pham, hoac tin tuc kinh doanh.
-  2. DA DANG: KHONG dung cau truc cau lap di lap lai (vi du: tranh bat dau moi cau bang
-     'Cong ty da...' hay 'Nhan vien can...'). Dung cau bi dong, cau dieu kien, hoac menh de
-     phuc hop khi phu hop.
-  3. NGON NGU TU NHIEN: Ban dich tieng Viet phai nghe chuyen nghiep va tu nhien, giong nhu
-     tai lieu kinh doanh thuc su hoac van phong ban ngu.
-  4. GOI Y NGU CANH: Ngu canh phai cung cap du manh moi logic de suy ra tu can dien ma
-     khong qua don gian.
+  2. DA DANG: KHONG dung cau truc cau lap di lap lai. Dung cau bi dong, cau dieu kien,
+     hoac menh de phuc hop khi phu hop.
+  3. NGON NGU TU NHIEN: Ban dich tieng Viet phai nghe chuyen nghiep va tu nhien.
+  4. GOI Y NGU CANH: Ngu canh phai cung cap du manh moi logic de suy ra tu can dien.
 
 === QUY TAC BAT BUOC VE CAU TRUC JSON ===
 
 Truong "question":
-  - PHAI la mot cau van TIENG VIET hoan chinh, ap dung dung cac quy tac tao cau phia tren.
-  - PHAI chua dung mot cho trong ky hieu la [_____] (nam gach duoi trong ngoac vuong).
-  - MOI cau PHAI co boi canh KHAC NHAU (email, thong bao, quang cao, hop dong, v.v.).
-  - Dung da dang cau truc cau: chu dong, bi dong, dieu kien, phuc hop.
-  - TUYET DOI KHONG bat dau qua 2 cau bang cung mot chu ngu (Cong ty, Nhan vien, v.v.).
-  - TUYET DOI KHONG viet kieu "Tu nao co nghia la...?" hoac dang cau hoi dinh nghia.
+  - PHAI la mot cau van TIENG VIET hoan chinh voi cho trong [_____].
+  - MOI cau PHAI co boi canh KHAC NHAU.
+  - TUYET DOI KHONG viet kieu "Tu nao co nghia la...?".
   - TUYET DOI KHONG de lo tu can dien trong phan cau hoi.
   - KHONG dung tieng Anh trong cau hoi (tru ky hieu [_____]).
 
-Truong "options":
-  - Dung 4 tu/cum tu TIENG ANH.
-  - Chi 1 dap an dung; 3 con lai phai thuoc cung nhom tu loai de tao suc gay nham.
-
-Truong "explanation":
-  - Viet bang TIENG VIET.
-  - Giai thich ngan gon tai sao tu dung phu hop voi ngu canh cau.
-
-Truong "wordEnglish":
-  - Tu tieng Anh chinh xac duoc kiem tra (dap an dung).
+Truong "options": 4 tu/cum tu TIENG ANH; chi 1 dap an dung.
+Truong "explanation": TIENG VIET, giai thich ngan gon.
+Truong "wordEnglish": tu tieng Anh chinh xac la dap an dung.
 
 Tu vung can dung: ${wordList}
 
@@ -141,25 +200,18 @@ Tu vung can dung: ${wordList}
 - Moi phan tu co dung 5 truong: "question", "options", "answerIndex", "explanation", "wordEnglish".
 - "answerIndex": chi so 0 cua dap an dung trong mang "options" (0=A, 1=B, 2=C, 3=D).
 
-VI DU MAU — chu y su DA DANG ve boi canh va cau truc cau:
+VI DU MAU:
 [
   {
     "question": "Hanh khach duoc thong bao rang chuyen bay se khoi hanh theo dung [_____] da dinh.",
     "options": ["schedule", "advantage", "gauge", "competent"],
     "answerIndex": 0,
-    "explanation": "'Schedule' (lich trinh) la dap an chinh xac trong boi canh thong bao san bay. Cac lua chon con lai khong phu hop.",
+    "explanation": "'Schedule' (lich trinh) la dap an chinh xac trong boi canh thong bao san bay.",
     "wordEnglish": "schedule"
-  },
-  {
-    "question": "Neu bao cao tai chinh quy nay khong duoc [_____] truoc thu Sau, hoi dong quan tri se hoan cuoc hop.",
-    "options": ["submitted", "promoted", "allocated", "suspended"],
-    "answerIndex": 0,
-    "explanation": "'Submitted' (nop/trinh) phu hop voi ngu canh bao cao can duoc nop dung han. Cac lua chon con lai khong di voi hanh dong nop tai lieu.",
-    "wordEnglish": "submit"
   }
 ]
 
-Bay gio hay tao chinh xac ${count} cau hoi theo dung dinh dang tren, dam bao MOI cau co boi canh va cau truc KHAC NHAU:`;
+Bay gio hay tao chinh xac ${count} cau hoi, dam bao MOI cau co boi canh va cau truc KHAC NHAU:`;
 }
 
 /**
@@ -249,10 +301,11 @@ function Section({ title, children }) {
 /* Quiz Config + Prompt Screen                                          */
 /* ------------------------------------------------------------------ */
 function QuizConfig({ words, onStart }) {
-  const [count,    setCount]    = useState(10);
-  const [diff,     setDiff]     = useState('Medium');
-  const [priority, setPriority] = useState('all');
-  const [mode,     setMode]     = useState('vn');
+  const [count,      setCount]      = useState(10);
+  const [diff,       setDiff]       = useState('Medium');
+  const [priority,   setPriority]   = useState('all');
+  const [mode,       setMode]       = useState('vn');
+  const [answerMode, setAnswerMode] = useState('mc');
 
   const [copied,     setCopied]     = useState(false);
   const [jsonPaste,  setJsonPaste]  = useState('');
@@ -297,7 +350,7 @@ function QuizConfig({ words, onStart }) {
     setParseError('');
     try {
       const questions = parseResponse(jsonPaste);
-      onStart(questions.slice(0, count));
+      onStart(questions.slice(0, count), answerMode);
     } catch (err) {
       setParseError(err.message || 'Failed to parse JSON.');
       textareaRef.current?.focus();
@@ -372,7 +425,7 @@ function QuizConfig({ words, onStart }) {
         </Section>
 
         {/* Quiz Mode */}
-        <Section title="Quiz Mode">
+        <Section title="Question Format">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {QUIZ_MODES.map(qm => (
               <button
@@ -392,14 +445,50 @@ function QuizConfig({ words, onStart }) {
           </div>
         </Section>
 
-        {/* ── TOEIC format reminder ──────────────────────────────────── */}
+        {/* Answer Mode */}
+        <Section title="Answer Mode">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {ANSWER_MODES.map(am => (
+              <button
+                key={am.id}
+                id={`answer-mode-${am.id}`}
+                onClick={() => setAnswerMode(am.id)}
+                className={`text-left p-4 rounded-xl border transition-all duration-200 ${
+                  answerMode === am.id
+                    ? 'bg-purple-600/20 border-purple-500 text-white'
+                    : 'bg-slate-700/30 border-slate-600 text-slate-400 hover:border-slate-500 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  {am.id === 'mc'
+                    ? <Type size={14} className={answerMode === am.id ? 'text-purple-400' : 'text-slate-500'} />
+                    : <Headphones size={14} className={answerMode === am.id ? 'text-purple-400' : 'text-slate-500'} />}
+                  <p className="font-semibold text-sm">{am.label}</p>
+                </div>
+                <p className="text-xs opacity-70">{am.desc}</p>
+              </button>
+            ))}
+          </div>
+        </Section>
+
+        {/* Info banner */}
         <div className="flex items-start gap-3 bg-sky-500/10 border border-sky-500/20 rounded-xl p-4">
-          <span className="text-xl shrink-0">✍️</span>
+          <span className="text-xl shrink-0">{mode === 'toeic' ? '🎯' : '✍️'}</span>
           <p className="text-sky-300 text-xs leading-relaxed">
-            <strong className="text-sky-200">TOEIC Fill-in-the-Blank Format:</strong> The prompt
-            instructs the AI to write a <strong>realistic Vietnamese scenario sentence</strong> with
-            a <strong>[_____] blank</strong>, and exactly <strong>4 English word choices</strong>.
-            The explanation is in Vietnamese. No dictionary-style questions.
+            {mode === 'toeic' ? (
+              <><strong className="text-sky-200">TOEIC Part 5 (English):</strong> The AI generates
+              authentic English sentences with a <strong>[_____] blank</strong>, common TOEIC collocations,
+              and 4 English word choices. Explanation is in Vietnamese.</>
+            ) : (
+              <><strong className="text-sky-200">Vietnamese → English:</strong> The AI writes a Vietnamese
+              context sentence with a <strong>[_____] blank</strong> and 4 English word choices.</>
+            )}
+            {answerMode === 'dictation' && (
+              <span className="block mt-1 text-purple-300">
+                🎧 <strong className="text-purple-200">Listening & Typing mode:</strong> You'll hear
+                the word and type your answer. A hint appears after 4 audio plays.
+              </span>
+            )}
           </p>
         </div>
 
@@ -515,16 +604,25 @@ function playWordAudio(wordEnglish) {
   playAudio(wordEnglish);
 }
 
-function QuizGame({ questions, words, onFinish, updateWordLevel }) {
+function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
   // Pre-shuffle all questions once so correct answer is never always at position A
   const [shuffledQuestions] = useState(() => questions.map(shuffleOptions));
 
-  const [current,  setCurrent]  = useState(0);
-  const [selected, setSelected] = useState(null);
-  const [results,  setResults]  = useState([]);
+  const [current,    setCurrent]    = useState(0);
+  const [selected,   setSelected]   = useState(null);
+  const [results,    setResults]    = useState([]);
+
+  // Dictation mode state
+  const [typedAnswer,  setTypedAnswer]  = useState('');
+  const [dictAnswered, setDictAnswered] = useState(false); // true after user submits
+  const [dictCorrect,  setDictCorrect]  = useState(false);
+  const [playCount,    setPlayCount]    = useState(0);
+  const inputRef = useRef(null);
+
+  const isDictation = answerMode === 'dictation';
 
   const q        = shuffledQuestions[current];
-  const answered = selected !== null;
+  const answered = isDictation ? dictAnswered : selected !== null;
   const progress = (current / shuffledQuestions.length) * 100;
 
   // Find the word object for the current question
@@ -546,6 +644,28 @@ function QuizGame({ questions, words, onFinish, updateWordLevel }) {
     }
   }, [answered, q.wordEnglish]);
 
+  // Reset dictation state when question changes
+  useEffect(() => {
+    setTypedAnswer('');
+    setDictAnswered(false);
+    setDictCorrect(false);
+    setPlayCount(0);
+    if (isDictation) {
+      setTimeout(() => inputRef.current?.focus(), 80);
+    }
+  }, [current, isDictation]);
+
+  function advanceAfterDelay(newResults) {
+    setTimeout(() => {
+      if (current + 1 >= shuffledQuestions.length) {
+        onFinish(newResults);
+      } else {
+        setCurrent(c => c + 1);
+        setSelected(null);
+      }
+    }, 1800);
+  }
+
   function handleNext() {
     if (current + 1 >= shuffledQuestions.length) {
       onFinish(results);
@@ -562,16 +682,28 @@ function QuizGame({ questions, words, onFinish, updateWordLevel }) {
     const newResults = [...results, { correct: isCorrect, wordEnglish: q.wordEnglish }];
     setResults(newResults);
     if (q.wordEnglish) updateWordLevel(q.wordEnglish, isCorrect);
+    advanceAfterDelay(newResults);
+  }
 
-    // Auto-advance after 1.8 s — show feedback briefly then move on
-    setTimeout(() => {
-      if (current + 1 >= shuffledQuestions.length) {
-        onFinish(newResults);
-      } else {
-        setCurrent(c => c + 1);
-        setSelected(null);
-      }
-    }, 1800);
+  // Dictation: play audio and count plays
+  function handleDictationPlay() {
+    if (q.wordEnglish) {
+      playWordAudio(q.wordEnglish);
+      setPlayCount(c => c + 1);
+    }
+  }
+
+  // Dictation: submit typed answer
+  function handleDictationSubmit() {
+    if (!typedAnswer.trim() || dictAnswered) return;
+    const isCorrect =
+      typedAnswer.trim().toLowerCase() === (q.wordEnglish || '').toLowerCase();
+    setDictCorrect(isCorrect);
+    setDictAnswered(true);
+    const newResults = [...results, { correct: isCorrect, wordEnglish: q.wordEnglish }];
+    setResults(newResults);
+    if (q.wordEnglish) updateWordLevel(q.wordEnglish, isCorrect);
+    advanceAfterDelay(newResults);
   }
 
   return (
@@ -634,32 +766,124 @@ function QuizGame({ questions, words, onFinish, updateWordLevel }) {
         </div>
       </div>
 
-      {/* Options */}
-      <div className="space-y-3 mb-4">
-        {q.options.map((opt, idx) => (
-          <button
-            key={idx}
-            id={`option-${idx}`}
-            onClick={() => handleSelect(idx)}
-            disabled={answered}
-            className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 text-left
-              ${optionClass(idx, answered, q.correctIndex, selected)}`}
-          >
-            <span className="shrink-0 w-8 h-8 rounded-lg bg-black/20 flex items-center justify-center font-bold text-sm">
-              {OPTION_LABELS[idx]}
-            </span>
-            <span className="font-medium flex-1">{opt}</span>
-            {answered && idx === q.correctIndex && (
-              <CheckCircle size={18} className="ml-auto text-emerald-400 shrink-0" />
-            )}
-            {answered && idx === selected && idx !== q.correctIndex && (
-              <XCircle size={18} className="ml-auto text-rose-400 shrink-0" />
-            )}
-          </button>
-        ))}
-      </div>
+      {/* ── Multiple-Choice Options ── */}
+      {!isDictation && (
+        <div className="space-y-3 mb-4">
+          {q.options.map((opt, idx) => (
+            <button
+              key={idx}
+              id={`option-${idx}`}
+              onClick={() => handleSelect(idx)}
+              disabled={answered}
+              className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 text-left
+                ${optionClass(idx, answered, q.correctIndex, selected)}`}
+            >
+              <span className="shrink-0 w-8 h-8 rounded-lg bg-black/20 flex items-center justify-center font-bold text-sm">
+                {OPTION_LABELS[idx]}
+              </span>
+              <span className="font-medium flex-1">{opt}</span>
+              {answered && idx === q.correctIndex && (
+                <CheckCircle size={18} className="ml-auto text-emerald-400 shrink-0" />
+              )}
+              {answered && idx === selected && idx !== q.correctIndex && (
+                <XCircle size={18} className="ml-auto text-rose-400 shrink-0" />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {/* Auto-advancing — show a subtle progress indicator */}
+      {/* ── Dictation / Listening & Typing Mode ── */}
+      {isDictation && (
+        <div className="mb-4 space-y-3 animate-fade-in">
+          {/* Audio play button + play count */}
+          <div className="flex items-center gap-3">
+            <button
+              id="dictation-play-btn"
+              onClick={handleDictationPlay}
+              disabled={dictAnswered}
+              className="flex items-center gap-2 px-5 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-sm transition-all duration-200 shadow-lg shadow-indigo-500/20"
+            >
+              <Headphones size={17} />
+              {playCount === 0 ? 'Play Word' : `Play Again (×${playCount})`}
+            </button>
+            {playCount > 0 && !dictAnswered && (
+              <span className="text-slate-500 text-xs">
+                {playCount < 4
+                  ? `${4 - playCount} play${4 - playCount === 1 ? '' : 's'} until hint`
+                  : 'Hint available ↓'}
+              </span>
+            )}
+          </div>
+
+          {/* Hint: shown after 4+ plays */}
+          {playCount >= 4 && !dictAnswered && (
+            <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-2 animate-fade-in">
+              <AlertCircle size={14} className="text-amber-400 shrink-0" />
+              <span className="text-amber-300 text-sm">
+                Hint: <strong className="text-amber-200">{q.wordEnglish}</strong>
+              </span>
+            </div>
+          )}
+
+          {/* Text input */}
+          <div className="flex gap-2">
+            <input
+              id="dictation-input"
+              ref={inputRef}
+              type="text"
+              value={typedAnswer}
+              onChange={e => setTypedAnswer(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleDictationSubmit(); }}
+              disabled={dictAnswered}
+              placeholder="Type the English word here…"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              className={`flex-1 bg-slate-900/60 border rounded-xl px-4 py-3 text-white text-sm font-mono placeholder-slate-600
+                focus:outline-none transition-colors
+                ${
+                  dictAnswered
+                    ? dictCorrect
+                      ? 'border-emerald-500 bg-emerald-500/10'
+                      : 'border-rose-500 bg-rose-500/10'
+                    : 'border-slate-600 focus:border-purple-500'
+                }`}
+            />
+            <button
+              id="dictation-submit-btn"
+              onClick={handleDictationSubmit}
+              disabled={!typedAnswer.trim() || dictAnswered}
+              className="flex items-center gap-1.5 px-5 py-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-sm transition-all duration-200"
+            >
+              <Send size={15} /> Submit
+            </button>
+          </div>
+
+          {/* Feedback after submit */}
+          {dictAnswered && (
+            <div className={`flex items-center gap-2 rounded-xl px-4 py-3 animate-fade-in ${
+              dictCorrect
+                ? 'bg-emerald-500/15 border border-emerald-500/30'
+                : 'bg-rose-500/15 border border-rose-500/30'
+            }`}>
+              {dictCorrect
+                ? <CheckCircle size={16} className="text-emerald-400 shrink-0" />
+                : <XCircle    size={16} className="text-rose-400 shrink-0" />}
+              <span className={`text-sm font-medium ${
+                dictCorrect ? 'text-emerald-300' : 'text-rose-300'
+              }`}>
+                {dictCorrect
+                  ? 'Correct! 🎉'
+                  : <>Wrong. The answer is <strong className="text-white">{q.wordEnglish}</strong></>}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Auto-advancing spinner */}
       {answered && (
         <div className="animate-fade-in flex items-center justify-center gap-2 py-2 text-slate-400 text-sm">
           <div className="w-4 h-4 border-2 border-slate-600 border-t-indigo-400 rounded-full animate-spin" />
@@ -727,12 +951,14 @@ function QuizResults({ results, onRestart }) {
 /* Root                                                                 */
 /* ------------------------------------------------------------------ */
 export default function Quiz({ words, updateWordLevel, recordQuizResult }) {
-  const [phase,     setPhase]     = useState('config');
-  const [questions, setQuestions] = useState([]);
-  const [results,   setResults]   = useState([]);
+  const [phase,      setPhase]      = useState('config');
+  const [questions,  setQuestions]  = useState([]);
+  const [results,    setResults]    = useState([]);
+  const [answerMode, setAnswerMode] = useState('mc');
 
-  function handleStart(qs) {
+  function handleStart(qs, am) {
     setQuestions(qs);
+    setAnswerMode(am || 'mc');
     setPhase('game');
   }
 
@@ -749,7 +975,7 @@ export default function Quiz({ words, updateWordLevel, recordQuizResult }) {
   }
 
   if (phase === 'config')  return <QuizConfig words={words} onStart={handleStart} />;
-  if (phase === 'game')    return <QuizGame   questions={questions} words={words} onFinish={handleFinish} updateWordLevel={updateWordLevel} />;
+  if (phase === 'game')    return <QuizGame   questions={questions} words={words} onFinish={handleFinish} updateWordLevel={updateWordLevel} answerMode={answerMode} />;
   if (phase === 'results') return <QuizResults results={results} onRestart={handleRestart} />;
   return null;
 }

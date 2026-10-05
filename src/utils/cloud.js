@@ -1,24 +1,29 @@
 /**
  * cloud.js — Google Apps Script webhook integration
  *
+ * Sheet layout (managed by google-apps-script.js):
+ *   Row 1  → headers: id | english | vietnamese | imageUrl | wordType | level | currentStreak | createdAt
+ *   Row 2+ → one vocabulary word per row  (no more single-cell JSON blob)
+ *
  * Two operations:
- *   • pushToCloud(words)   — POST the full words array to the sheet.
- *   • fetchFromCloud()     — GET the full words array from the sheet.
+ *   • pushToCloud(words)  — POST the full words array; Apps Script rewrites all rows.
+ *   • fetchFromCloud()    — GET; Apps Script returns { data: [...] } built from sheet rows.
  *
- * ─── IMPORTANT: CORS behaviour with Google Apps Script ───────────────────────
+ * ─── CORS behaviour with Google Apps Script ──────────────────────────────────
  *
- *  POST  → must use  mode: 'no-cors'
- *          Google Apps Script does not send back proper CORS headers on POST
- *          responses, so the browser blocks them. With no-cors the request
- *          fires successfully and the sheet receives the data, but the response
- *          is opaque (unreadable). That is fine — we only need fire-and-forget.
- *          Body is sent as a plain JSON array (not wrapped in { words: [...] })
- *          so doPost() can parse it with JSON.parse(e.postData.contents).
+ *  POST → must use mode:'no-cors'
+ *         Apps Script does not return proper CORS headers on POST, so the
+ *         browser would block a normal fetch. With no-cors the request fires
+ *         successfully (Apps Script receives and processes it), but the response
+ *         is opaque — that's fine, we only need fire-and-forget here.
+ *         ⚠ Because no-cors strips custom headers, the body MUST be sent as a
+ *         plain JSON string (not FormData / URLSearchParams).
  *
- *  GET   → must NOT use no-cors, because we need to read the JSON response.
- *          Apps Script doGet() returns proper CORS headers, so a normal fetch
- *          works. If you see a CORS error on GET, re-check that your deployment
- *          is set to "Execute as: Me" and "Who has access: Anyone".
+ *  GET  → must NOT use no-cors, because we need to read the JSON response.
+ *         Apps Script doGet() sends proper CORS headers, so a plain fetch works.
+ *         Do NOT add custom request headers (Cache-Control, Pragma, etc.) —
+ *         they trigger a preflight OPTIONS request that Apps Script cannot handle.
+ *         Cache busting is done via the _cb query-param instead.
  *
  * ─────────────────────────────────────────────────────────────────────────────
  */
@@ -39,25 +44,28 @@ function isConfigured() {
 // ---------------------------------------------------------------------------
 
 /**
- * POST the current words array to the Google Sheet.
+ * POST the full words array to Google Sheets.
  *
- * Uses mode:'no-cors' (required for Apps Script POST).
- * The response will always be opaque, so we cannot read res.ok —
- * we treat the absence of a network-level exception as success.
+ * Apps Script will clear all existing data rows and rewrite them one-per-row,
+ * so the sheet always mirrors the local state exactly.
+ *
+ * Uses mode:'no-cors' (required for Apps Script POST — see header comment).
+ * The response is opaque; absence of a network exception = success.
  *
  * @param {object[]} words
- * @returns {Promise<boolean>} true if the request was sent without a network error
+ * @returns {Promise<boolean>} true if the request was dispatched without error
  */
 export async function pushToCloud(words) {
   if (!isConfigured()) return false;
   try {
     await fetch(WEBHOOK_URL, {
-      method:  'POST',
-      mode:    'no-cors',           // ← CRITICAL for Google Apps Script
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(words), // bare array — doPost reads e.postData.contents
+      method: 'POST',
+      mode:   'no-cors',          // ← CRITICAL for Google Apps Script POST
+      body:   JSON.stringify(words), // bare array — doPost reads e.postData.contents
+      // No Content-Type header: no-cors strips custom headers anyway, and
+      // Apps Script reads the raw body regardless of content-type.
     });
-    // With no-cors the response is opaque, so we just assume success if no throw
+    // Response is opaque with no-cors — treat no-throw as success
     return true;
   } catch {
     // Network error (offline, DNS failure, etc.) — silently ignored
@@ -66,62 +74,59 @@ export async function pushToCloud(words) {
 }
 
 /**
- * GET the words array from the Google Sheet.
+ * GET the words array from Google Sheets.
  *
- * Refuses to return an empty array — returns null instead so the caller
- * can distinguish "cloud is genuinely empty" from "request failed / sheet
- * not set up yet". This prevents an accidental overwrite of local data.
+ * Apps Script returns { data: [ ...wordObjects ] } built from the sheet rows.
+ * Returns null (not []) when there is no usable data, so the caller can
+ * distinguish "cloud is empty / broken" from "successfully fetched 0 words"
+ * and avoid accidentally overwriting local data with an empty list.
  *
  * @returns {Promise<object[] | null>}
  *   - Array of word objects (length >= 1) on success
- *   - null if unconfigured, network fails, response is malformed, or the
- *     sheet returned 0 rows (treat as "no useful data")
+ *   - null if unconfigured, network error, malformed response, or 0 rows
  */
 export async function fetchFromCloud() {
   if (!isConfigured()) return null;
   try {
-    // Append a timestamp query-param as a last-resort cache buster for
-    // proxies / service workers that ignore Cache-Control headers.
+    // Timestamp query-param busts proxy / service-worker caches without
+    // adding custom request headers (which would trigger a CORS preflight).
     const bustUrl = `${WEBHOOK_URL}${WEBHOOK_URL.includes('?') ? '&' : '?'}_cb=${Date.now()}`;
 
     const res = await fetch(bustUrl, {
       method:   'GET',
-      redirect: 'follow',  // follow the Apps Script redirect to the final response
-      // No custom headers — they would trigger a CORS preflight OPTIONS request
-      // that Google Apps Script cannot handle. The _cb query-param above is
-      // sufficient to bust any proxy / service-worker cache.
+      redirect: 'follow', // Apps Script issues a redirect — must follow it
+      // No custom headers — they trigger an OPTIONS preflight that Apps Script
+      // cannot handle, causing a CORS error before any data is returned.
     });
 
     if (!res.ok) return null;
 
     const json = await res.json();
 
-    // Accept both { data: [...] } and a bare array
-    const rows = Array.isArray(json)
-      ? json
-      : Array.isArray(json?.data)
-        ? json.data
+    // Apps Script returns { data: [...] }; also accept a bare array for
+    // backwards-compatibility with any old deployment that returned one.
+    const rows = Array.isArray(json?.data)
+      ? json.data
+      : Array.isArray(json)
+        ? json
         : null;
 
-    // ── Safety guard ────────────────────────────────────────────────────────
-    // If the sheet returned 0 rows (never had data, or doGet is broken),
-    // return null rather than [] so the caller never overwrites local words
-    // with an empty list.
+    // Safety guard: never overwrite local words with an empty list
     if (!rows || rows.length === 0) return null;
 
     // Normalise fields so the app never crashes on unexpected cloud data
     return rows
       .map(w => ({
-        id:            w.id            ?? String(Date.now() + Math.random()),
+        id:            String(w.id || (Date.now() + Math.random())),
         english:       (w.english      ?? '').trim(),
         vietnamese:    (w.vietnamese   ?? '').trim(),
         imageUrl:      (w.imageUrl     ?? '').trim(),
         wordType:      w.wordType      ?? 'Word',
         level:         Number(w.level) || 1,
         currentStreak: Number(w.currentStreak) || 0,
-        createdAt:     w.createdAt     ?? Date.now(),
+        createdAt:     Number(w.createdAt)      || Date.now(),
       }))
-      .filter(w => w.english); // drop blank rows from the sheet
+      .filter(w => w.english); // drop any blank rows from the sheet
 
   } catch {
     return null;
