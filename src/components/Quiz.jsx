@@ -622,6 +622,14 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
    */
   const warningSetRef = useRef(new Set());
 
+  /**
+   * Mirror refs: always hold the live value of the corresponding state.
+   * Used inside setTimeout callbacks to avoid stale-closure bugs.
+   */
+  const queueRef   = useRef(null);  // mirrors questionQueue
+  const idxRef     = useRef(0);     // mirrors queueIndex
+  const resultsRef = useRef([]);    // mirrors results
+
   const [selected,   setSelected]   = useState(null);
   const [results,    setResults]    = useState([]);
 
@@ -671,81 +679,120 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
     }
   }, [queueIndex, isDictation]);
 
+  // Keep refs in sync with state on every render so setTimeout callbacks
+  // always see the latest values regardless of when they fire.
+  queueRef.current   = questionQueue;
+  idxRef.current     = queueIndex;
+  resultsRef.current = results;
+
   /**
-   * Core grading logic shared by both MC and Dictation modes.
-   * Implements the hidden warning-state algorithm:
-   *   - First wrong: silently re-queue the question; DO NOT update word level yet.
-   *   - Second wrong: clear warning, demote word by 1 level.
-   *   - Any correct on a warned word: clear warning, keep level (forgiven).
-   *   - Normal correct (not warned): promote as usual.
+   * Core grading logic — called once per answer.
+   * Takes explicit arguments instead of closing over state to avoid
+   * stale-closure bugs when called from event handlers.
+   *
+   * STRICT WARNING-STATE ALGORITHM:
+   *
+   *   Branch 1 — First wrong (no flag):
+   *     • Add warning flag for this word.
+   *     • Splice a re-test copy into the live queue (mutates queueRef + state).
+   *     • Record wrong in tally.
+   *     • *** DO NOT call updateWordLevel — word level is UNCHANGED. ***
+   *
+   *   Branch 2a — Re-test correct (forgiven):
+   *     • Clear flag.
+   *     • Call updateWordLevel(word, true) — streak increment, no demotion.
+   *     • Retroactively fix tally entry.
+   *
+   *   Branch 2b — Re-test wrong (confirmed mistake):
+   *     • Clear flag.
+   *     • Call updateWordLevel(word, false) — level −1.
+   *
+   *   Branch 3 — Normal correct (no flag):
+   *     • Call updateWordLevel(word, true) — streak/level up.
+   *
+   * updateWordLevel(word, false) is called ONLY in Branch 2b. Nowhere else.
    */
-  function grade(isCorrect) {
-    const key = (q.wordEnglish || '').toLowerCase();
+  function grade(isCorrect, currentQ, currentResults) {
+    const key      = (currentQ.wordEnglish || '').toLowerCase();
     const isWarned = warningSetRef.current.has(key);
 
+    // ── Branch 1: First wrong ──────────────────────────────────────────────
     if (!isCorrect && !isWarned) {
-      // === FIRST WRONG: enter warning state, re-queue silently ===
       warningSetRef.current.add(key);
 
-      // Insert a fresh shuffled copy of this question near the end of the queue
-      // (at most 3 positions from the end, so it feels natural, not immediate).
-      setQuestionQueue(prev => {
-        const retest = shuffleOptions({ ...q }); // re-shuffle options for variety
-        const insertAt = Math.max(prev.length - 2, queueIndex + 2);
-        const next = [...prev];
-        next.splice(insertAt, 0, retest);
-        return next;
-      });
+      // Re-shuffle options so the re-test feels fresh
+      const retestQ   = shuffleOptions({ ...currentQ });
+      const liveQueue = queueRef.current;
+      const liveIdx   = idxRef.current;
+      const insertAt  = Math.max(liveQueue.length - 2, liveIdx + 2);
+      const nextQueue = [...liveQueue];
+      nextQueue.splice(insertAt, 0, retestQ);
 
-      // Record as wrong for the live score tally (visible to user during quiz)
-      const newResults = [...results, { correct: false, wordEnglish: q.wordEnglish }];
+      // Write to ref immediately so advanceAfterDelay sees updated length
+      queueRef.current = nextQueue;
+      setQuestionQueue(nextQueue);
+
+      // Tally: record wrong — store is NOT touched
+      const newResults = [...currentResults, { correct: false, wordEnglish: currentQ.wordEnglish }];
+      resultsRef.current = newResults;
       setResults(newResults);
-      return newResults; // do NOT call updateWordLevel yet
+      return; // ← explicit early return; no updateWordLevel call
     }
 
-    // === FINAL VERDICT (either correct, or second wrong) ===
-    if (isWarned) {
+    // ── Branch 2a: Re-test correct (forgiven) ────────────────────────────
+    if (isWarned && isCorrect) {
       warningSetRef.current.delete(key);
-      if (isCorrect) {
-        // Forgiven: keep current level — call updateWordLevel with correct=true
-        // but only once (no streak bump manipulation; the store handles it).
-        if (q.wordEnglish) updateWordLevel(q.wordEnglish, true);
-        // Fix the earlier wrong result: replace the last wrong entry for this word
-        const newResults = [
-          ...results.slice(0, -1),      // remove the "wrong" tally entry
-          { correct: true, wordEnglish: q.wordEnglish }, // replace with correct
-        ];
-        setResults(newResults);
-        return newResults;
-      } else {
-        // Confirmed wrong: demote by 1 level
-        if (q.wordEnglish) updateWordLevel(q.wordEnglish, false);
-        const newResults = [...results, { correct: false, wordEnglish: q.wordEnglish }];
-        setResults(newResults);
-        return newResults;
+      if (currentQ.wordEnglish) updateWordLevel(currentQ.wordEnglish, true);
+
+      // Retroactively flip the earliest wrong entry for this word in the tally
+      const copy = [...currentResults];
+      for (let i = copy.length - 1; i >= 0; i--) {
+        if ((copy[i].wordEnglish || '').toLowerCase() === key && !copy[i].correct) {
+          copy[i] = { ...copy[i], correct: true };
+          break;
+        }
       }
+      resultsRef.current = copy;
+      setResults(copy);
+      return;
     }
 
-    // === Normal correct (no warning state) ===
-    if (q.wordEnglish) updateWordLevel(q.wordEnglish, true);
-    const newResults = [...results, { correct: true, wordEnglish: q.wordEnglish }];
+    // ── Branch 2b: Re-test wrong (confirmed mistake) ──────────────────────
+    if (isWarned && !isCorrect) {
+      warningSetRef.current.delete(key);
+      if (currentQ.wordEnglish) updateWordLevel(currentQ.wordEnglish, false); // level −1
+      const newResults = [...currentResults, { correct: false, wordEnglish: currentQ.wordEnglish }];
+      resultsRef.current = newResults;
+      setResults(newResults);
+      return;
+    }
+
+    // ── Branch 3: Normal correct ──────────────────────────────────────────
+    if (currentQ.wordEnglish) updateWordLevel(currentQ.wordEnglish, true);
+    const newResults = [...currentResults, { correct: true, wordEnglish: currentQ.wordEnglish }];
+    resultsRef.current = newResults;
     setResults(newResults);
-    return newResults;
   }
 
-  function advanceAfterDelay(newResults) {
+  /**
+   * Advance to the next question after the feedback delay.
+   * Reads only from live refs — immune to stale-closure bugs.
+   */
+  function advanceAfterDelay() {
     setTimeout(() => {
-      // Re-read queue length after any setState calls have flushed
-      setQuestionQueue(currentQueue => {
-        const isLast = queueIndex + 1 >= currentQueue.length;
-        if (isLast) {
-          onFinish(newResults);
-        } else {
-          setQueueIndex(i => i + 1);
-          setSelected(null);
-        }
-        return currentQueue; // no mutation
-      });
+      const liveQueue   = queueRef.current;
+      const liveIdx     = idxRef.current;
+      const liveResults = resultsRef.current;
+      const isLast      = liveIdx + 1 >= liveQueue.length;
+
+      if (isLast) {
+        onFinish(liveResults);
+      } else {
+        const nextIdx  = liveIdx + 1;
+        idxRef.current = nextIdx;
+        setQueueIndex(nextIdx);
+        setSelected(null);
+      }
     }, 1800);
   }
 
@@ -753,8 +800,8 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
     if (answered) return;
     setSelected(idx);
     const isCorrect = idx === q.correctIndex;
-    const newResults = grade(isCorrect);
-    advanceAfterDelay(newResults);
+    grade(isCorrect, q, resultsRef.current);
+    advanceAfterDelay();
   }
 
   // Dictation: play audio and count plays
@@ -772,8 +819,8 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
       typedAnswer.trim().toLowerCase() === (q.wordEnglish || '').toLowerCase();
     setDictCorrect(isCorrect);
     setDictAnswered(true);
-    const newResults = grade(isCorrect);
-    advanceAfterDelay(newResults);
+    grade(isCorrect, q, resultsRef.current);
+    advanceAfterDelay();
   }
 
   return (
