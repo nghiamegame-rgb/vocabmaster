@@ -605,25 +605,41 @@ function playWordAudio(wordEnglish) {
 }
 
 function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
-  // Pre-shuffle all questions once so correct answer is never always at position A
-  const [shuffledQuestions] = useState(() => questions.map(shuffleOptions));
+  /**
+   * Live question queue — starts as all shuffled questions.
+   * Re-test items for warned words are appended near the end transparently.
+   * `queueIndex` is the cursor into this array.
+   */
+  const [questionQueue, setQuestionQueue] = useState(
+    () => questions.map(shuffleOptions)
+  );
+  const [queueIndex, setQueueIndex] = useState(0);
 
-  const [current,    setCurrent]    = useState(0);
+  /**
+   * Hidden warning tracker (NOT stored in global word objects).
+   * Maps wordEnglish (lowercase) → true when that word is under a
+   * first-wrong grace period. Invisible to the user.
+   */
+  const warningSetRef = useRef(new Set());
+
   const [selected,   setSelected]   = useState(null);
   const [results,    setResults]    = useState([]);
 
   // Dictation mode state
   const [typedAnswer,  setTypedAnswer]  = useState('');
-  const [dictAnswered, setDictAnswered] = useState(false); // true after user submits
+  const [dictAnswered, setDictAnswered] = useState(false);
   const [dictCorrect,  setDictCorrect]  = useState(false);
   const [playCount,    setPlayCount]    = useState(0);
   const inputRef = useRef(null);
 
   const isDictation = answerMode === 'dictation';
 
-  const q        = shuffledQuestions[current];
+  const q        = questionQueue[queueIndex];
   const answered = isDictation ? dictAnswered : selected !== null;
-  const progress = (current / shuffledQuestions.length) * 100;
+
+  // Progress is based on original question count (re-tests don't inflate %)
+  const originalCount = questions.length;
+  const progress = (Math.min(queueIndex, originalCount) / originalCount) * 100;
 
   // Find the word object for the current question
   const wordObj = words.find(
@@ -644,7 +660,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
     }
   }, [answered, q.wordEnglish]);
 
-  // Reset dictation state when question changes
+  // Reset dictation state when question advances
   useEffect(() => {
     setTypedAnswer('');
     setDictAnswered(false);
@@ -653,35 +669,91 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
     if (isDictation) {
       setTimeout(() => inputRef.current?.focus(), 80);
     }
-  }, [current, isDictation]);
+  }, [queueIndex, isDictation]);
+
+  /**
+   * Core grading logic shared by both MC and Dictation modes.
+   * Implements the hidden warning-state algorithm:
+   *   - First wrong: silently re-queue the question; DO NOT update word level yet.
+   *   - Second wrong: clear warning, demote word by 1 level.
+   *   - Any correct on a warned word: clear warning, keep level (forgiven).
+   *   - Normal correct (not warned): promote as usual.
+   */
+  function grade(isCorrect) {
+    const key = (q.wordEnglish || '').toLowerCase();
+    const isWarned = warningSetRef.current.has(key);
+
+    if (!isCorrect && !isWarned) {
+      // === FIRST WRONG: enter warning state, re-queue silently ===
+      warningSetRef.current.add(key);
+
+      // Insert a fresh shuffled copy of this question near the end of the queue
+      // (at most 3 positions from the end, so it feels natural, not immediate).
+      setQuestionQueue(prev => {
+        const retest = shuffleOptions({ ...q }); // re-shuffle options for variety
+        const insertAt = Math.max(prev.length - 2, queueIndex + 2);
+        const next = [...prev];
+        next.splice(insertAt, 0, retest);
+        return next;
+      });
+
+      // Record as wrong for the live score tally (visible to user during quiz)
+      const newResults = [...results, { correct: false, wordEnglish: q.wordEnglish }];
+      setResults(newResults);
+      return newResults; // do NOT call updateWordLevel yet
+    }
+
+    // === FINAL VERDICT (either correct, or second wrong) ===
+    if (isWarned) {
+      warningSetRef.current.delete(key);
+      if (isCorrect) {
+        // Forgiven: keep current level — call updateWordLevel with correct=true
+        // but only once (no streak bump manipulation; the store handles it).
+        if (q.wordEnglish) updateWordLevel(q.wordEnglish, true);
+        // Fix the earlier wrong result: replace the last wrong entry for this word
+        const newResults = [
+          ...results.slice(0, -1),      // remove the "wrong" tally entry
+          { correct: true, wordEnglish: q.wordEnglish }, // replace with correct
+        ];
+        setResults(newResults);
+        return newResults;
+      } else {
+        // Confirmed wrong: demote by 1 level
+        if (q.wordEnglish) updateWordLevel(q.wordEnglish, false);
+        const newResults = [...results, { correct: false, wordEnglish: q.wordEnglish }];
+        setResults(newResults);
+        return newResults;
+      }
+    }
+
+    // === Normal correct (no warning state) ===
+    if (q.wordEnglish) updateWordLevel(q.wordEnglish, true);
+    const newResults = [...results, { correct: true, wordEnglish: q.wordEnglish }];
+    setResults(newResults);
+    return newResults;
+  }
 
   function advanceAfterDelay(newResults) {
     setTimeout(() => {
-      if (current + 1 >= shuffledQuestions.length) {
-        onFinish(newResults);
-      } else {
-        setCurrent(c => c + 1);
-        setSelected(null);
-      }
+      // Re-read queue length after any setState calls have flushed
+      setQuestionQueue(currentQueue => {
+        const isLast = queueIndex + 1 >= currentQueue.length;
+        if (isLast) {
+          onFinish(newResults);
+        } else {
+          setQueueIndex(i => i + 1);
+          setSelected(null);
+        }
+        return currentQueue; // no mutation
+      });
     }, 1800);
-  }
-
-  function handleNext() {
-    if (current + 1 >= shuffledQuestions.length) {
-      onFinish(results);
-    } else {
-      setCurrent(c => c + 1);
-      setSelected(null);
-    }
   }
 
   function handleSelect(idx) {
     if (answered) return;
     setSelected(idx);
     const isCorrect = idx === q.correctIndex;
-    const newResults = [...results, { correct: isCorrect, wordEnglish: q.wordEnglish }];
-    setResults(newResults);
-    if (q.wordEnglish) updateWordLevel(q.wordEnglish, isCorrect);
+    const newResults = grade(isCorrect);
     advanceAfterDelay(newResults);
   }
 
@@ -700,9 +772,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
       typedAnswer.trim().toLowerCase() === (q.wordEnglish || '').toLowerCase();
     setDictCorrect(isCorrect);
     setDictAnswered(true);
-    const newResults = [...results, { correct: isCorrect, wordEnglish: q.wordEnglish }];
-    setResults(newResults);
-    if (q.wordEnglish) updateWordLevel(q.wordEnglish, isCorrect);
+    const newResults = grade(isCorrect);
     advanceAfterDelay(newResults);
   }
 
@@ -712,7 +782,8 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
       <div className="mb-6">
         <div className="flex items-center justify-between text-sm text-slate-400 mb-2">
           <span className="font-medium text-white">
-            Question {current + 1} <span className="text-slate-500">/ {questions.length}</span>
+            Question {Math.min(queueIndex + 1, originalCount)}{' '}
+            <span className="text-slate-500">/ {originalCount}</span>
           </span>
           <span>{Math.round(progress)}% done</span>
         </div>
@@ -887,7 +958,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
       {answered && (
         <div className="animate-fade-in flex items-center justify-center gap-2 py-2 text-slate-400 text-sm">
           <div className="w-4 h-4 border-2 border-slate-600 border-t-indigo-400 rounded-full animate-spin" />
-          {current + 1 >= shuffledQuestions.length
+          {queueIndex + 1 >= questionQueue.length
             ? 'Finishing quiz…'
             : 'Next question in a moment…'
           }
