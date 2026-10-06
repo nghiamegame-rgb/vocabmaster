@@ -124,7 +124,7 @@ function FilterPills({ options, active, onSelect, countFn, idPrefix }) {
 /* ------------------------------------------------------------------ */
 /* ImageCard                                                            */
 /* ------------------------------------------------------------------ */
-function ImageCard({ word, state, onClick, showMeaning, onToggleMeaning, index }) {
+function ImageCard({ word, state, onClick, showMeaning, onToggleMeaning, index, isGlobal }) {
   const [imgLoaded, setImgLoaded] = useState(false);
   const [imgError,  setImgError]  = useState(false);
 
@@ -211,10 +211,14 @@ function ImageCard({ word, state, onClick, showMeaning, onToggleMeaning, index }
         </div>
         <button
           id={`toggle-meaning-${index}`}
-          className="shrink-0 p-1 rounded-lg text-slate-500 hover:text-indigo-400 transition-colors"
+          className={`shrink-0 p-1 rounded-lg transition-colors ${
+            showMeaning
+              ? 'text-indigo-400 hover:text-indigo-300'
+              : 'text-slate-500 hover:text-indigo-400'
+          }`}
           onClick={e => { e.stopPropagation(); onToggleMeaning(); }}
-          aria-label={showMeaning ? 'Hide meaning' : 'Show Vietnamese meaning'}
-          title={showMeaning ? 'Hide meaning' : 'Show Vietnamese meaning'}
+          aria-label={showMeaning ? 'Hide all meanings' : 'Show all Vietnamese meanings'}
+          title={showMeaning ? 'Hide all meanings' : 'Show all meanings'}
         >
           {showMeaning ? <EyeOff size={14} /> : <Eye size={14} />}
         </button>
@@ -261,7 +265,7 @@ export default function ListeningReview({ words, updateWordLevel }) {
   const [previousId,    setPreviousId]    = useState(null); // tracks last correct word to avoid repetition
   const [answered,      setAnswered]      = useState(false);
   const [selectedWord,  setSelectedWord]  = useState(null);
-  const [showMeanings,  setShowMeanings]  = useState([false, false, false, false]);
+  const [isMeaningRevealed, setIsMeaningRevealed] = useState(false); // global, persists across questions
   const [score,         setScore]         = useState(0);
   const [totalPlayed,   setTotalPlayed]   = useState(0);
   const [isPlaying,     setIsPlaying]     = useState(false);
@@ -298,7 +302,7 @@ export default function ListeningReview({ words, updateWordLevel }) {
     setRound(r);
     setAnswered(false);
     setSelectedWord(null);
-    setShowMeanings([false, false, false, false]);
+    // NOTE: isMeaningRevealed is intentionally NOT reset here — it persists across questions
     setListenCount(0);   // reset hint counter
     setTypingInput('');  // clear typing field
   }, []);
@@ -401,9 +405,9 @@ export default function ListeningReview({ words, updateWordLevel }) {
     return 'disabled';
   }
 
-  /* ── Toggle one meaning hint ── */
-  function toggleMeaning(idx) {
-    setShowMeanings(prev => prev.map((v, i) => (i === idx ? !v : v)));
+  /* ── Toggle global meaning visibility (persists across questions) ── */
+  function toggleMeaning() {
+    setIsMeaningRevealed(v => !v);
   }
 
   /* ── Count helpers for pills ── */
@@ -657,8 +661,8 @@ export default function ListeningReview({ words, updateWordLevel }) {
                 word={word}
                 state={cardState(word)}
                 onClick={handleCardClick}
-                showMeaning={showMeanings[idx]}
-                onToggleMeaning={() => toggleMeaning(idx)}
+                showMeaning={isMeaningRevealed}
+                onToggleMeaning={toggleMeaning}
                 index={idx}
               />
             ))}
@@ -679,6 +683,25 @@ export default function ListeningReview({ words, updateWordLevel }) {
                 ? <><ChevronRight size={16} /> Next Word</>
                 : <><RotateCcw   size={16} /> Skip</>
               }
+            </button>
+
+            {/* Global meaning toggle */}
+            <button
+              id="toggle-all-meanings-btn"
+              onClick={toggleMeaning}
+              title={isMeaningRevealed ? 'Hide Vietnamese meanings' : 'Show Vietnamese meanings for all cards'}
+              className={`
+                flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold
+                border transition-all duration-200 active:scale-95
+                ${
+                  isMeaningRevealed
+                    ? 'bg-indigo-600/20 border-indigo-500/50 text-indigo-300 hover:bg-indigo-600/30'
+                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
+                }
+              `}
+            >
+              {isMeaningRevealed ? <EyeOff size={14} /> : <Eye size={14} />}
+              <span>{isMeaningRevealed ? 'Hide' : 'Meanings'}</span>
             </button>
 
             {/* Target level hint */}
