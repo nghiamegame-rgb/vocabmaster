@@ -4,6 +4,7 @@ import Dashboard       from './components/Dashboard';
 import Vocabulary      from './components/Vocabulary';
 import Quiz            from './components/Quiz';
 import ListeningReview from './components/ListeningReview';
+import Flashcard       from './components/Flashcard';
 import { useVocabStore } from './hooks/useVocabStore';
 
 export default function App() {
@@ -70,6 +71,12 @@ export default function App() {
         )}
         {activeTab === 'listening' && (
           <ListeningReview
+            words={words}
+            updateWordLevel={updateWordLevel}
+          />
+        )}
+        {activeTab === 'flashcard' && (
+          <Flashcard
             words={words}
             updateWordLevel={updateWordLevel}
           />

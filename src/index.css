@@ -60,3 +60,18 @@ body {
 .progress-fill {
   transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Flashcard 3D flip */
+.perspective-1000 {
+  perspective: 1000px;
+}
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+.backface-hidden {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}

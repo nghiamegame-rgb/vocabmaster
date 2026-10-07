@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { LayoutDashboard, BookOpen, Brain, Headphones, RefreshCw, Trash2 } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Brain, Headphones, RefreshCw, Trash2, Layers } from 'lucide-react';
 
 const tabs = [
   { id: 'dashboard',  label: 'Dashboard', Icon: LayoutDashboard },
   { id: 'vocabulary', label: 'Vocabulary', Icon: BookOpen },
+  { id: 'flashcard',  label: 'Flashcard', Icon: Layers },
   { id: 'quiz',       label: 'Smart Quiz', Icon: Brain },
   { id: 'listening',  label: 'Listening',  Icon: Headphones },
 ];
