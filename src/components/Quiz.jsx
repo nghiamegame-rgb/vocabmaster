@@ -3,7 +3,7 @@ import {
   Brain, ChevronRight, CheckCircle, XCircle,
   RotateCcw, AlertCircle, Trophy, Zap,
   Copy, Check, ClipboardPaste, BookOpen, Volume2,
-  Headphones, Type, Send,
+  Headphones, Type, Send, FastForward
 } from 'lucide-react';
 import { playAudio } from '../utils/audio';
 
@@ -823,6 +823,16 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
     advanceAfterDelay();
   }
 
+  // Dictation: I Know It (auto-skip)
+  function handleIKnowIt() {
+    if (dictAnswered) return;
+    setTypedAnswer(q.wordEnglish || '');
+    setDictCorrect(true);
+    setDictAnswered(true);
+    grade(true, q, resultsRef.current);
+    advanceAfterDelay();
+  }
+
   return (
     <div className="animate-fade-in max-w-2xl mx-auto">
       {/* Progress */}
@@ -976,6 +986,15 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
               className="flex items-center gap-1.5 px-5 py-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-sm transition-all duration-200"
             >
               <Send size={15} /> Submit
+            </button>
+            <button
+              id="dictation-iknowit-btn"
+              onClick={handleIKnowIt}
+              disabled={dictAnswered}
+              className="flex items-center gap-1.5 px-5 py-3 bg-transparent border-2 border-slate-600 hover:border-slate-400 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 rounded-xl font-semibold text-sm transition-all duration-200"
+              title="Auto-skip and mark as correct"
+            >
+              <FastForward size={15} /> I Know It
             </button>
           </div>
 
