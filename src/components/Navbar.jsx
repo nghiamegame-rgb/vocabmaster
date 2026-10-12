@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LayoutDashboard, BookOpen, Brain, Headphones, RefreshCw, Trash2, Layers } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Brain, Headphones, RefreshCw, Trash2, Layers, BookOpenCheck } from 'lucide-react';
 
 const tabs = [
   { id: 'dashboard',  label: 'Dashboard', Icon: LayoutDashboard },
@@ -7,6 +7,7 @@ const tabs = [
   { id: 'flashcard',  label: 'Flashcard', Icon: Layers },
   { id: 'quiz',       label: 'Smart Quiz', Icon: Brain },
   { id: 'listening',  label: 'Listening',  Icon: Headphones },
+  { id: 'grammar',    label: 'Grammar',    Icon: BookOpenCheck },
 ];
 
 /**
