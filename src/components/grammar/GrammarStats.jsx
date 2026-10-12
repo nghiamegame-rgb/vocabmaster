@@ -1,4 +1,5 @@
 import { BarChart2, Target, TrendingUp, Bookmark, XCircle, Clock, CheckCircle2 } from 'lucide-react';
+import { getTopicLabel } from '../../utils/grammarPrompt';
 
 /**
  * GrammarStats — Grammar performance statistics dashboard.
@@ -42,7 +43,7 @@ export default function GrammarStats({
   }
 
   function diffLabel(d) {
-    return d === 'Easy' ? 'Dễ' : d === 'Medium' ? 'Vừa' : 'Khó';
+    return d === 'Easy' ? 'Dễ' : d === 'Medium' ? 'Vừa' : d === 'Hard' ? 'Khó' : '';
   }
 
   return (
@@ -98,7 +99,7 @@ export default function GrammarStats({
                 {topicEntries.map(({ topic, answered, correct, pct }) => (
                   <div key={topic}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-slate-300 text-sm">{topic}</span>
+                      <span className="text-slate-300 text-sm">{getTopicLabel(topic)}</span>
                       <span className="text-slate-400 text-xs">{correct}/{answered} ({pct}%)</span>
                     </div>
                     <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
@@ -156,7 +157,9 @@ export default function GrammarStats({
                         {pct}%
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-slate-300 text-sm truncate">{s.topic} · {diffLabel(s.difficulty)}</p>
+                        <p className="text-slate-300 text-sm truncate">
+                          {getTopicLabel(s.topic)}{s.difficulty ? ` · ${diffLabel(s.difficulty)}` : ''}
+                        </p>
                         <p className="text-slate-500 text-xs">{s.correct}/{s.total} đúng</p>
                       </div>
                       <span className="text-slate-600 text-xs shrink-0">

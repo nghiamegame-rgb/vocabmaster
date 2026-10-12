@@ -8,6 +8,27 @@ export const LS_GRAMMAR_SAVED      = 'vocabmaster_grammar_saved';
 export const LS_GRAMMAR_STATS      = 'vocabmaster_grammar_stats';
 export const LS_GRAMMAR_REVIEW     = 'vocabmaster_grammar_review';
 export const LS_GRAMMAR_CLOUD_URL  = 'vocabmaster_grammar_cloud_url';
+export const LS_GRAMMAR_REVISION   = 'vocabmaster_grammar_revision';
+export const LS_GRAMMAR_PENDING    = 'vocabmaster_grammar_pending';
+
+// ── Revision & Pending Changes ─────────────────────────────────────────────
+
+export function getGrammarRevision() {
+  const val = localStorage.getItem(LS_GRAMMAR_REVISION);
+  return val ? (Number(val) || 0) : 0;
+}
+
+export function saveGrammarRevision(rev) {
+  localStorage.setItem(LS_GRAMMAR_REVISION, String(Math.max(0, Number(rev) || 0)));
+}
+
+export function hasGrammarPending() {
+  return localStorage.getItem(LS_GRAMMAR_PENDING) === 'true';
+}
+
+export function setGrammarPending(isPending) {
+  localStorage.setItem(LS_GRAMMAR_PENDING, isPending ? 'true' : 'false');
+}
 
 // ── Saved Questions ────────────────────────────────────────────────────────
 

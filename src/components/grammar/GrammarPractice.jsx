@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Copy, Check, Settings, Zap, ChevronDown, ChevronUp, AlertCircle, Upload, RefreshCw } from 'lucide-react';
+import { Copy, Check, Zap, ChevronDown, ChevronUp, AlertCircle, Upload, RefreshCw } from 'lucide-react';
 import {
   GRAMMAR_TOPICS,
-  GRAMMAR_DIFFICULTIES,
   GRAMMAR_COUNTS,
+  getTopicLabel,
   buildGrammarPrompt,
   validateGrammarJSON,
   normalizeQuestions,
@@ -14,7 +14,6 @@ import {
  */
 export default function GrammarPractice({ onStartSession }) {
   const [count,      setCount]      = useState(10);
-  const [difficulty, setDifficulty] = useState('Medium');
   const [topic,      setTopic]      = useState('Mixed');
   const [copied,     setCopied]     = useState(false);
   const [promptOpen, setPromptOpen] = useState(false);
@@ -22,7 +21,7 @@ export default function GrammarPractice({ onStartSession }) {
   const [error,      setError]      = useState(null);
   const [validating, setValidating] = useState(false);
 
-  const prompt = buildGrammarPrompt({ count, difficulty, topic });
+  const prompt = buildGrammarPrompt({ count, topic });
 
   async function handleCopy() {
     try {
@@ -54,7 +53,7 @@ export default function GrammarPractice({ onStartSession }) {
         if (!valid) { setError(errors); setValidating(false); return; }
 
         const questions = normalizeQuestions(parsed);
-        onStartSession({ questions, config: { count, difficulty, topic } });
+        onStartSession({ questions, config: { count, topic } });
       } catch (e) {
         setError([`JSON không hợp lệ: ${e.message}`, 'Hãy đảm bảo bạn copy toàn bộ JSON từ AI, không thiếu "[" hoặc "]".']);
       }
@@ -82,7 +81,7 @@ export default function GrammarPractice({ onStartSession }) {
           <h3 className="text-white font-semibold">Cấu hình bài luyện</h3>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Count */}
           <div>
             <label className="block text-slate-400 text-xs font-medium mb-2">Số câu hỏi</label>
@@ -103,29 +102,6 @@ export default function GrammarPractice({ onStartSession }) {
             </div>
           </div>
 
-          {/* Difficulty */}
-          <div>
-            <label className="block text-slate-400 text-xs font-medium mb-2">Độ khó</label>
-            <div className="flex gap-2 flex-wrap">
-              {GRAMMAR_DIFFICULTIES.map(d => {
-                const cls = { Easy: 'emerald', Medium: 'amber', Hard: 'rose' }[d];
-                return (
-                  <button
-                    key={d}
-                    onClick={() => setDifficulty(d)}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                      difficulty === d
-                        ? `bg-${cls}-600 text-white shadow-lg shadow-${cls}-500/30`
-                        : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
-                    }`}
-                  >
-                    {d === 'Easy' ? 'Dễ' : d === 'Medium' ? 'Vừa' : 'Khó'}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Topic */}
           <div>
             <label className="block text-slate-400 text-xs font-medium mb-2">Chủ đề ngữ pháp</label>
@@ -135,7 +111,7 @@ export default function GrammarPractice({ onStartSession }) {
               className="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500 transition-colors"
             >
               {GRAMMAR_TOPICS.map(t => (
-                <option key={t} value={t}>{t}</option>
+                <option key={t} value={t}>{getTopicLabel(t)}</option>
               ))}
             </select>
           </div>

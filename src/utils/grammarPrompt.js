@@ -21,60 +21,116 @@ export const GRAMMAR_TOPICS = [
   'Noun Clauses',
 ];
 
+export const TOPIC_LABELS = {
+  'Mixed': 'Tổng hợp',
+  'Word Forms': 'Loại từ',
+  'Tenses': 'Các thì',
+  'Prepositions': 'Giới từ',
+  'Conjunctions': 'Liên từ',
+  'Relative Clauses': 'Mệnh đề quan hệ',
+  'Conditionals': 'Câu điều kiện',
+  'Passive Voice': 'Câu bị động',
+  'Articles & Determiners': 'Mạo từ và từ hạn định',
+  'Subject-Verb Agreement': 'Sự hòa hợp chủ ngữ - động từ',
+  'Comparatives & Superlatives': 'So sánh hơn và so sánh nhất',
+  'Modal Verbs': 'Động từ khuyết thiếu',
+  'Gerunds & Infinitives': 'Danh động từ và động từ nguyên mẫu',
+  'Reported Speech': 'Câu tường thuật',
+  'Noun Clauses': 'Mệnh đề danh từ',
+};
+
+export function getTopicLabel(topic) {
+  return TOPIC_LABELS[topic] || topic || 'Tổng hợp';
+}
+
+/** Legacy export for backward compatibility */
 export const GRAMMAR_DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
 
 export const GRAMMAR_COUNTS = [5, 10, 15, 20];
 
 /**
  * Build an AI prompt that generates TOEIC Part 5 grammar questions in JSON.
- * @param {{ count: number, difficulty: string, topic: string }} config
+ * Explanations are strictly in natural, accurate Vietnamese.
+ * Questions are calibrated for TOEIC 550 target with exposure to 700-750.
+ * @param {{ count?: number, topic?: string, difficulty?: string }} config
  * @returns {string}
  */
-export function buildGrammarPrompt({ count = 10, difficulty = 'Medium', topic = 'Mixed' }) {
+export function buildGrammarPrompt({ count = 10, topic = 'Mixed' } = {}) {
+  const topicLabel = getTopicLabel(topic);
   const topicInstruction = topic === 'Mixed'
-    ? 'Mix a variety of TOEIC grammar topics (word forms, tenses, prepositions, conjunctions, relative clauses, conditionals, passive voice, modal verbs, etc.)'
-    : `Focus specifically on the grammar topic: **${topic}**`;
+    ? 'Mix a diverse range of realistic TOEIC Part 5 grammar topics (Word Forms, Tenses, Prepositions, Conjunctions, Relative Clauses, Conditionals, Passive Voice, Subject-Verb Agreement, Gerunds & Infinitives, Modal Verbs, etc.).'
+    : `Focus specifically on the grammar topic: **${topic}** (${topicLabel}). Ensure all ${count} questions test core and intermediate aspects of this topic.`;
 
-  return `You are a TOEIC exam expert. Generate exactly ${count} TOEIC Part 5 (sentence completion) grammar questions.
+  return `You are an expert TOEIC test creator and English instructor for Vietnamese learners. Generate exactly ${count} TOEIC Part 5 (sentence completion) grammar questions.
 
-TOPIC: ${topicInstruction}
-DIFFICULTY: ${difficulty}
-- Easy: Common grammar patterns, straightforward sentences
-- Medium: Moderate complexity, typical TOEIC exam level (score 500–700)
-- Hard: Advanced patterns, complex sentences (score 700–990)
+TARGET LEVEL & DIFFICULTY DISTRIBUTION (TOEIC 550 TARGET WITH 700–750 EXPOSURE):
+The learner is currently at approximately TOEIC 550 and aiming to advance toward 700–750.
+Provide an organic mix of question difficulties across the ${count} questions (flexible guidelines):
+- Approximately 40% foundational questions (~500–550 level: core word forms, basic tenses, common prepositions, straightforward agreements).
+- Approximately 40% intermediate questions (~600–650 level: conjunctions vs. prepositions, passive voice, relative clauses, gerunds vs. infinitives).
+- Approximately 20% moderately challenging questions (~700–750 level: tricky collocations, subtle word forms, conditional inversions, reduced relative clauses).
+- Randomize the question order so difficulties are naturally mixed.
+- Do NOT group questions by difficulty or include any difficulty indicator in the output.
 
-STRICT JSON REQUIREMENTS:
-Return ONLY a valid JSON array. No markdown, no explanation outside the JSON, no code blocks.
-Each element must have EXACTLY these fields:
+REALISTIC TOEIC PART 5 BUSINESS CONTEXTS:
+- Business emails and internal memos
+- Office communication and human resources (recruitment, onboarding, benefits)
+- Customer service, warranties, and client relations
+- Contracts, negotiations, and purchasing
+- Business travel, conferences, and transportation
+- Meetings, announcements, and corporate events
+- Business operations, manufacturing, and financial reports
+Keep sentences realistic, natural, and representative of modern workplace English. Avoid obscure vocabulary, highly academic jargon, or tricky questions relying on ambiguous wording.
 
+GRAMMAR EMPHASIS:
+- TOPIC FOCUS: ${topicInstruction}
+- Prioritize practical TOEIC grammar: Word Forms (noun/verb/adj/adv), Verb Tenses & Voice, Subject-Verb Agreement, Prepositions, Conjunctions, Relative Clauses, Passive Voice, Gerunds & Infinitives, Modal Verbs.
+- Each question must have exactly ONE clearly defensible correct answer.
+- Distractors (incorrect options) must be plausible and natural, but grammatically or contextually incorrect.
+
+LANGUAGE & EXPLANATION REQUIREMENTS (STRICT - ALL EXPLANATIONS IN NATURAL VIETNAMESE):
+- Question sentences and options A, B, C, D must remain in ENGLISH.
+- Keep English grammar structures and collocations in their original form (e.g., "will be + V3/ed", "look forward to + V-ing").
+- ALL explanations and learning notes must be written in natural, accurate, learner-friendly VIETNAMESE:
+  1. "vietnameseSentence": Natural Vietnamese translation of the entire sentence with the correct answer filled in.
+  2. "shortExplanation": A clear, concise explanation (1–2 sentences) in VIETNAMESE explaining why the correct answer is chosen.
+  3. "detailedExplanation.whyCorrect": Detailed explanation in VIETNAMESE explaining why the chosen option is correct (cite grammar formula, role in the sentence, clue words).
+  4. "detailedExplanation.whyWrongA", "whyWrongB", "whyWrongC", "whyWrongD": Clear explanations in VIETNAMESE for why EACH distractor is incorrect. Never write vague statements like "sai ngữ pháp" — state the exact grammatical reason (e.g., "sai thì", "cần danh từ nhưng đây là tính từ", "sau giới từ cần V-ing chứ không dùng động từ nguyên mẫu").
+  5. "detailedExplanation.grammarRules": 2–4 concise bullet points in VIETNAMESE summarizing the core grammar rules / formulas applied in this question.
+  6. "detailedExplanation.keyVocabulary": 1–4 important words or business collocations from the sentence with English word, Vietnamese meaning, and word type.
+
+STRICT JSON OUTPUT FORMAT:
+Return ONLY a valid JSON array. No markdown, no commentary before or after, no code fences.
+Start your response with "[" and end with "]".
+
+JSON SCHEMA EXAMPLE:
 [
   {
     "id": "q1",
-    "sentence": "The report will be _____ to the board of directors next Monday.",
+    "sentence": "The marketing director will _____ the new campaign proposals at tomorrow's executive meeting.",
     "options": {
-      "A": "present",
-      "B": "presented",
-      "C": "presenting",
-      "D": "presents"
+      "A": "review",
+      "B": "reviewed",
+      "C": "reviewing",
+      "D": "reviews"
     },
-    "answer": "B",
-    "topic": "Passive Voice",
-    "difficulty": "${difficulty}",
-    "vietnameseSentence": "Báo cáo sẽ được trình bày cho hội đồng quản trị vào thứ Hai tới.",
-    "shortExplanation": "Use passive voice (will be + past participle) because the subject 'report' receives the action.",
+    "answer": "A",
+    "topic": "${topic === 'Mixed' ? 'Modal Verbs' : topic}",
+    "vietnameseSentence": "Giám đốc tiếp thị sẽ xem xét các đề xuất chiến dịch mới tại cuộc họp ban điều hành ngày mai.",
+    "shortExplanation": "Sau trợ động từ khuyết thiếu 'will', ta dùng động từ nguyên mẫu không 'to' (bare infinitive) 'review'.",
     "detailedExplanation": {
-      "whyCorrect": "B 'presented' is correct because the sentence uses future passive voice structure: 'will be + past participle'. The report (subject) receives the action of being presented.",
-      "whyWrongA": "A 'present' is the base form, which cannot follow 'will be' in a passive construction.",
-      "whyWrongC": "C 'presenting' is the present participle (active -ing form). After 'will be', we need a past participle for passive voice, not -ing.",
-      "whyWrongD": "D 'presents' is the third-person singular simple present, which doesn't fit the future modal structure 'will be'.",
+      "whyCorrect": "A 'review' đúng vì cấu trúc thì tương lai với modal verb: 'will + V-bare' (động từ nguyên mẫu không 'to').",
+      "whyWrongB": "B 'reviewed' là dạng quá khứ/quá khứ phân từ, không thể đi trực tiếp sau 'will' trong câu chủ động.",
+      "whyWrongC": "C 'reviewing' là hiện tại phân từ (dạng -ing), sau 'will' phải có 'be' nếu muốn tạo thì tương lai tiếp diễn.",
+      "whyWrongD": "D 'reviews' là dạng chia thì hiện tại đơn ngôi thứ ba số ít, không kết hợp trực tiếp sau 'will'.",
       "grammarRules": [
-        "Future Passive Voice = will be + past participle",
-        "The subject (report) receives the action → passive required",
-        "Modal verbs (will, can, should) + be + past participle = passive modal"
+        "Modal verb (will / can / must / should) + V-bare (nguyên mẫu không 'to')",
+        "Không chia thì hay thêm s/es vào động từ đứng sau trợ động từ khuyết thiếu",
+        "Dấu hiệu nhận biết: 'tomorrow' kết hợp với 'will' chỉ hành động tương lai"
       ],
       "keyVocabulary": [
-        { "word": "board of directors", "meaning": "hội đồng quản trị", "type": "Noun Phrase" },
-        { "word": "present (v)", "meaning": "trình bày, giới thiệu", "type": "Verb" }
+        { "word": "executive meeting", "meaning": "cuộc họp ban điều hành", "type": "Noun Phrase" },
+        { "word": "campaign proposal", "meaning": "đề xuất chiến dịch", "type": "Noun Phrase" }
       ]
     }
   }
@@ -82,17 +138,12 @@ Each element must have EXACTLY these fields:
 
 RULES:
 1. Each sentence must have exactly ONE blank marked as "_____" (5 underscores).
-2. Options A, B, C, D must all be grammatically plausible (not obviously wrong) but only ONE is correct.
-3. "answer" must be exactly "A", "B", "C", or "D".
-4. "vietnameseSentence" must be a natural Vietnamese translation of the full sentence with the correct answer filled in.
-5. "shortExplanation" = 1–2 sentences, in English.
-6. "detailedExplanation.whyWrong*" = explain clearly why each wrong option fails.
-7. "grammarRules" = 2–4 concise bullet rules relevant to the question.
-8. "keyVocabulary" = 1–4 important words or collocations from the sentence.
-9. "topic" must be one of: Mixed, Word Forms, Tenses, Prepositions, Conjunctions, Relative Clauses, Conditionals, Passive Voice, Articles & Determiners, Subject-Verb Agreement, Comparatives & Superlatives, Modal Verbs, Gerunds & Infinitives, Reported Speech, Noun Clauses.
-10. Generate EXACTLY ${count} questions, numbered q1 through q${count}.
+2. "answer" must be exactly "A", "B", "C", or "D".
+3. "topic" must be one of: Mixed, Word Forms, Tenses, Prepositions, Conjunctions, Relative Clauses, Conditionals, Passive Voice, Articles & Determiners, Subject-Verb Agreement, Comparatives & Superlatives, Modal Verbs, Gerunds & Infinitives, Reported Speech, Noun Clauses.
+4. Generate EXACTLY ${count} questions, numbered q1 through q${count}.
+5. ALL explanations MUST be written in natural VIETNAMESE.
 
-OUTPUT: Return ONLY the JSON array. Start your response with "[" and end with "]".`;
+OUTPUT: Return ONLY the JSON array. Start with "[" and end with "]".`;
 }
 
 /**
@@ -150,9 +201,8 @@ export function validateGrammarJSON(parsed) {
 export function normalizeQuestions(questions) {
   return questions.map((q, i) => ({
     ...q,
-    id:         q.id || `q${i + 1}`,
-    difficulty: q.difficulty || 'Medium',
-    topic:      q.topic || 'Mixed',
+    id:    q.id || `q${i + 1}`,
+    topic: q.topic || 'Mixed',
     // Runtime fields (not from AI)
     _userAnswer:  null,
     _isCorrect:   null,

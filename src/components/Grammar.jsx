@@ -30,6 +30,7 @@ export default function Grammar({ addWord }) {
     reviewProgress,
     grammarStats,
     syncStatus,
+    hasPending,
     cloudConfigured,
     setCloudConfigured,
     dueForReview,
@@ -91,7 +92,7 @@ export default function Grammar({ addWord }) {
           {/* Cloud settings button */}
           <button
             onClick={() => setShowCloud(v => !v)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 border ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 border relative ${
               showCloud
                 ? 'bg-indigo-600/20 text-indigo-300 border-indigo-500/30'
                 : 'bg-slate-800 text-slate-400 hover:text-white border-slate-700'
@@ -99,6 +100,9 @@ export default function Grammar({ addWord }) {
           >
             <Cloud size={13} />
             Cloud
+            {hasPending && cloudConfigured && (
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping absolute -top-0.5 -right-0.5" />
+            )}
           </button>
         </div>
       </div>
@@ -109,6 +113,7 @@ export default function Grammar({ addWord }) {
           onClose={() => setShowCloud(false)}
           onConfigChanged={setCloudConfigured}
           syncStatus={syncStatus}
+          hasPending={hasPending}
           onSync={syncFromCloud}
         />
       )}

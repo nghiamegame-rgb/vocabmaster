@@ -4,6 +4,7 @@ import {
   RotateCcw, Star, Zap, Clock
 } from 'lucide-react';
 import { isGrammarDueForReview } from '../../utils/grammarStorage';
+import { getTopicLabel } from '../../utils/grammarPrompt';
 
 const OPTION_KEYS = ['A', 'B', 'C', 'D'];
 
@@ -228,7 +229,7 @@ export default function GrammarReview({
       <div className="bg-slate-900/80 border border-slate-700/50 rounded-2xl p-6 space-y-5">
         <div className="flex items-center gap-2">
           <span className="px-2.5 py-1 rounded-lg bg-purple-600/20 text-purple-300 text-xs font-semibold border border-purple-500/20">
-            {q.topic}
+            {getTopicLabel(q.topic)}
           </span>
           {getLevelBadge(q.savedId)}
           {q.hardMarked && <Star size={14} className="text-amber-400" fill="currentColor" />}

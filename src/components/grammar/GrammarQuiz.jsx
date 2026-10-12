@@ -4,6 +4,7 @@ import {
   ChevronDown, ChevronUp, CheckCircle2, XCircle,
   Book, BarChart2, ArrowRight, RotateCcw, PlusCircle
 } from 'lucide-react';
+import { getTopicLabel } from '../../utils/grammarPrompt';
 
 const OPTION_KEYS = ['A', 'B', 'C', 'D'];
 
@@ -85,7 +86,6 @@ export default function GrammarQuiz({
       correct: correctCount,
       total:   questions.length,
       topic:   config.topic,
-      difficulty: config.difficulty,
     });
     setFinished(true);
   }
@@ -115,8 +115,7 @@ export default function GrammarQuiz({
           </h3>
           <p className="text-slate-400">
             Đúng <span className="text-white font-bold">{correctCount}</span> / {questions.length} câu
-            &nbsp;·&nbsp; Chủ đề: <span className="text-purple-400">{config.topic}</span>
-            &nbsp;·&nbsp; Độ khó: <span className="text-indigo-400">{config.difficulty}</span>
+            &nbsp;·&nbsp; Chủ đề: <span className="text-purple-400">{getTopicLabel(config.topic)}</span>
           </p>
         </div>
         <div className="flex gap-3">
@@ -127,7 +126,7 @@ export default function GrammarQuiz({
             <RotateCcw size={16} /> Làm lại
           </button>
           <button
-            onClick={() => onFinish({ correct: correctCount, total: questions.length, topic: config.topic, difficulty: config.difficulty, goBack: true })}
+            onClick={() => onFinish({ correct: correctCount, total: questions.length, topic: config.topic, goBack: true })}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-purple-500/20 transition-all duration-200"
           >
             <ArrowRight size={16} /> Tạo bộ câu mới
@@ -188,14 +187,7 @@ export default function GrammarQuiz({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-1 rounded-lg bg-purple-600/20 text-purple-300 text-xs font-semibold border border-purple-500/20">
-              {q.topic}
-            </span>
-            <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold border ${
-              q.difficulty === 'Easy'   ? 'bg-emerald-600/15 text-emerald-300 border-emerald-500/20'
-              : q.difficulty === 'Hard' ? 'bg-rose-600/15 text-rose-300 border-rose-500/20'
-              : 'bg-amber-600/15 text-amber-300 border-amber-500/20'
-            }`}>
-              {q.difficulty === 'Easy' ? 'Dễ' : q.difficulty === 'Hard' ? 'Khó' : 'Vừa'}
+              {getTopicLabel(q.topic)}
             </span>
           </div>
           {/* Bookmark */}

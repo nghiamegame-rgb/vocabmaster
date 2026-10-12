@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import {
-  Bookmark, BookmarkX, Search, Filter, Star, StarOff,
+  Bookmark, Search, Filter, Star, StarOff,
   ChevronDown, ChevronUp, Trash2, StickyNote, X, Cloud, HardDrive
 } from 'lucide-react';
-import { GRAMMAR_TOPICS, GRAMMAR_DIFFICULTIES } from '../../utils/grammarPrompt';
+import { GRAMMAR_TOPICS, getTopicLabel } from '../../utils/grammarPrompt';
 
 const OPTION_KEYS = ['A', 'B', 'C', 'D'];
 
@@ -20,7 +20,6 @@ export default function GrammarSaved({
 }) {
   const [search,      setSearch]      = useState('');
   const [topicFilter, setTopicFilter] = useState('All');
-  const [diffFilter,  setDiffFilter]  = useState('All');
   const [hardOnly,    setHardOnly]    = useState(false);
   const [expanded,    setExpanded]    = useState({}); // { [savedId]: bool }
   const [editingNote, setEditingNote] = useState(null); // savedId
@@ -31,7 +30,6 @@ export default function GrammarSaved({
     return savedQuestions.filter(q => {
       if (hardOnly && !q.hardMarked) return false;
       if (topicFilter !== 'All' && q.topic !== topicFilter) return false;
-      if (diffFilter  !== 'All' && q.difficulty !== diffFilter) return false;
       if (search) {
         const s = search.toLowerCase();
         const matches =
@@ -43,7 +41,7 @@ export default function GrammarSaved({
       }
       return true;
     });
-  }, [savedQuestions, search, topicFilter, diffFilter, hardOnly]);
+  }, [savedQuestions, search, topicFilter, hardOnly]);
 
   // ── Note editing ──────────────────────────────────────────────────────────
   function startEditNote(q) {
@@ -125,19 +123,7 @@ export default function GrammarSaved({
           >
             <option value="All">Tất cả chủ đề</option>
             {GRAMMAR_TOPICS.filter(t => t !== 'Mixed').map(t => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-
-          {/* Difficulty filter */}
-          <select
-            value={diffFilter}
-            onChange={e => setDiffFilter(e.target.value)}
-            className="bg-slate-800 border border-slate-600 text-slate-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-purple-500 transition-colors"
-          >
-            <option value="All">Mọi độ khó</option>
-            {GRAMMAR_DIFFICULTIES.map(d => (
-              <option key={d} value={d}>{d === 'Easy' ? 'Dễ' : d === 'Medium' ? 'Vừa' : 'Khó'}</option>
+              <option key={t} value={t}>{getTopicLabel(t)}</option>
             ))}
           </select>
 
@@ -207,14 +193,7 @@ export default function GrammarSaved({
                     {/* Meta badges */}
                     <div className="flex flex-wrap gap-1.5 mb-2">
                       <span className="px-2 py-0.5 rounded-md bg-purple-600/20 text-purple-300 text-xs font-medium border border-purple-500/20">
-                        {q.topic}
-                      </span>
-                      <span className={`px-2 py-0.5 rounded-md text-xs font-medium border ${
-                        q.difficulty === 'Easy'   ? 'bg-emerald-600/15 text-emerald-300 border-emerald-500/20'
-                        : q.difficulty === 'Hard' ? 'bg-rose-600/15 text-rose-300 border-rose-500/20'
-                        : 'bg-amber-600/15 text-amber-300 border-amber-500/20'
-                      }`}>
-                        {q.difficulty === 'Easy' ? 'Dễ' : q.difficulty === 'Hard' ? 'Khó' : 'Vừa'}
+                        {getTopicLabel(q.topic)}
                       </span>
                       {/* Review level */}
                       <span className="px-2 py-0.5 rounded-md bg-indigo-600/15 text-indigo-300 text-xs font-medium border border-indigo-500/20">
