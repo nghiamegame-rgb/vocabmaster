@@ -5,6 +5,7 @@ import Vocabulary      from './components/Vocabulary';
 import Quiz            from './components/Quiz';
 import ListeningReview from './components/ListeningReview';
 import Flashcard       from './components/Flashcard';
+import Grammar         from './components/Grammar';
 import { useVocabStore } from './hooks/useVocabStore';
 
 export default function App() {
@@ -79,6 +80,11 @@ export default function App() {
           <Flashcard
             words={words}
             updateWordLevel={updateWordLevel}
+          />
+        )}
+        {activeTab === 'grammar' && (
+          <Grammar
+            addWord={addWord}
           />
         )}
       </main>
