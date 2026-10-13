@@ -50,7 +50,7 @@ export const GRAMMAR_COUNTS = [5, 10, 15, 20];
 
 /**
  * Build an AI prompt that generates TOEIC Part 5 grammar questions in JSON.
- * Explanations are strictly in natural, accurate Vietnamese.
+ * Explanations are in natural, intuitive Vietnamese.
  * Questions are calibrated for TOEIC 550 target with exposure to 700-750.
  * @param {{ count?: number, topic?: string }} config
  * @returns {string}
@@ -63,126 +63,103 @@ export function buildGrammarPrompt({ count = 10, topic = 'Mixed' } = {}) {
 
   const exampleTopic = topic === 'Mixed' ? 'Modal Verbs' : topic;
 
-  return `You are an expert TOEIC test creator and English instructor for Vietnamese learners. Generate exactly ${count} TOEIC Part 5 (sentence completion) grammar questions.
+  return `You are an expert TOEIC test creator and English instructor for Vietnamese learners.
+Generate exactly ${count} TOEIC Part 5 (sentence completion) grammar questions in the JSON format specified below.
 
-TARGET LEVEL & DIFFICULTY DISTRIBUTION (TOEIC 550 TARGET WITH 700-750 EXPOSURE):
-The learner is currently at approximately TOEIC 550 and aiming to advance toward 700-750.
-Provide an organic mix of question difficulties across the ${count} questions (flexible guidelines):
-- Approximately 40% foundational questions (~500-550 level: core word forms, basic tenses, common prepositions, straightforward agreements).
-- Approximately 40% intermediate questions (~600-650 level: conjunctions vs. prepositions, passive voice, relative clauses, gerunds vs. infinitives).
-- Approximately 20% moderately challenging questions (~700-750 level: tricky collocations, subtle word forms, conditional inversions, reduced relative clauses).
-- Randomize the question order so difficulties are naturally mixed.
-- Do NOT group questions by difficulty or include any difficulty indicator in the output.
+[1] DIFFICULTY DISTRIBUTION (TOEIC 550 target, exposure to 700-750)
+~40% foundational (500-550 level): core word forms, basic tenses, common prepositions, subject-verb agreement.
+~40% intermediate (600-650 level): conjunctions vs prepositions, passive voice, relative clauses, gerunds vs infinitives.
+~20% moderately challenging (700-750 level): subtle word forms, tricky collocations, conditional inversions, reduced relative clauses.
+Randomize question order. Do NOT label difficulty or group questions by level.
 
-REALISTIC TOEIC PART 5 BUSINESS CONTEXTS:
-- Business emails and internal memos
-- Office communication and human resources (recruitment, onboarding, benefits)
-- Customer service, warranties, and client relations
-- Contracts, negotiations, and purchasing
-- Business travel, conferences, and transportation
-- Meetings, announcements, and corporate events
-- Business operations, manufacturing, and financial reports
-Keep sentences realistic, natural, and representative of modern workplace English. Avoid obscure vocabulary, highly academic jargon, or tricky questions relying on ambiguous wording.
+[2] BUSINESS CONTEXTS
+Use realistic TOEIC workplace settings: emails, memos, HR, customer service, contracts, meetings, travel, financial reports.
+Sentences must be natural and representative of modern workplace English. Avoid ambiguous wording or overly academic vocabulary.
 
-GRAMMAR EMPHASIS:
-- TOPIC FOCUS: ${topicInstruction}
-- Prioritize practical TOEIC grammar: Word Forms (noun/verb/adj/adv), Verb Tenses & Voice, Subject-Verb Agreement, Prepositions, Conjunctions, Relative Clauses, Passive Voice, Gerunds & Infinitives, Modal Verbs.
-- Each question must have exactly ONE clearly defensible correct answer.
-- Distractors (incorrect options) must be plausible and natural, but grammatically or contextually incorrect.
+[3] GRAMMAR FOCUS
+${topicInstruction}
+Each question must have exactly ONE clearly correct answer. Distractors must be plausible but grammatically or contextually wrong.
 
-PART-OF-SPEECH LABELS — "optionLabels" field:
-For each question, include an "optionLabels" object alongside "options".
-For each answer key (A, B, C, D), provide a short grammatical label.
-Use these standard abbreviations: n (noun), v (verb), adj (adjective), adv (adverb), prep (preposition), conj (conjunction), pron (pronoun), det (determiner).
-For verb forms, be more specific when helpful: v-inf (bare infinitive), v-ing, v-ed (past/past participle).
-Compound labels are allowed: "n/v", "adj/v-ed".
-Leave the key absent ONLY if the word class is genuinely ambiguous in isolation.
-Examples: "carefully" -> "adv", "careful" -> "adj", "care" -> "n/v", "employee" -> "n", "manage" -> "v", "whether" -> "conj", "during" -> "prep", "reviewed" -> "v-ed".
+[4] PART-OF-SPEECH LABELS — "optionLabels" field
+Include "optionLabels": an object with a short POS label for each option (A-D).
+Standard abbreviations: n, v, adj, adv, prep, conj, pron, det.
+For verb forms: v-inf (bare infinitive), v-ing, v-ed (past/past participle). Compound labels allowed: "n/v", "adj/v-ed".
+Omit a key only when classification is genuinely ambiguous.
+Examples: "carefully"->"adv", "careful"->"adj", "care"->"n/v", "employee"->"n", "whether"->"conj", "during"->"prep", "reviewed"->"v-ed".
 
-LANGUAGE & EXPLANATION REQUIREMENTS - INTUITIVE VIETNAMESE (STRICT):
-- Question sentences and options A, B, C, D must remain in ENGLISH.
-- Keep English grammar structures and collocations in their original form.
-- ALL explanations and learning notes must be written in natural, conversational VIETNAMESE.
+[5] EXPLANATIONS — INTUITIVE VIETNAMESE
+Sentences and options (A-D) must remain in ENGLISH. All explanations in natural, conversational VIETNAMESE.
 
-EXPLANATION STYLE GUIDE (VERY IMPORTANT):
-Explain grammar through the actual meaning and context of each sentence, NOT through abstract formulas.
+Style rules:
+- Explain through the sentence's ACTUAL MEANING AND CONTEXT, not through abstract formulas (avoid "S+V+O+Adv" style).
+- Identify the specific clue words or phrases in the sentence that point to the correct answer.
+- Explain what kind of word fits the blank and WHY, based on what the sentence is saying.
+- For wrong options: state the EXACT mismatch — wrong word class, wrong meaning, or wrong grammatical form. Never just say "sai ngu phap".
+- Mention grammar formulas only when they genuinely help, and explain each part in plain language.
+- Keep explanations concise and practical. Do not pad.
 
-BAD style (avoid):
-"Cau co cau truc S + V + O + Adv nen can trang tu."
+Fields:
+- "vietnameseSentence": Natural Vietnamese translation with the correct answer filled in.
+- "shortExplanation": 1-2 sentences explaining why the correct answer fits, based on context/meaning.
+- "detailedExplanation.whyCorrect": Why the correct option fits — cite the actual sentence context.
+- "detailedExplanation.whyWrongA/B/C/D": Exact reason each distractor fails.
+- "detailedExplanation.grammarRules": Array of 2-4 concise Vietnamese bullet points summarizing rules applied.
+- "detailedExplanation.keyVocabulary": Array of 2-4 entries — see [6] below.
 
-GOOD style:
-"Cau dang noi ve cach nguoi do thuc hien hanh dong. Cho trong bo nghi a cho dong tu, vi vay ta can trang tu. 'Carefully' nghia la 'mot cach can than', phu hop voi ngu canh."
+[6] KEY VOCABULARY — COLLOCATIONS AND USEFUL EXPRESSIONS
+Select 2-4 words, phrases, or collocations that actually appear in the question sentence or answer options.
+PRIORITIZE expressions that are practically reusable in TOEIC business contexts (550-750 level):
+- Verb + noun collocations: meet a deadline, submit a report, conduct a review, place an order
+- Verb/adj + preposition: be responsible for, be eligible for, result in, in charge of
+- Fixed business expressions: in accordance with, prior to, subject to, on behalf of
+- Business noun phrases: customer satisfaction, annual revenue, board of directors, fiscal year
+Each entry format: { "word": "...", "meaning": "Vietnamese meaning", "type": "word class or Noun Phrase / Verb Phrase / etc." }
+Rules:
+- Only include vocabulary that actually appears in the sentence or options.
+- Prefer useful collocations over isolated basic words when the sentence contains both.
+- Do not invent entries just to reach the count.
+- Provide accurate Vietnamese meanings.
 
-GOOD style:
-"Ngay truoc cho trong co mao tu 'the', va sau do khong co danh tu nao khac trong cum nay, nen vi tri nay rat co the can mot danh tu."
+[7] JSON OUTPUT FORMAT — STRICT
+Return ONLY a valid JSON array. No markdown, no code fences, no text before or after. Start with "[", end with "]".
 
-Specific requirements for each explanation:
-1. Point out the specific clue words or phrases in the sentence that help identify the correct answer.
-2. Explain what kind of word naturally fills the blank and WHY — based on what the sentence is saying.
-3. For wrong options: explain the EXACT mismatch (wrong word class for this position, wrong meaning, wrong grammatical form) — never just say "sai ngu phap".
-4. Mention grammar formulas only when they genuinely add value, and explain each part in plain language.
-5. Keep explanations informative but not padded.
-
-FIELDS:
-1. "vietnameseSentence": Natural Vietnamese translation of the entire sentence with the correct answer filled in.
-2. "shortExplanation": 1-2 sentences in VIETNAMESE. Explain why the correct answer fits based on the sentence context and meaning.
-3. "detailedExplanation.whyCorrect": VIETNAMESE — why the correct option fits. Reference actual sentence context, not just abstract rules.
-4. "detailedExplanation.whyWrongA" / "whyWrongB" / "whyWrongC" / "whyWrongD": VIETNAMESE — exact reason each distractor fails (cite the mismatch specifically).
-5. "detailedExplanation.grammarRules": Array of 2-4 concise bullet points in VIETNAMESE. Practical rules applied. When formulas are used, explain them in plain language.
-6. "detailedExplanation.keyVocabulary": Array of 1-4 key words/collocations: { "word", "meaning" (Vietnamese), "type" }.
-
-STRICT JSON OUTPUT FORMAT:
-Return ONLY a valid JSON array. No markdown, no commentary before or after, no code fences.
-Start your response with "[" and end with "]".
-
-JSON SCHEMA EXAMPLE:
+SCHEMA EXAMPLE:
 [
   {
     "id": "q1",
     "sentence": "The marketing director will _____ the new campaign proposals at tomorrow's executive meeting.",
-    "options": {
-      "A": "review",
-      "B": "reviewed",
-      "C": "reviewing",
-      "D": "reviews"
-    },
-    "optionLabels": {
-      "A": "v-inf",
-      "B": "v-ed",
-      "C": "v-ing",
-      "D": "v"
-    },
+    "options": { "A": "review", "B": "reviewed", "C": "reviewing", "D": "reviews" },
+    "optionLabels": { "A": "v-inf", "B": "v-ed", "C": "v-ing", "D": "v" },
     "answer": "A",
     "topic": "${exampleTopic}",
-    "vietnameseSentence": "Giam doc tiep thi se xem xet cac de xuat chien dich moi tai cuoc hop ban dieu hanh ngay mai.",
-    "shortExplanation": "Cau co 'will' dung truoc cho trong. Sau 'will', ta luon dung dong tu nguyen mau khong 'to' (bare infinitive), nen 'review' la lua chon dung.",
+    "vietnameseSentence": "Giám đốc tiếp thị sẽ xem xét các đề xuất chiến dịch mới tại cuộc họp ban điều hành ngày mai.",
+    "shortExplanation": "Câu có 'will' ngay trước chỗ trống — sau 'will', động từ luôn ở dạng nguyên mẫu không 'to', nên 'review' là đúng.",
     "detailedExplanation": {
-      "whyCorrect": "Tu 'will' ngay truoc cho trong la tro dong tu (modal verb). Quy tac co ban: sau modal verb, dong tu chinh phai o dang nguyen mau khong 'to'. 'Review' dung dang nay va co nghia la 'xem xet, danh gia' — hoan toan phu hop voi ngu canh mot giam doc chuan bi cho cuoc hop.",
-      "whyWrongB": "'Reviewed' la dang qua khu hoac qua khu phan tu. Sau 'will', khong dung dang nay trong cau chu dong — muon dung 'reviewed' thi phai la 'will be reviewed' (cau bi dong).",
-      "whyWrongC": "'Reviewing' la dang V-ing. De dung duoc sau 'will', cau phai co 'be' o giua: 'will be reviewing'. O day khong co 'be', nen sai.",
-      "whyWrongD": "'Reviews' la dang hien tai don so it (he/she/it reviews). Sau modal verb 'will', khong them 's' vao dong tu.",
+      "whyCorrect": "Từ 'will' trước chỗ trống là modal verb. Quy tắc: sau modal verb, động từ chính phải ở dạng bare infinitive (không chia, không thêm đuôi). 'Review' đúng dạng này và có nghĩa là 'xem xét, đánh giá' — hoàn toàn phù hợp với ngữ cảnh giám đốc chuẩn bị cho cuộc họp.",
+      "whyWrongB": "'Reviewed' là dạng quá khứ hoặc quá khứ phân từ. Trong câu chủ động sau 'will', không dùng dạng này — muốn bị động mới cần 'will be reviewed'.",
+      "whyWrongC": "'Reviewing' là V-ing. Sau 'will' cần có 'be' để tạo thì tiếp diễn: 'will be reviewing'. Thiếu 'be' nên không dùng được.",
+      "whyWrongD": "'Reviews' là dạng hiện tại đơn (he/she/it). Sau modal verb 'will', không thêm -s vào động từ.",
       "grammarRules": [
-        "Modal verb (will, can, must, should...) + dong tu nguyen mau khong 'to' (bare infinitive) — khong chia, khong them -s/-ing/-ed.",
-        "Tu 'tomorrow' va 'will' cung nhau cho thay cau dang noi ve tuong lai.",
-        "Cau bi dong tuong lai co dang: will + be + V-ed/V3 — khac voi cau chu dong will + V-bare."
+        "Modal verb (will, can, must, should…) + V-bare: không chia, không thêm -s/-ing/-ed.",
+        "Câu bị động tương lai: will + be + V-ed. Câu tiếp diễn tương lai: will + be + V-ing."
       ],
       "keyVocabulary": [
-        { "word": "executive meeting", "meaning": "cuoc hop ban dieu hanh", "type": "Noun Phrase" },
-        { "word": "campaign proposal", "meaning": "de xuat chien dich", "type": "Noun Phrase" }
+        { "word": "executive meeting", "meaning": "cuộc họp ban điều hành", "type": "Noun Phrase" },
+        { "word": "campaign proposal", "meaning": "đề xuất chiến dịch", "type": "Noun Phrase" }
       ]
     }
   }
 ]
 
-RULES:
-1. Each sentence must have exactly ONE blank marked as "_____" (5 underscores).
-2. "answer" must be exactly "A", "B", "C", or "D".
+FINAL RULES:
+1. Exactly ONE blank per sentence, marked "_____" (5 underscores).
+2. "answer" must be "A", "B", "C", or "D".
 3. "topic" must be one of: Mixed, Word Forms, Tenses, Prepositions, Conjunctions, Relative Clauses, Conditionals, Passive Voice, Articles & Determiners, Subject-Verb Agreement, Comparatives & Superlatives, Modal Verbs, Gerunds & Infinitives, Reported Speech, Noun Clauses.
-4. Generate EXACTLY ${count} questions, numbered q1 through q${count}.
-5. ALL explanations MUST be written in natural VIETNAMESE.
-6. Include "optionLabels" for all options where classification is clear.
+4. Generate EXACTLY ${count} questions, ids q1 through q${count}.
+5. ALL explanations in natural VIETNAMESE.
+6. Include "optionLabels" for every option where POS classification is clear.
 
-OUTPUT: Return ONLY the JSON array. Start with "[" and end with "]".`;
+OUTPUT: JSON array only. Start "[", end "]".`;
 }
 
 /**
