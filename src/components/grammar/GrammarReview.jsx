@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import {
   Brain, CheckCircle2, XCircle, ChevronRight,
-  RotateCcw, Star, Zap, Clock
+  RotateCcw, Star, Zap, Clock, ChevronDown, ChevronUp, Book, BarChart2
 } from 'lucide-react';
 import { isGrammarDueForReview } from '../../utils/grammarStorage';
 import { getTopicLabel } from '../../utils/grammarPrompt';
@@ -24,6 +24,7 @@ export default function GrammarReview({
   const [current,     setCurrent]     = useState(0);
   const [answers,     setAnswers]     = useState({});
   const [showAnswer,  setShowAnswer]  = useState({});
+  const [showDetail,  setShowDetail]  = useState({});       // { [idx]: bool }
   const [sessionResult, setSessionResult] = useState(null);
 
   // ── Compute available questions ───────────────────────────────────────────
@@ -51,6 +52,7 @@ export default function GrammarReview({
     setCurrent(0);
     setAnswers({});
     setShowAnswer({});
+    setShowDetail({});
     setSessionResult(null);
     setMode('session');
   }
@@ -260,9 +262,14 @@ export default function GrammarReview({
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium text-left transition-all duration-200 ${cls}`}
               >
                 <span className="w-6 h-6 rounded-full bg-slate-700 text-xs font-bold flex items-center justify-center shrink-0">{key}</span>
-                {q.options[key]}
-                {isAnswered && key === q.answer && <CheckCircle2 size={16} className="ml-auto text-emerald-400" />}
-                {isAnswered && key === userAnswer && key !== q.answer && <XCircle size={16} className="ml-auto text-rose-400" />}
+                <span className="flex-1">{q.options[key]}</span>
+                {q.optionLabels?.[key] && (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-slate-700/70 text-slate-400 font-mono shrink-0">
+                    {q.optionLabels[key]}
+                  </span>
+                )}
+                {isAnswered && key === q.answer && <CheckCircle2 size={16} className="ml-auto text-emerald-400 shrink-0" />}
+                {isAnswered && key === userAnswer && key !== q.answer && <XCircle size={16} className="ml-auto text-rose-400 shrink-0" />}
               </button>
             );
           })}
@@ -270,18 +277,91 @@ export default function GrammarReview({
 
         {/* Explanation after answer */}
         {isAnswered && (
-          <div className={`rounded-xl border p-4 animate-fade-in ${
+          <div className={`rounded-xl border p-4 space-y-3 animate-fade-in ${
             isCorrect ? 'bg-emerald-500/5 border-emerald-500/25' : 'bg-rose-500/5 border-rose-500/25'
           }`}>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2">
               {isCorrect ? <CheckCircle2 size={16} className="text-emerald-400" /> : <XCircle size={16} className="text-rose-400" />}
               <span className={`text-sm font-semibold ${isCorrect ? 'text-emerald-300' : 'text-rose-300'}`}>
                 {isCorrect ? 'Chính xác! 🎉' : `Sai — Đáp án: ${q.answer}. ${q.options[q.answer]}`}
               </span>
             </div>
-            <p className="text-slate-300 text-sm">{q.shortExplanation}</p>
+
+            {/* Short explanation */}
+            <p className="text-slate-300 text-sm leading-relaxed">{q.shortExplanation}</p>
+
             {q.vietnameseSentence && (
-              <p className="text-slate-500 text-xs mt-2 italic">{q.vietnameseSentence}</p>
+              <p className="text-slate-500 text-xs italic border-l-2 border-slate-700 pl-3">{q.vietnameseSentence}</p>
+            )}
+
+            {/* Expandable detailed explanation */}
+            {q.detailedExplanation && (
+              <div>
+                <button
+                  onClick={() => setShowDetail(p => ({ ...p, [current]: !p[current] }))}
+                  className="flex items-center gap-1.5 text-indigo-400 hover:text-indigo-300 text-xs font-semibold transition-colors"
+                >
+                  {showDetail[current] ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  {showDetail[current] ? 'Ẩn giải thích chi tiết' : 'Xem giải thích chi tiết'}
+                </button>
+
+                {showDetail[current] && (
+                  <div className="mt-3 space-y-3 animate-fade-in">
+                    {/* Why correct */}
+                    <div className="bg-emerald-500/5 border border-emerald-500/15 rounded-xl p-3">
+                      <p className="text-emerald-400 text-xs font-semibold mb-1.5">✅ Tại sao {q.answer} đúng</p>
+                      <p className="text-slate-300 text-sm">{q.detailedExplanation.whyCorrect}</p>
+                    </div>
+
+                    {/* Why wrong */}
+                    <div className="space-y-2">
+                      {OPTION_KEYS.filter(k => k !== q.answer).map(k => (
+                        <div key={k} className="bg-rose-500/5 border border-rose-500/10 rounded-xl p-3">
+                          <p className="text-rose-400 text-xs font-semibold mb-1">❌ {k} — {q.options[k]}</p>
+                          <p className="text-slate-400 text-sm">{q.detailedExplanation[`whyWrong${k}`] || '—'}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Grammar rules */}
+                    {Array.isArray(q.detailedExplanation.grammarRules) && q.detailedExplanation.grammarRules.length > 0 && (
+                      <div className="bg-indigo-500/5 border border-indigo-500/15 rounded-xl p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Book size={14} className="text-indigo-400" />
+                          <p className="text-indigo-400 text-xs font-semibold">Quy tắc ngữ pháp</p>
+                        </div>
+                        <ul className="space-y-1">
+                          {q.detailedExplanation.grammarRules.map((r, i) => (
+                            <li key={i} className="text-slate-300 text-sm flex items-start gap-2">
+                              <span className="text-indigo-400 shrink-0">▸</span>{r}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Key vocabulary */}
+                    {Array.isArray(q.detailedExplanation.keyVocabulary) && q.detailedExplanation.keyVocabulary.length > 0 && (
+                      <div className="bg-purple-500/5 border border-purple-500/15 rounded-xl p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <BarChart2 size={14} className="text-purple-400" />
+                          <p className="text-purple-400 text-xs font-semibold">Từ vựng quan trọng</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {q.detailedExplanation.keyVocabulary.map((w, idx) => (
+                            <div key={idx} className="flex items-center gap-2 bg-slate-800 rounded-lg px-3 py-1.5">
+                              <span className="text-white text-sm font-medium">{w.word}</span>
+                              <span className="text-slate-400 text-xs">—</span>
+                              <span className="text-slate-300 text-xs">{w.meaning}</span>
+                              {w.type && <span className="text-purple-400 text-xs">({w.type})</span>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}

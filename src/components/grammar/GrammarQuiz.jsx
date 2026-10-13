@@ -244,9 +244,14 @@ export default function GrammarQuiz({
                 <span className="w-6 h-6 rounded-full bg-slate-700 text-xs font-bold flex items-center justify-center shrink-0">
                   {key}
                 </span>
-                {q.options[key]}
-                {answered && key === q.answer && <CheckCircle2 size={16} className="ml-auto text-emerald-400" />}
-                {answered && key === userAnswer && key !== q.answer && <XCircle size={16} className="ml-auto text-rose-400" />}
+                <span className="flex-1">{q.options[key]}</span>
+                {q.optionLabels?.[key] && (
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-slate-700/70 text-slate-400 font-mono shrink-0">
+                    {q.optionLabels[key]}
+                  </span>
+                )}
+                {answered && key === q.answer && <CheckCircle2 size={16} className="ml-auto text-emerald-400 shrink-0" />}
+                {answered && key === userAnswer && key !== q.answer && <XCircle size={16} className="ml-auto text-rose-400 shrink-0" />}
               </button>
             );
           })}
