@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import {
   Brain, CheckCircle2, XCircle, ChevronRight,
-  RotateCcw, Star, Zap, Clock, ChevronDown, ChevronUp, Book, BarChart2
+  RotateCcw, Star, Zap, Clock, ChevronDown, ChevronUp, Book, BarChart2, PlusCircle
 } from 'lucide-react';
 import { isGrammarDueForReview } from '../../utils/grammarStorage';
 import { getTopicLabel } from '../../utils/grammarPrompt';
@@ -17,6 +17,7 @@ export default function GrammarReview({
   savedQuestions,
   reviewProgress,
   onRecordReview,
+  onAddToVocab,
 }) {
   const [mode,        setMode]        = useState('select'); // 'select'|'session'|'done'
   const [reviewMode,  setReviewMode]  = useState('due');    // 'due'|'wrong'|'all'
@@ -25,6 +26,7 @@ export default function GrammarReview({
   const [answers,     setAnswers]     = useState({});
   const [showAnswer,  setShowAnswer]  = useState({});
   const [showDetail,  setShowDetail]  = useState({});       // { [idx]: bool }
+  const [vocabNotice,  setVocabNotice]  = useState({});     // { [`${idx}_${widx}`]: 'added'|'duplicate' }
   const [sessionResult, setSessionResult] = useState(null);
 
   // ── Compute available questions ───────────────────────────────────────────
@@ -53,6 +55,7 @@ export default function GrammarReview({
     setAnswers({});
     setShowAnswer({});
     setShowDetail({});
+    setVocabNotice({});
     setSessionResult(null);
     setMode('session');
   }
@@ -65,6 +68,15 @@ export default function GrammarReview({
     setAnswers(prev => ({ ...prev, [idx]: option }));
     setShowAnswer(prev => ({ ...prev, [idx]: true }));
     onRecordReview(q.savedId, correct);
+  }
+
+  // ── Add word to Vocab ────────────────────────────────────────────────────
+  function handleAddVocab(word, widx) {
+    if (!onAddToVocab) return;
+    const result = onAddToVocab({ english: word.word, vietnamese: word.meaning, wordType: word.type || 'Phrase' });
+    const key = `${current}_${widx}`;
+    setVocabNotice(p => ({ ...p, [key]: result === false ? 'duplicate' : 'added' }));
+    setTimeout(() => setVocabNotice(p => { const n = { ...p }; delete n[key]; return n; }), 2000);
   }
 
   function finishSession() {
@@ -348,14 +360,31 @@ export default function GrammarReview({
                           <p className="text-purple-400 text-xs font-semibold">Từ vựng quan trọng</p>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          {q.detailedExplanation.keyVocabulary.map((w, idx) => (
-                            <div key={idx} className="flex items-center gap-2 bg-slate-800 rounded-lg px-3 py-1.5">
-                              <span className="text-white text-sm font-medium">{w.word}</span>
-                              <span className="text-slate-400 text-xs">—</span>
-                              <span className="text-slate-300 text-xs">{w.meaning}</span>
-                              {w.type && <span className="text-purple-400 text-xs">({w.type})</span>}
-                            </div>
-                          ))}
+                          {q.detailedExplanation.keyVocabulary.map((w, widx) => {
+                            const vn = vocabNotice[`${current}_${widx}`];
+                            return (
+                              <div key={widx} className="flex items-center gap-2 bg-slate-800 rounded-lg px-3 py-1.5">
+                                <span className="text-white text-sm font-medium">{w.word}</span>
+                                <span className="text-slate-400 text-xs">—</span>
+                                <span className="text-slate-300 text-xs">{w.meaning}</span>
+                                {w.type && <span className="text-purple-400 text-xs">({w.type})</span>}
+                                {onAddToVocab && (
+                                  <button
+                                    onClick={() => handleAddVocab(w, widx)}
+                                    title="Thêm vào Vocabulary"
+                                    className={`ml-1 flex items-center gap-1 text-xs px-2 py-0.5 rounded-md transition-all duration-200 ${
+                                      vn === 'added'     ? 'bg-emerald-600/20 text-emerald-400'
+                                      : vn === 'duplicate' ? 'bg-amber-600/20 text-amber-400'
+                                      : 'bg-slate-700 text-slate-400 hover:text-purple-300 hover:bg-purple-600/20'
+                                    }`}
+                                  >
+                                    <PlusCircle size={12} />
+                                    {vn === 'added' ? 'Đã thêm' : vn === 'duplicate' ? 'Có rồi' : 'Vocab'}
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}

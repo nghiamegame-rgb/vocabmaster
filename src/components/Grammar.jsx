@@ -184,6 +184,7 @@ export default function Grammar({ addWord }) {
             savedQuestions={savedQuestions}
             reviewProgress={reviewProgress}
             onRecordReview={recordReview}
+            onAddToVocab={handleAddToVocab}
           />
         )}
 
