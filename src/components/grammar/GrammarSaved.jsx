@@ -254,12 +254,18 @@ export default function GrammarSaved({
                   {/* Options */}
                   <div className="grid grid-cols-2 gap-2">
                     {OPTION_KEYS.map(k => (
-                      <div key={k} className={`px-3 py-2 rounded-lg text-sm border ${
+                      <div key={k} className={`px-3 py-2 rounded-lg text-sm border flex items-center gap-2 ${
                         k === q.answer
                           ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
                           : 'bg-slate-800/50 border-slate-700/30 text-slate-500'
                       }`}>
-                        <span className="font-bold mr-2">{k}.</span>{q.options?.[k]}
+                        <span className="font-bold shrink-0">{k}.</span>
+                        <span className="flex-1">{q.options?.[k]}</span>
+                        {q.optionLabels?.[k] && (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-slate-700/70 text-slate-400 font-mono shrink-0">
+                            {q.optionLabels[k]}
+                          </span>
+                        )}
                       </div>
                     ))}
                   </div>
