@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react';
 import {
   Brain, CheckCircle2, XCircle, ChevronRight,
-  RotateCcw, Star, Zap, Clock, ChevronDown, ChevronUp, Book, BarChart2, PlusCircle
+  RotateCcw, Star, Zap, Clock, ChevronDown, ChevronUp, Book, BarChart2, PlusCircle, Filter
 } from 'lucide-react';
 import { isGrammarDueForReview } from '../../utils/grammarStorage';
-import { getTopicLabel } from '../../utils/grammarPrompt';
+import { GRAMMAR_TOPICS, getTopicLabel } from '../../utils/grammarPrompt';
 
 const OPTION_KEYS = ['A', 'B', 'C', 'D'];
 
@@ -21,6 +21,7 @@ export default function GrammarReview({
 }) {
   const [mode,        setMode]        = useState('select'); // 'select'|'session'|'done'
   const [reviewMode,  setReviewMode]  = useState('due');    // 'due'|'wrong'|'all'
+  const [topicFilter, setTopicFilter] = useState('All');    // 'All' | topic key
   const [queue,       setQueue]       = useState([]);
   const [current,     setCurrent]     = useState(0);
   const [answers,     setAnswers]     = useState({});
@@ -30,19 +31,26 @@ export default function GrammarReview({
   const [sessionResult, setSessionResult] = useState(null);
 
   // ── Compute available questions ───────────────────────────────────────────
+  // Apply topic filter first, then derive due/wrong subsets from the filtered pool
+  const topicFiltered = useMemo(() =>
+    topicFilter === 'All'
+      ? savedQuestions
+      : savedQuestions.filter(q => q.topic === topicFilter),
+    [savedQuestions, topicFilter]
+  );
   const dueQuestions   = useMemo(() =>
-    savedQuestions.filter(q => isGrammarDueForReview(reviewProgress[q.savedId])),
-    [savedQuestions, reviewProgress]
+    topicFiltered.filter(q => isGrammarDueForReview(reviewProgress[q.savedId])),
+    [topicFiltered, reviewProgress]
   );
   const wrongQuestions = useMemo(() =>
-    savedQuestions.filter(q => (reviewProgress[q.savedId]?.wrongCount ?? 0) > 0),
-    [savedQuestions, reviewProgress]
+    topicFiltered.filter(q => (reviewProgress[q.savedId]?.wrongCount ?? 0) > 0),
+    [topicFiltered, reviewProgress]
   );
 
   function getQueue() {
     if (reviewMode === 'due')   return dueQuestions;
     if (reviewMode === 'wrong') return wrongQuestions;
-    return savedQuestions;
+    return topicFiltered;
   }
 
   function startSession() {
@@ -101,28 +109,67 @@ export default function GrammarReview({
   // ── Mode: Select ──────────────────────────────────────────────────────────
   if (mode === 'select') {
     const stats = [
-      { label: '⚡ Đến hạn ôn',      count: dueQuestions.length,   key: 'due',   color: 'from-purple-600 to-indigo-600' },
-      { label: '❌ Đã sai',           count: wrongQuestions.length, key: 'wrong', color: 'from-rose-600 to-pink-600' },
-      { label: '📚 Tất cả đã lưu',   count: savedQuestions.length, key: 'all',   color: 'from-slate-600 to-slate-700' },
+      { label: '⚡ Đến hạn ôn',    count: dueQuestions.length,   key: 'due',   color: 'from-purple-600 to-indigo-600' },
+      { label: '❌ Đã sai',         count: wrongQuestions.length, key: 'wrong', color: 'from-rose-600 to-pink-600' },
+      { label: '📚 Trong chủ đề',  count: topicFiltered.length,  key: 'all',   color: 'from-slate-600 to-slate-700' },
     ];
 
     return (
       <div className="space-y-6 animate-fade-in">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center shadow-lg shadow-rose-500/20">
-            <Brain size={20} className="text-white" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-white">Grammar Review</h2>
-            <p className="text-slate-400 text-sm">Spaced repetition — ôn tập thông minh</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center shadow-lg shadow-rose-500/20">
+              <Brain size={20} className="text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white">Grammar Review</h2>
+              <p className="text-slate-400 text-sm">Spaced repetition — ôn tập thông minh</p>
+            </div>
           </div>
         </div>
+
+        {/* Topic filter */}
+        {savedQuestions.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <Filter size={14} className="text-slate-500 shrink-0" />
+            <select
+              value={topicFilter}
+              onChange={e => setTopicFilter(e.target.value)}
+              className="bg-slate-800 border border-slate-600 text-slate-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-purple-500 transition-colors"
+            >
+              <option value="All">Tất cả chủ đề ({savedQuestions.length})</option>
+              {GRAMMAR_TOPICS.filter(t => t !== 'Mixed').map(t => {
+                const cnt = savedQuestions.filter(q => q.topic === t).length;
+                return cnt > 0 ? (
+                  <option key={t} value={t}>{getTopicLabel(t)} ({cnt})</option>
+                ) : null;
+              })}
+              {savedQuestions.some(q => q.topic === 'Mixed') && (
+                <option value="Mixed">{getTopicLabel('Mixed')} ({savedQuestions.filter(q => q.topic === 'Mixed').length})</option>
+              )}
+            </select>
+            {topicFilter !== 'All' && (
+              <button
+                onClick={() => setTopicFilter('All')}
+                className="text-xs text-slate-500 hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-slate-800"
+              >
+                ✕ Xoá lọc
+              </button>
+            )}
+          </div>
+        )}
 
         {savedQuestions.length === 0 ? (
           <div className="text-center py-16">
             <Brain size={48} className="text-slate-700 mx-auto mb-4" />
             <h3 className="text-slate-400 font-medium mb-2">Chưa có câu hỏi nào để ôn</h3>
             <p className="text-slate-600 text-sm">Lưu câu hỏi trong khi luyện tập để tạo danh sách ôn tập.</p>
+          </div>
+        ) : topicFiltered.length === 0 ? (
+          <div className="text-center py-16">
+            <Filter size={40} className="text-slate-700 mx-auto mb-4" />
+            <h3 className="text-slate-400 font-medium mb-2">Không có câu hỏi nào cho chủ đề này</h3>
+            <p className="text-slate-600 text-sm">Thử chọn chủ đề khác hoặc "Tất cả chủ đề".</p>
           </div>
         ) : (
           <>
