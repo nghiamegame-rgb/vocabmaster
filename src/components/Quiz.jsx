@@ -20,6 +20,12 @@ const LEVEL_PRIORITIES = [
   { id: 'l5',     label: 'L5 Mastered'      },
   { id: 'custom', label: 'Custom (Random)'  },
 ];
+const WORD_TYPE_FILTERS = [
+  { id: 'All',    label: 'All Types',    icon: '🔤' },
+  { id: 'Word',   label: 'Single Words', icon: '📝' },
+  { id: 'Phrase', label: 'Phrases',      icon: '💬' },
+  { id: 'Family', label: 'Word Families',icon: '🌳' },
+];
 const QUIZ_MODES = [
   {
     id:   'vn',
@@ -301,23 +307,29 @@ function Section({ title, children }) {
 /* Quiz Config + Prompt Screen                                          */
 /* ------------------------------------------------------------------ */
 function QuizConfig({ words, onStart }) {
-  const [count,      setCount]      = useState(10);
-  const [diff,       setDiff]       = useState('Medium');
-  const [priority,   setPriority]   = useState('all');
-  const [mode,       setMode]       = useState('vn');
-  const [answerMode, setAnswerMode] = useState('mc');
+  const [count,          setCount]          = useState(10);
+  const [diff,           setDiff]           = useState('Medium');
+  const [priority,       setPriority]       = useState('all');
+  const [mode,           setMode]           = useState('vn');
+  const [answerMode,     setAnswerMode]     = useState('mc');
+  const [wordTypeFilter, setWordTypeFilter] = useState('All'); // 'All'|'Word'|'Phrase'|'Family'
 
   const [copied,     setCopied]     = useState(false);
   const [jsonPaste,  setJsonPaste]  = useState('');
   const [parseError, setParseError] = useState('');
 
   const textareaRef = useRef(null);
-  const hasWords    = words.length >= 4;
+
+  // Apply wordType filter before anything else
+  const filteredWords = wordTypeFilter === 'All'
+    ? words
+    : words.filter(w => (w.wordType || 'Word') === wordTypeFilter);
+  const hasWords = filteredWords.length >= 4;
 
   /* Copy prompt to clipboard */
   function handleCopy() {
     if (!hasWords) return;
-    const pool   = buildPool(words, priority, count);
+    const pool   = buildPool(filteredWords, priority, count);
     const prompt = buildPrompt(pool, count, diff, mode);
 
     const write = () => {
@@ -372,8 +384,10 @@ function QuizConfig({ words, onStart }) {
         <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-5">
           <AlertCircle size={17} className="text-amber-400 shrink-0 mt-0.5" />
           <p className="text-amber-300 text-sm">
-            You need at least <strong>4 vocabulary words</strong> to generate a quiz.
-            Add words in the <strong>Vocabulary</strong> tab first.
+            {wordTypeFilter === 'All'
+              ? <>You need at least <strong>4 vocabulary words</strong> to generate a quiz. Add words in the <strong>Vocabulary</strong> tab first.</>
+              : <>Not enough <strong>{wordTypeFilter}</strong> words (need ≥ 4). Try <strong>All Types</strong> or add more words of this type.</>
+            }
           </p>
         </div>
       )}
@@ -421,6 +435,33 @@ function QuizConfig({ words, onStart }) {
                 onClick={() => setPriority(lp.id)}
               />
             ))}
+          </div>
+        </Section>
+
+        {/* Vocabulary Type */}
+        <Section title="Vocabulary Type">
+          <div className="flex flex-wrap gap-2">
+            {WORD_TYPE_FILTERS.map(wt => {
+              const cnt = wt.id === 'All'
+                ? words.length
+                : words.filter(w => (w.wordType || 'Word') === wt.id).length;
+              return (
+                <button
+                  key={wt.id}
+                  id={`wtype-${wt.id.toLowerCase()}`}
+                  onClick={() => setWordTypeFilter(wt.id)}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 border ${
+                    wordTypeFilter === wt.id
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/20'
+                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-500 hover:text-white'
+                  }`}
+                >
+                  <span>{wt.icon}</span>
+                  {wt.label}
+                  <span className="text-xs opacity-60">({cnt})</span>
+                </button>
+              );
+            })}
           </div>
         </Section>
 

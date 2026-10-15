@@ -49,6 +49,7 @@ export default async function handler(req, res) {
       const upstream = await fetch(url.toString(), {
         method: 'GET',
         headers: { Accept: 'application/json' },
+        redirect: 'follow',
       });
 
       if (!upstream.ok) {
@@ -91,6 +92,7 @@ export default async function handler(req, res) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
+        redirect: 'follow',
       });
 
       if (!upstream.ok) {
