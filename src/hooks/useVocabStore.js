@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getWords, saveWords, clearWords, getStats, saveStats, getVocabRevision, saveVocabRevision } from '../utils/storage';
-import { pushToCloud, fetchFromCloud } from '../utils/cloud';
+import { getWords, saveWords, clearWords, getStats, saveStats } from '../utils/storage';
+import { pushToCloud, fetchFromCloud, verifyPush } from '../utils/cloud';
 
 /**
  * Merge cloud words with local words safely.
@@ -59,28 +59,69 @@ export function isDueForReview(word) {
 }
 
 /** Debounce delay (ms) before pushing to the cloud after a local change. */
-const PUSH_DEBOUNCE_MS = 1500;
+const PUSH_DEBOUNCE_MS = 2000;
+
+/**
+ * How long (ms) to wait after a POST before doing the verification GET.
+ * Gives Apps Script time to commit the write before we re-read.
+ * Must be long enough for Apps Script to finish, but not so long that the
+ * user is left waiting. 3 s is a reasonable compromise.
+ */
+const VERIFY_DELAY_MS = 3000;
 
 /**
  * Central state hook for VocabMaster.
  * Syncs words and stats from LocalStorage on mount and whenever they change.
- * Also handles cloud push (debounced POST) and cloud fetch (GET).
+ * Also handles cloud push (debounced POST + verification GET) and cloud fetch (GET).
+ *
+ * ── Key design decisions ──────────────────────────────────────────────────────
+ *
+ * 1. ALWAYS fetch on mount (not just when local is empty).
+ *    Mobile devices with stale local data would never refresh otherwise.
+ *    The cloud-first merge ensures local-only new words are preserved.
+ *
+ * 2. Push is debounced but VERIFIED.
+ *    After a debounced POST we do a follow-up GET to confirm the sheet was
+ *    updated. syncStatus='ok' is ONLY set after this verification succeeds.
+ *    This prevents the false "Synced!" that occurred when the POST was
+ *    fire-and-forget and the status was set after a mere fetch.
+ *
+ * 3. syncInProgressRef stays true until the React commit has had one full
+ *    render cycle to settle, preventing the push-debounce effect from firing
+ *    with stale words during a sync.
+ *
+ * 4. Separate syncStatus vs pushStatus.
+ *    syncStatus reflects the manual Sync button (fetch from cloud).
+ *    pushStatus reflects the automatic debounced push to cloud.
+ *    The Navbar exposes both so the user can see the state of each independently.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 export function useVocabStore() {
   const [words, setWords] = useState(() => getWords());
   const [stats, setStats] = useState(() => getStats());
 
   // Cloud sync state — exposed so the Navbar Sync button can reflect it
-  const [syncStatus, setSyncStatus] = useState('idle'); // 'idle' | 'syncing' | 'ok' | 'error'
+  // syncStatus: manual Sync button (fetch from cloud)
+  const [syncStatus, setSyncStatus] = useState('idle'); // 'idle'|'syncing'|'ok'|'error'
   // Distinguishes hard (clear + fetch) from soft (fetch only) for the Navbar
-  const [syncMode,   setSyncMode]   = useState('soft'); // 'soft' | 'hard'
+  const [syncMode,   setSyncMode]   = useState('soft'); // 'soft'|'hard'
+
+  // pushStatus: automatic debounced push to cloud
+  // 'idle' | 'pushing' | 'verifying' | 'ok' | 'error'
+  const [pushStatus, setPushStatus] = useState('idle');
 
   // Debounce timer ref for cloud push
   const pushTimerRef = useRef(null);
 
   // Guard: true while a sync fetch is in flight — suppresses auto-push so we
   // never fire pushToCloud(words) with an empty or stale list mid-sync.
+  // Also stays true for one extra render cycle after setWords() to let React
+  // commit the merged state before push effects can fire (fixes Bug 5 race).
   const syncInProgressRef = useRef(false);
+
+  // Track whether we are currently in a push+verify cycle so we don't
+  // start a second verification while one is already running.
+  const pushInProgressRef = useRef(false);
 
   // ── Persist words to LocalStorage + debounced push to cloud ──────────────
   useEffect(() => {
@@ -95,25 +136,76 @@ export function useVocabStore() {
 
     clearTimeout(pushTimerRef.current);
     pushTimerRef.current = setTimeout(() => {
-      pushToCloud(words, getVocabRevision()); // include last-known revision for CAS
+      _doPush(words);
     }, PUSH_DEBOUNCE_MS);
 
     return () => clearTimeout(pushTimerRef.current);
-  }, [words]);
+  }, [words]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Persist stats ─────────────────────────────────────────────────────────
   useEffect(() => {
     saveStats(stats);
   }, [stats]);
 
-  // ── Auto-fetch from cloud when LocalStorage is empty on first load ────────
+  // ── Always fetch from cloud on mount ─────────────────────────────────────
+  //
+  // Bug fix: previously only fetched when local was empty, meaning mobile
+  // devices with stale cached data would NEVER get fresh cloud data unless
+  // the user manually pressed Sync.
+  //
+  // Now we ALWAYS do a background fetch on mount. The cloud-first merge
+  // preserves any local-only words added since the last push.
+  //
+  // We use 'auto' mode (silent failure) so an offline first-load doesn't
+  // interrupt the user with an error toast.
   useEffect(() => {
-    if (getWords().length === 0) {
-      // Don't await — run in background and hydrate state when done
-      _doFetch('auto');
-    }
+    _doFetch('auto');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally runs once on mount
+
+  // ── Internal push implementation ──────────────────────────────────────────
+  /**
+   * Push words to cloud and verify the write succeeded.
+   *
+   * Because POST is no-cors (opaque response), we cannot read the response body.
+   * Instead we do a follow-up GET after a short delay and check the row count.
+   *
+   * pushStatus state transitions:
+   *   idle → pushing → verifying → ok | error
+   *
+   * @param {object[]} wordsToSend  - snapshot of words at push time
+   */
+  async function _doPush(wordsToSend) {
+    // Don't start a second push cycle while one is still verifying
+    if (pushInProgressRef.current) return;
+    pushInProgressRef.current = true;
+
+    setPushStatus('pushing');
+
+    const dispatched = await pushToCloud(wordsToSend);
+    if (!dispatched) {
+      // Network-level failure (offline, DNS failure, etc.)
+      pushInProgressRef.current = false;
+      setPushStatus('error');
+      setTimeout(() => setPushStatus('idle'), 5000);
+      return;
+    }
+
+    // POST was dispatched — now verify the sheet was actually updated
+    setPushStatus('verifying');
+    const result = await verifyPush(wordsToSend.length, VERIFY_DELAY_MS);
+
+    pushInProgressRef.current = false;
+
+    if (result === 'ok') {
+      setPushStatus('ok');
+      setTimeout(() => setPushStatus('idle'), 3000);
+    } else {
+      // 'mismatch' or 'error' — cloud has fewer rows than expected
+      setPushStatus('error');
+      setTimeout(() => setPushStatus('idle'), 5000);
+    }
+  }
 
   // ── Internal fetch implementation ─────────────────────────────────────────
   /**
@@ -141,13 +233,15 @@ export function useVocabStore() {
     }
 
     try {
-      const cloudResult = await fetchFromCloud();
+      const cloudWords = await fetchFromCloud();
 
       // fetchFromCloud returns null for: unconfigured URL, network error,
-      // empty sheet (0 words), or malformed response.
+      // empty sheet (0 rows), or malformed response.
       // In ALL those cases we must NOT touch local data.
-      if (!cloudResult || cloudResult.words.length === 0) {
-        syncInProgressRef.current = false;
+      if (!cloudWords || cloudWords.length === 0) {
+        // Release guard: lift AFTER a tick so the setWords() call from a
+        // previous render has had time to settle (fixes Bug 5 race condition).
+        setTimeout(() => { syncInProgressRef.current = false; }, 0);
         setSyncStatus(trigger === 'manual' ? 'error' : 'idle');
         return;
       }
@@ -156,11 +250,7 @@ export function useVocabStore() {
       // Read the CURRENT LocalStorage (not stale React state) so we catch any
       // words added while the fetch was in flight.
       const currentLocal = getWords();
-      const merged = mergeVocabWords(cloudResult.words, currentLocal);
-
-      // Persist the cloud revision so subsequent POSTs carry the correct
-      // expectedRevision for the backend CAS check.
-      saveVocabRevision(cloudResult.revision);
+      const merged = mergeVocabWords(cloudWords, currentLocal);
 
       // Now it is safe to wipe + rewrite LocalStorage with the merged result.
       if (hardClear) {
@@ -171,15 +261,31 @@ export function useVocabStore() {
       // so this setWords() won't queue a cloud push immediately.
       setWords(merged);
 
-      // Lift the guard — future word changes will push normally.
-      syncInProgressRef.current = false;
+      // ── GUARD RELEASE: lift AFTER one extra tick ──────────────────────────
+      // React's setWords() is asynchronous — it schedules a re-render but
+      // does NOT run the useEffect synchronously. If we set the guard to false
+      // immediately, the push-debounce effect could fire with the old words
+      // from the previous render's closure before the merged words commit.
+      // Yielding one tick (setTimeout 0) ensures the React commit runs first.
+      setTimeout(() => { syncInProgressRef.current = false; }, 0);
 
       setSyncStatus('ok');
+
+      // After a successful fetch that found new cloud words, push the merged
+      // list back so any local-only additions reach the sheet.
+      // We only do this if the merge produced MORE words than what cloud had
+      // (meaning there were local-only words that need to be pushed up).
+      if (merged.length > cloudWords.length) {
+        // Schedule a push after the guard has been lifted (next tick + debounce)
+        pushTimerRef.current = setTimeout(() => {
+          _doPush(merged);
+        }, PUSH_DEBOUNCE_MS + 50);
+      }
 
       // Reset the "ok" indicator after 3 s so it doesn't linger
       setTimeout(() => setSyncStatus('idle'), 3000);
     } catch {
-      syncInProgressRef.current = false;
+      setTimeout(() => { syncInProgressRef.current = false; }, 0);
       setSyncStatus('error');
       setTimeout(() => setSyncStatus('idle'), 4000);
     }
@@ -189,7 +295,7 @@ export function useVocabStore() {
    * Hard-sync: clear LocalStorage cache first, then pull fresh data from cloud.
    * Exposed so the Sync button in the Navbar can call it.
    */
-  const syncFromCloud = useCallback(() => _doFetch('manual', true), []);
+  const syncFromCloud = useCallback(() => _doFetch('manual', true), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Vocabulary mutations ───────────────────────────────────────────────────
 
@@ -228,7 +334,7 @@ export function useVocabStore() {
   /**
    * Promote or demote word level after quiz using streak-based spaced repetition.
    * - Correct: increment streak; if streak >= threshold for current level → level up, reset streak
-   * - Wrong:   reset streak to 0 and drop ALL THE WAY back to L1 (strict reset)
+   * - Wrong:   reset streak to 0 and drop back one level (capped at L1)
    */
   function updateWordLevel(wordEnglish, isCorrect) {
     setWords(prev =>
@@ -283,6 +389,7 @@ export function useVocabStore() {
     stats,
     syncStatus,
     syncMode,
+    pushStatus,
     addWord,
     deleteWord,
     updateWord,

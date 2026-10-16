@@ -1,7 +1,6 @@
 // LocalStorage keys
-export const LS_WORDS          = 'vocabmaster_words';
-export const LS_STATS          = 'vocabmaster_stats';
-export const LS_VOCAB_REVISION = 'vocabmaster_vocab_revision'; // protocol 2 CAS
+export const LS_WORDS = 'vocabmaster_words';
+export const LS_STATS = 'vocabmaster_stats';
 
 // ---------- Words ----------
 export function getWords() {
@@ -32,16 +31,3 @@ export function getStats() {
 export function saveStats(stats) {
   localStorage.setItem(LS_STATS, JSON.stringify(stats));
 }
-
-// ---------- Cloud revision (protocol 2 CAS) ----------
-/**
- * Returns the last revision number acknowledged from the cloud.
- * 0 = never synced / unknown.
- */
-export function getVocabRevision() {
-  return Number(localStorage.getItem(LS_VOCAB_REVISION)) || 0;
-}
-export function saveVocabRevision(revision) {
-  localStorage.setItem(LS_VOCAB_REVISION, String(Number(revision) || 0));
-}
-
