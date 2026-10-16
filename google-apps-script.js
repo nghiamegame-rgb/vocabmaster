@@ -2,7 +2,7 @@
  * VocabMaster — Google Apps Script (paste into Apps Script editor & redeploy)
  *
  * Sheet layout (Sheet1):
- *   Row 1  → headers: id | english | vietnamese | imageUrl | wordType | level | currentStreak | createdAt
+ *   Row 1  → headers: id | english | vietnamese | imageUrl | wordType | level | currentStreak | createdAt | lastReviewedDate
  *   Row 2+ → one vocabulary word per row
  *
  * Endpoints
@@ -14,10 +14,21 @@
  * ──────────────────────────────
  *  Execute as : Me
  *  Who has access : Anyone
+ *
+ * ── Column history ───────────────────────────────────────────────────────────
+ *  v6 (deployed): 8 columns — id…createdAt
+ *  v7 (local ref): 9 columns — adds lastReviewedDate (column index 8)
+ *
+ *  The frontend handles the missing column gracefully: if lastReviewedDate is
+ *  absent from a GET response row, fetchFromCloud() sets it to undefined and
+ *  isDueForReview() treats the word as due (safest default).
+ *
+ *  To persist review dates, redeploy this script as a new version.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 
 // Column order must match HEADERS exactly.
-var HEADERS = ['id', 'english', 'vietnamese', 'imageUrl', 'wordType', 'level', 'currentStreak', 'createdAt'];
+var HEADERS = ['id', 'english', 'vietnamese', 'imageUrl', 'wordType', 'level', 'currentStreak', 'createdAt', 'lastReviewedDate'];
 
 // ─── GET ────────────────────────────────────────────────────────────────────
 
@@ -40,14 +51,15 @@ function doGet() {
       .filter(function(row) { return row[1]; }) // skip rows where 'english' is blank
       .map(function(row) {
         return {
-          id:            String(row[0] || ''),
-          english:       String(row[1] || '').trim(),
-          vietnamese:    String(row[2] || '').trim(),
-          imageUrl:      String(row[3] || '').trim(),
-          wordType:      String(row[4] || 'Word'),
-          level:         Number(row[5]) || 1,
-          currentStreak: Number(row[6]) || 0,
-          createdAt:     Number(row[7]) || Date.now(),
+          id:               String(row[0] || ''),
+          english:          String(row[1] || '').trim(),
+          vietnamese:       String(row[2] || '').trim(),
+          imageUrl:         String(row[3] || '').trim(),
+          wordType:         String(row[4] || 'Word'),
+          level:            Number(row[5]) || 1,
+          currentStreak:    Number(row[6]) || 0,
+          createdAt:        Number(row[7]) || Date.now(),
+          lastReviewedDate: Number(row[8]) || null, // col 8: may be empty in v6 sheets
         };
       });
 
@@ -83,14 +95,15 @@ function doPost(e) {
     if (words.length > 0) {
       var rows = words.map(function(w) {
         return [
-          w.id            ?? '',
-          w.english       ?? '',
-          w.vietnamese    ?? '',
-          w.imageUrl      ?? '',
-          w.wordType      ?? 'Word',
-          w.level         ?? 1,
-          w.currentStreak ?? 0,
-          w.createdAt     ?? Date.now(),
+          w.id               ?? '',
+          w.english          ?? '',
+          w.vietnamese       ?? '',
+          w.imageUrl         ?? '',
+          w.wordType         ?? 'Word',
+          w.level            ?? 1,
+          w.currentStreak    ?? 0,
+          w.createdAt        ?? Date.now(),
+          w.lastReviewedDate ?? '', // col 8: empty string if never reviewed
         ];
       });
 

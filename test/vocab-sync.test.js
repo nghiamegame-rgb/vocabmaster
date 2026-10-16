@@ -1,18 +1,30 @@
 /**
  * vocab-sync.test.js
  *
- * Focused unit-tests for the vocabulary sync merge logic.
+ * Focused unit-tests for the vocabulary sync merge logic and push-verification
+ * result handling.
  *
  * Scenarios covered:
- *  1. Basic: cloud has more words than local → local-only words are kept.
- *  2. Bug reproduction: mobile has 95 stale words, cloud has 100.
- *     After merge the result must have ≥ 100 words; no cloud word is lost.
- *  3. Cloud word wins over local when same english key exists.
- *  4. Merge is idempotent: merging the same data twice gives the same result.
- *  5. Both inputs empty → empty result.
- *  6. Cloud empty + local has words → all local kept.
- *  7. Progress fields come from cloud.
- *  8. Duplicate english with different id → cloud wins, no duplicates.
+ *  Original 8:
+ *   1. Bug reproduction: mobile has 95 stale words, cloud has 100.
+ *      After merge the result must have ≥ 100 words; no cloud word is lost.
+ *   2. Local-only words are preserved.
+ *   3. Cloud word wins over local when same english key exists.
+ *   4. Merge is idempotent.
+ *   5. Both inputs empty → empty result.
+ *   6. Cloud empty + local has words → all local kept.
+ *   7. Progress fields come from cloud.
+ *   8. Duplicate english with different id → cloud wins, no duplicates.
+ *
+ *  New (Bug-fix validation):
+ *   9.  308-local / 250-cloud scenario: merged result has 308 words, and
+ *       all 250 cloud words are present (no cloud word overwritten).
+ *       The 58 local-only words must survive.
+ *  10.  After fetch that finds local-only words, merged.length > cloudWords.length
+ *       so the caller should push the merged list (logic gate test).
+ *  11.  verifyPush result interpretation: 'ok' when cloud count >= expected,
+ *       'mismatch' when cloud count < expected.
+ *  12.  lastReviewedDate is preserved from cloud through mergeVocabWords.
  *
  * Run with: node test/vocab-sync.test.js
  * (Self-contained — no test framework, no browser deps.)
@@ -30,6 +42,14 @@ function mergeVocabWords(cloudWords, localWords) {
     w => !cloudIds.has(w.id) && !cloudEngLc.has(w.english.toLowerCase())
   );
   return [...cloudWords, ...localOnly];
+}
+
+// ─── Inline verifyPush interpretation logic ───────────────────────────────────
+// This mirrors the logic in src/utils/cloud.js verifyPush().
+// We test the decision logic, not the actual network call.
+function interpretVerifyResult(cloudCount, expectedCount) {
+  if (cloudCount === null) return 'error';
+  return cloudCount >= expectedCount ? 'ok' : 'mismatch';
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -205,6 +225,100 @@ test('Progress fields (level, currentStreak, lastReviewedDate) come from cloud',
   assert.equal(result.level, 5);
   assert.equal(result.currentStreak, 15);
   assert.equal(result.lastReviewedDate, now - 1000);
+});
+
+// ── NEW Test 9: 308 local / 250 cloud scenario ────────────────────────────────
+test('308-local / 250-cloud: all 308 words in result, 250 cloud words intact, 58 local-only preserved', () => {
+  // Cloud has 250 words
+  const cloudWords = makeWords(250, 'cloud', i => (i % 5) + 1);
+
+  // Laptop has 308 words: 250 matching cloud + 58 new local-only ones
+  const localMatching = cloudWords.map(w => ({ ...w, level: 1, currentStreak: 0 })); // stale copies
+  const localOnly58   = makeWords(58, 'laptop_new');
+  const localWords    = [...localMatching, ...localOnly58];
+
+  assert.equal(localWords.length, 308, `Setup: local should have 308, got ${localWords.length}`);
+
+  const merged = mergeVocabWords(cloudWords, localWords);
+
+  // Result must have exactly 308 words
+  assert.equal(merged.length, 308,
+    `Expected 308 words after merge, got ${merged.length}`);
+
+  // All 250 cloud words must be present (by id)
+  const cloudIds = new Set(cloudWords.map(w => w.id));
+  for (const w of merged) cloudIds.delete(w.id);
+  assert.equal(cloudIds.size, 0,
+    `Missing ${cloudIds.size} cloud words from merged result`);
+
+  // All 58 local-only words must be present
+  for (const w of localOnly58) {
+    assert.ok(merged.some(m => m.id === w.id),
+      `Local-only word "${w.english}" missing from merged result`);
+  }
+
+  // Cloud words win: merged words that exist in cloud must have cloud's level,
+  // not the stale local level=1
+  const cloudMap = new Map(cloudWords.map(w => [w.id, w]));
+  for (const mergedWord of merged) {
+    const original = cloudMap.get(mergedWord.id);
+    if (original) {
+      assert.equal(mergedWord.level, original.level,
+        `Cloud word "${mergedWord.english}" should have level ${original.level}, got ${mergedWord.level}`);
+    }
+  }
+});
+
+// ── NEW Test 10: Fetch-then-push gate condition ────────────────────────────────
+test('After fetch: should push iff merged.length > cloudWords.length (local-only words exist)', () => {
+  const cloudWords = makeWords(250, 'cloud');
+  const localOnly  = makeWords(58,  'new');
+  const localAll   = [...cloudWords.map(w => ({ ...w })), ...localOnly];
+
+  const merged = mergeVocabWords(cloudWords, localAll);
+
+  // The gate: push back if merge has more than cloud (local-only additions exist)
+  const shouldPush = merged.length > cloudWords.length;
+  assert.ok(shouldPush,
+    `Should push because merged (${merged.length}) > cloud (${cloudWords.length})`);
+
+  // Sanity: if local has no extras, should NOT push
+  const mergedNoExtras = mergeVocabWords(cloudWords, cloudWords.map(w => ({ ...w })));
+  const shouldNotPush  = mergedNoExtras.length > cloudWords.length;
+  assert.ok(!shouldNotPush,
+    `Should NOT push when merged (${mergedNoExtras.length}) === cloud (${cloudWords.length})`);
+});
+
+// ── NEW Test 11: verifyPush result interpretation ────────────────────────────
+test('verifyPush: ok when cloud count >= expected; mismatch when fewer; error when null', () => {
+  // ok: cloud has same count as expected
+  assert.equal(interpretVerifyResult(308, 308), 'ok',
+    'Should be ok when cloud count equals expected');
+
+  // ok: cloud has MORE than expected (e.g. race condition added a word between push and verify)
+  assert.equal(interpretVerifyResult(310, 308), 'ok',
+    'Should be ok when cloud count exceeds expected');
+
+  // mismatch: cloud returned fewer rows (push partially failed or was throttled)
+  assert.equal(interpretVerifyResult(250, 308), 'mismatch',
+    'Should be mismatch when cloud count < expected');
+
+  // error: fetchFromCloud returned null (network/parse failure)
+  assert.equal(interpretVerifyResult(null, 308), 'error',
+    'Should be error when cloud returns null');
+});
+
+// ── NEW Test 12: lastReviewedDate preserved through merge ────────────────────
+test('lastReviewedDate is preserved from cloud; local stale date is not used', () => {
+  const now = Date.now();
+  const cloudW = makeWord({ id: 'rv-id', english: 'date', lastReviewedDate: now - 500 });
+  const localW = makeWord({ id: 'rv-id', english: 'date', lastReviewedDate: now - 99999 });
+
+  const merged = mergeVocabWords([cloudW], [localW]);
+  assert.equal(merged.length, 1);
+  // Cloud wins — the newer lastReviewedDate from cloud should be used
+  assert.equal(merged[0].lastReviewedDate, now - 500,
+    `Expected cloud lastReviewedDate (${now - 500}), got ${merged[0].lastReviewedDate}`);
 });
 
 // ── Summary ─────────────────────────────────────────────────────────────────

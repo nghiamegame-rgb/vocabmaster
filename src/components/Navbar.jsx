@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LayoutDashboard, BookOpen, Brain, Headphones, RefreshCw, Trash2, Layers, BookOpenCheck } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Brain, Headphones, RefreshCw, Trash2, Layers, BookOpenCheck, CloudOff, CloudUpload } from 'lucide-react';
 
 const tabs = [
   { id: 'dashboard',  label: 'Dashboard', Icon: LayoutDashboard },
@@ -46,22 +46,76 @@ function useSyncVisual(syncStatus, syncMode) {
   return MAP[phase] ?? MAP.idle;
 }
 
-/* ── Toast banner ── */
-function SyncToast({ syncStatus, syncMode, show }) {
-  if (!show) return null;
+/**
+ * Push indicator — shows the status of the background debounced push to cloud.
+ * This is separate from the manual Sync button, which only fetches FROM cloud.
+ *
+ * pushStatus: 'idle'|'pushing'|'verifying'|'ok'|'error'
+ */
+function PushIndicator({ pushStatus }) {
+  if (pushStatus === 'idle') return null;
 
-  const messages = {
-    clearing: { text: '🗑 Clearing local cache…',                   cls: 'bg-amber-500/90  text-white' },
-    syncing:  { text: '☁️ Fetching fresh data from Google Sheets…', cls: 'bg-indigo-600/90 text-white' },
-    ok:       { text: '✅ Vocabulary synced successfully!',          cls: 'bg-emerald-600/90 text-white' },
-    error:    { text: '❌ Sync failed — check your webhook URL.',    cls: 'bg-rose-600/90   text-white' },
+  const MAP = {
+    pushing:   { label: 'Saving…',   cls: 'text-sky-400    bg-sky-500/10    border-sky-500/20',     Icon: CloudUpload, animate: 'animate-pulse' },
+    verifying: { label: 'Verifying…',cls: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20',  Icon: CloudUpload, animate: 'animate-pulse' },
+    ok:        { label: 'Saved ✓',   cls: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',Icon: CloudUpload, animate: '' },
+    error:     { label: 'Save failed!',cls:'text-rose-400  bg-rose-500/10   border-rose-500/20',    Icon: CloudOff,    animate: '' },
   };
 
-  // Derive the display key: during hard syncing show 'clearing' first
-  const key =
-    syncStatus === 'syncing' && syncMode === 'hard' ? 'clearing' :
-    syncStatus === 'syncing'                         ? 'syncing'  :
-    syncStatus;
+  const config = MAP[pushStatus];
+  if (!config) return null;
+
+  const { label, cls, Icon, animate } = config;
+
+  return (
+    <div
+      className={`
+        flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold
+        border transition-all duration-300 shrink-0
+        ${cls}
+      `}
+      title={
+        pushStatus === 'error'
+          ? 'Your changes could not be saved to Google Sheets. Check your connection and try the Sync button.'
+          : pushStatus === 'verifying'
+          ? 'Verifying that Google Sheets was updated…'
+          : pushStatus === 'ok'
+          ? 'Your vocabulary was saved to Google Sheets.'
+          : 'Saving your vocabulary to Google Sheets…'
+      }
+    >
+      <Icon size={12} className={animate} />
+      <span className="hidden sm:inline">{label}</span>
+    </div>
+  );
+}
+
+/* ── Toast banner ── */
+function SyncToast({ syncStatus, syncMode, pushStatus, show }) {
+  // Compute which message to show
+  // Push errors take priority over sync state for the toast
+  const pushErrorActive = pushStatus === 'error';
+
+  const messages = {
+    clearing:   { text: '🗑 Clearing local cache…',                   cls: 'bg-amber-500/90  text-white' },
+    syncing:    { text: '☁️ Fetching fresh data from Google Sheets…', cls: 'bg-indigo-600/90 text-white' },
+    ok:         { text: '✅ Vocabulary synced successfully!',          cls: 'bg-emerald-600/90 text-white' },
+    error:      { text: '❌ Sync failed — check your webhook URL.',    cls: 'bg-rose-600/90   text-white' },
+    push_error: { text: '⚠️ Could not save to cloud — changes are local only.', cls: 'bg-rose-600/90 text-white' },
+  };
+
+  // Derive the display key
+  let key;
+  if (pushErrorActive) {
+    key = 'push_error';
+  } else if (!show) {
+    return null;
+  } else {
+    key =
+      syncStatus === 'syncing' && syncMode === 'hard' ? 'clearing' :
+      syncStatus === 'syncing'                        ? 'syncing'  :
+      syncStatus;
+  }
 
   const msg = messages[key];
   if (!msg) return null;
@@ -82,12 +136,12 @@ function SyncToast({ syncStatus, syncMode, show }) {
   );
 }
 
-export default function Navbar({ activeTab, setActiveTab, syncStatus, syncMode = 'soft', onSync }) {
+export default function Navbar({ activeTab, setActiveTab, syncStatus, syncMode = 'soft', pushStatus = 'idle', onSync }) {
   const sync = useSyncVisual(syncStatus, syncMode);
   const SyncIcon = sync.Icon;
 
-  // Show toast whenever actively syncing or just finished (ok/error)
-  const showToast = syncStatus !== 'idle';
+  // Show toast whenever actively syncing, just finished (ok/error), or push failed
+  const showToast = syncStatus !== 'idle' || pushStatus === 'error';
 
   return (
     <>
@@ -124,7 +178,10 @@ export default function Navbar({ activeTab, setActiveTab, syncStatus, syncMode =
               ))}
             </div>
 
-            {/* Sync button */}
+            {/* Push indicator (auto-save status) */}
+            <PushIndicator pushStatus={pushStatus} />
+
+            {/* Sync button (manual fetch from cloud) */}
             <button
               id="nav-sync-btn"
               onClick={onSync}
@@ -148,7 +205,7 @@ export default function Navbar({ activeTab, setActiveTab, syncStatus, syncMode =
       </nav>
 
       {/* Toast notification — rendered outside the nav so it sits below it */}
-      <SyncToast syncStatus={syncStatus} syncMode={syncMode} show={showToast} />
+      <SyncToast syncStatus={syncStatus} syncMode={syncMode} pushStatus={pushStatus} show={showToast} />
     </>
   );
 }
