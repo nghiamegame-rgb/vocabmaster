@@ -1,6 +1,36 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getWords, saveWords, clearWords, getStats, saveStats } from '../utils/storage';
+import { getWords, saveWords, clearWords, getStats, saveStats, getVocabRevision, saveVocabRevision } from '../utils/storage';
 import { pushToCloud, fetchFromCloud } from '../utils/cloud';
+
+/**
+ * Merge cloud words with local words safely.
+ *
+ * Strategy (cloud-first, preserve local-only):
+ *  - Cloud is the source of truth for any word that exists there.
+ *  - Local-only words (not in cloud by id OR english) are kept.
+ *  - Cloud order is preserved; local-only words are appended at the end.
+ *
+ * This prevents two failure modes:
+ *  1. Mobile with 95 words overwrites cloud's 100 words on push.
+ *  2. Hard-sync wipes words added locally but not yet pushed.
+ *
+ * @param {object[]} cloudWords  - words returned by fetchFromCloud()
+ * @param {object[]} localWords  - words currently in LocalStorage / React state
+ * @returns {object[]} merged list
+ */
+export function mergeVocabWords(cloudWords, localWords) {
+  // Build lookup sets for fast membership checks
+  const cloudIds     = new Set(cloudWords.map(w => w.id));
+  const cloudEngLc   = new Set(cloudWords.map(w => w.english.toLowerCase()));
+
+  // Keep local-only words: not found in cloud by id and not by english
+  const localOnly = localWords.filter(
+    w => !cloudIds.has(w.id) && !cloudEngLc.has(w.english.toLowerCase())
+  );
+
+  // Cloud words are authoritative; append any purely-local additions
+  return [...cloudWords, ...localOnly];
+}
 
 /**
  * Spaced-repetition thresholds: consecutive correct answers needed
@@ -48,6 +78,10 @@ export function useVocabStore() {
   // Debounce timer ref for cloud push
   const pushTimerRef = useRef(null);
 
+  // Guard: true while a sync fetch is in flight — suppresses auto-push so we
+  // never fire pushToCloud(words) with an empty or stale list mid-sync.
+  const syncInProgressRef = useRef(false);
+
   // ── Persist words to LocalStorage + debounced push to cloud ──────────────
   useEffect(() => {
     saveWords(words);
@@ -55,9 +89,13 @@ export function useVocabStore() {
     // Skip pushing an empty list (avoid overwriting cloud data on a fresh device)
     if (words.length === 0) return;
 
+    // Skip pushing while a cloud fetch is in progress — prevents race where
+    // setWords([]) during hard-sync schedules a push of an empty list.
+    if (syncInProgressRef.current) return;
+
     clearTimeout(pushTimerRef.current);
     pushTimerRef.current = setTimeout(() => {
-      pushToCloud(words); // fire-and-forget; failures are silent
+      pushToCloud(words, getVocabRevision()); // include last-known revision for CAS
     }, PUSH_DEBOUNCE_MS);
 
     return () => clearTimeout(pushTimerRef.current);
@@ -87,33 +125,61 @@ export function useVocabStore() {
     setSyncMode(hardClear ? 'hard' : 'soft');
     setSyncStatus('syncing');
 
+    // ── GUARD: suppress auto-push while fetch is in progress ──────────────
+    // Prevents the debounced push effect from firing with [] or stale data.
+    syncInProgressRef.current = true;
+
+    // Cancel any pending push that was queued before sync started.
+    clearTimeout(pushTimerRef.current);
+
     if (hardClear) {
-      // 1. Nuke LocalStorage immediately so no stale key survives
-      clearWords();
-      // 2. Clear React state so the UI shows an empty list during the load
-      setWords([]);
-      // 3. Small yield so the browser paints the "clearing" state before we block on fetch
+      // Small yield so the browser paints the "clearing" state before we
+      // block on fetch. We intentionally do NOT wipe LocalStorage here —
+      // we wait until we have confirmed cloud data to avoid a window where
+      // both cloud and local are empty simultaneously.
       await new Promise(r => setTimeout(r, 120));
     }
 
     try {
-      const cloudWords = await fetchFromCloud();
+      const cloudResult = await fetchFromCloud();
 
       // fetchFromCloud returns null for: unconfigured URL, network error,
-      // empty sheet (0 rows), or malformed response.
-      // In ALL those cases we must NOT overwrite local data.
-      if (!cloudWords || cloudWords.length === 0) {
+      // empty sheet (0 words), or malformed response.
+      // In ALL those cases we must NOT touch local data.
+      if (!cloudResult || cloudResult.words.length === 0) {
+        syncInProgressRef.current = false;
         setSyncStatus(trigger === 'manual' ? 'error' : 'idle');
         return;
       }
 
-      // Cloud returned real data — safe to overwrite local store
-      setWords(cloudWords);
+      // ── SAFE MERGE: cloud-first, preserve local-only additions ────────────
+      // Read the CURRENT LocalStorage (not stale React state) so we catch any
+      // words added while the fetch was in flight.
+      const currentLocal = getWords();
+      const merged = mergeVocabWords(cloudResult.words, currentLocal);
+
+      // Persist the cloud revision so subsequent POSTs carry the correct
+      // expectedRevision for the backend CAS check.
+      saveVocabRevision(cloudResult.revision);
+
+      // Now it is safe to wipe + rewrite LocalStorage with the merged result.
+      if (hardClear) {
+        clearWords();
+      }
+
+      // Update React state. The push effect is still suppressed by the guard
+      // so this setWords() won't queue a cloud push immediately.
+      setWords(merged);
+
+      // Lift the guard — future word changes will push normally.
+      syncInProgressRef.current = false;
+
       setSyncStatus('ok');
 
       // Reset the "ok" indicator after 3 s so it doesn't linger
       setTimeout(() => setSyncStatus('idle'), 3000);
     } catch {
+      syncInProgressRef.current = false;
       setSyncStatus('error');
       setTimeout(() => setSyncStatus('idle'), 4000);
     }
