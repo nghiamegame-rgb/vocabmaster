@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { playAudio } from '../utils/audio';
 import { isDueForReview } from '../hooks/useVocabStore';
+import { shuffle, buildListeningRound } from '../utils/wordSelection';
 
 /* ------------------------------------------------------------------ */
 /* Constants — mirrored from Vocabulary.jsx                             */
@@ -38,49 +39,6 @@ const LEVEL_BG = {
 /* ------------------------------------------------------------------ */
 /* Helpers                                                              */
 /* ------------------------------------------------------------------ */
-
-/** Fisher-Yates in-place shuffle, returns new array */
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-/**
- * Pick the most "due" word from the pool.
- * Priority: lowest level first, then lowest streak first.
- * Excludes previousId to prevent back-to-back repetition.
- */
-function pickDueWord(pool, previousId) {
-  // Exclude the word that was just shown
-  const candidates = previousId
-    ? pool.filter(w => w.id !== previousId)
-    : pool;
-
-  if (candidates.length === 0) return pool[0] ?? null; // fallback: only 1 word in pool
-
-  return [...candidates].sort((a, b) => {
-    if (a.level !== b.level) return a.level - b.level;
-    return (a.currentStreak ?? 0) - (b.currentStreak ?? 0);
-  })[0];
-}
-
-/**
- * Build one round from the filtered pool.
- * Returns { correct, cards } or null if pool is too small.
- */
-function buildRound(pool, previousId) {
-  if (pool.length < 4) return null;
-
-  const correct = pickDueWord(pool, previousId);
-  const others  = shuffle(pool.filter(w => w.id !== correct.id)).slice(0, 3);
-  const cards   = shuffle([correct, ...others]);
-
-  return { correct, cards };
-}
 
 /** Resolve image URL for a word */
 function getImageUrl(word) {
@@ -296,7 +254,7 @@ export default function ListeningReview({ words, updateWordLevel }) {
   /* ── Build a new round from the current filteredPool ── */
   const startNewRound = useCallback((pool, prevId) => {
     if (pool.length < 4) return;
-    const r = buildRound(pool, prevId);
+    const r = buildListeningRound(pool, prevId);
     if (!r) return;
 
     setRound(r);

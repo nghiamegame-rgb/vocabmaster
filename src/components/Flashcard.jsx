@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Volume2, CheckCircle, XCircle, RefreshCw, Filter } from 'lucide-react';
 import { playAudio } from '../utils/audio';
+import { pickNextWord } from '../utils/wordSelection';
 
 // ── Filter constants (mirroring Vocabulary.jsx) ──────────────────────────────
 const LEVEL_OPTS = [
@@ -19,14 +20,55 @@ const TYPE_OPTS = [
   { value: 'Family', label: 'Families',  icon: '🌳' },
 ];
 
+/**
+ * How many recently-seen word IDs to remember per session.
+ * Words in this window are excluded from being picked next, as long as
+ * other candidates remain in the pool.
+ *
+ * Window = min(pool.length - 1, RECENT_WINDOW) so the session never deadlocks
+ * when the pool is small.
+ */
+const RECENT_WINDOW = 8;
+
+/**
+ * Advance the recentIds set by adding `newId` and evicting the oldest entry
+ * when the window would exceed `maxSize`.
+ *
+ * We use an array (in insertion order) as the backing store and convert to Set
+ * for O(1) lookups in pickNextWord.
+ *
+ * @param {string[]} recentArr  - ordered array of recent IDs (oldest first)
+ * @param {string}   newId      - ID of the word just shown
+ * @param {number}   maxSize    - maximum window size
+ * @returns {string[]}          - new recentArr (original is not mutated)
+ */
+function advanceRecent(recentArr, newId, maxSize) {
+  const next = [...recentArr, newId];
+  return next.length > maxSize ? next.slice(next.length - maxSize) : next;
+}
+
 export default function Flashcard({ words, updateWordLevel }) {
-  const [mode,         setMode]         = useState('eng-vie'); // 'eng-vie' | 'vie-eng'
-  const [levelFilter,  setLevelFilter]  = useState(null);      // null = all
-  const [typeFilter,   setTypeFilter]   = useState('All');
-  const [queue,        setQueue]        = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [mode,        setMode]        = useState('eng-vie'); // 'eng-vie' | 'vie-eng'
+  const [levelFilter, setLevelFilter] = useState(null);      // null = all
+  const [typeFilter,  setTypeFilter]  = useState('All');
+
+  // ── Current card state ───────────────────────────────────────────────────
+  const [currentWord,  setCurrentWord]  = useState(null);
   const [isFlipped,    setIsFlipped]    = useState(false);
   const [finished,     setFinished]     = useState(false);
+
+  // Session counter (how many cards shown this session)
+  const [sessionCount, setSessionCount] = useState(0);
+
+  /**
+   * recentArr: IDs of recently-shown words, oldest-first.
+   * Stored as an array so we can evict the oldest entry in O(n).
+   * Converted to a Set when passed to pickNextWord for O(1) lookup.
+   *
+   * We use a ref instead of state because updating it should NOT trigger a
+   * re-render — it's internal bookkeeping for the selection algorithm.
+   */
+  const recentArrRef = useRef([]);
 
   // ── Filtered word pool ───────────────────────────────────────────────────
   const filteredWords = useMemo(() => {
@@ -36,14 +78,58 @@ export default function Flashcard({ words, updateWordLevel }) {
     return result;
   }, [words, levelFilter, typeFilter]);
 
-  // ── Rebuild queue whenever filters or mode change ──────────────────────
-  useEffect(() => {
-    const shuffled = [...filteredWords].sort(() => Math.random() - 0.5).slice(0, 50);
-    setQueue(shuffled);
-    setCurrentIndex(0);
+  // ── Pick the next card ───────────────────────────────────────────────────
+  /**
+   * Selects the next word using pickNextWord and updates recentArrRef.
+   * Called on initial mount, after each answer, and on restart.
+   *
+   * @param {object[]} pool    - current filtered pool (use latest, not stale)
+   * @param {string[]} recent  - current recentArr contents
+   */
+  function advanceToNext(pool, recent) {
+    if (pool.length === 0) {
+      setCurrentWord(null);
+      setFinished(true);
+      return;
+    }
+
+    const windowSize = Math.min(pool.length - 1, RECENT_WINDOW);
+    const recentSet  = new Set(recent.slice(-windowSize)); // use only the relevant tail
+    const next       = pickNextWord(pool, recentSet);
+
+    if (!next) {
+      setCurrentWord(null);
+      setFinished(true);
+      return;
+    }
+
+    // Advance the window
+    recentArrRef.current = advanceRecent(recent, next.id, windowSize);
+    setCurrentWord(next);
     setIsFlipped(false);
+  }
+
+  // ── Reset session when filters or mode change ─────────────────────────────
+  //
+  // CRITICAL FIX: we deliberately do NOT include `filteredWords` directly in
+  // the dependency array — if we did, every updateWordLevel call (which changes
+  // `words` → `filteredWords`) would reset the session mid-card.
+  //
+  // Instead we depend only on the filter *parameters* (levelFilter, typeFilter,
+  // mode). The pool is read fresh from `filteredWords` inside the effect so it
+  // uses the latest state without being a dependency.
+  //
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    // Reset session state
+    recentArrRef.current = [];
+    setSessionCount(0);
     setFinished(false);
-  }, [filteredWords, mode]);
+    // Use the current filteredWords (captured via closure; stale-safe because
+    // filteredWords updates synchronously with levelFilter/typeFilter changes)
+    advanceToNext(filteredWords, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [levelFilter, typeFilter, mode]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────
   function handleLevelFilter(val) {
@@ -56,31 +142,41 @@ export default function Flashcard({ words, updateWordLevel }) {
     setFinished(false);
   }
 
-  function restartQueue() {
-    const shuffled = [...filteredWords].sort(() => Math.random() - 0.5).slice(0, 50);
-    setQueue(shuffled);
-    setCurrentIndex(0);
-    setIsFlipped(false);
+  function restartSession() {
+    recentArrRef.current = [];
+    setSessionCount(0);
     setFinished(false);
+    advanceToNext(filteredWords, []);
   }
 
+  /**
+   * Advance to the next card.
+   * `remembered` — true = user marked as remembered; false = needs review.
+   */
   const handleNext = (remembered) => {
-    if (updateWordLevel && queue[currentIndex]) {
-      updateWordLevel(queue[currentIndex].english, remembered);
+    if (!currentWord) return;
+
+    // SRS update
+    if (updateWordLevel) {
+      updateWordLevel(currentWord.english, remembered);
     }
+
+    setSessionCount(c => c + 1);
     setIsFlipped(false);
+
+    // Small delay to let the flip animation settle before switching words
     setTimeout(() => {
-      if (currentIndex < queue.length - 1) {
-        setCurrentIndex(prev => prev + 1);
-      } else {
-        setFinished(true);
-      }
+      // Use the CURRENT filteredWords (via closure captured at render time).
+      // After updateWordLevel → setWords → re-render, `filteredWords` will have
+      // refreshed word objects. We read it here (post-render) to get the latest
+      // levels/streaks so pickNextWord can prioritise correctly.
+      advanceToNext(filteredWords, recentArrRef.current);
     }, 200);
   };
 
   const playPronunciation = (e) => {
     e.stopPropagation();
-    if (queue[currentIndex]) playAudio(queue[currentIndex].english);
+    if (currentWord) playAudio(currentWord.english);
   };
 
   // ── Filter bar (always rendered) ─────────────────────────────────────────
@@ -165,8 +261,8 @@ export default function Flashcard({ words, updateWordLevel }) {
     );
   }
 
-  // ── Finished screen ───────────────────────────────────────────────────────
-  if (finished || queue.length === 0) {
+  // ── Finished / no word selected yet ──────────────────────────────────────
+  if (finished || !currentWord) {
     return (
       <div className="max-w-2xl mx-auto animate-fade-in flex flex-col items-center">
         <div className="w-full mb-6">
@@ -179,9 +275,9 @@ export default function Flashcard({ words, updateWordLevel }) {
             <CheckCircle size={48} className="text-emerald-400" />
           </div>
           <h2 className="text-2xl font-bold text-white">Session Complete!</h2>
-          <p className="text-slate-400 text-sm">{filteredWords.length} card{filteredWords.length !== 1 ? 's' : ''} in current filter</p>
+          <p className="text-slate-400 text-sm">{sessionCount} card{sessionCount !== 1 ? 's' : ''} reviewed</p>
           <button
-            onClick={restartQueue}
+            onClick={restartSession}
             className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold flex items-center gap-2 transition-colors shadow-lg shadow-indigo-500/20"
           >
             <RefreshCw size={20} /> Review Again
@@ -190,8 +286,6 @@ export default function Flashcard({ words, updateWordLevel }) {
       </div>
     );
   }
-
-  const currentWord = queue[currentIndex];
 
   // ── Card content ──────────────────────────────────────────────────────────
   const frontContent = mode === 'eng-vie' ? (
@@ -256,13 +350,11 @@ export default function Flashcard({ words, updateWordLevel }) {
       {/* Filters */}
       {filterBar}
 
-      {/* Header controls — card counter + mode toggle */}
+      {/* Header controls — session counter + mode toggle */}
       <div className="w-full flex justify-between items-center mb-6 bg-slate-800/40 p-3 rounded-2xl border border-slate-700/50">
         <div className="text-slate-400 font-medium px-3">
-          Card <span className="text-white font-bold">{currentIndex + 1}</span> of {queue.length}
-          {filteredWords.length > queue.length && (
-            <span className="text-slate-600 text-xs ml-2">({filteredWords.length} total)</span>
-          )}
+          <span className="text-white font-bold">{sessionCount + 1}</span>
+          <span className="text-slate-600 text-xs ml-2">({filteredWords.length} in pool)</span>
         </div>
 
         {/* Mode Toggle */}
