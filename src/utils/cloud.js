@@ -1,13 +1,13 @@
 /**
  * cloud.js — Google Apps Script webhook integration
  *
- * Sheet layout (managed by google-apps-script.js):
- *   Row 1  → headers: id | english | vietnamese | imageUrl | wordType | level | currentStreak | createdAt
- *   Row 2+ → one vocabulary word per row  (no more single-cell JSON blob)
+ * Protocol 2 (deployed backend):
+ *   GET  → { ok: true, words: [...], revision: N, stats: {...} }
+ *   POST → body: { words: [...], expectedRevision: N }
+ *          response opaque (no-cors), fire-and-forget.
  *
- * Two operations:
- *   • pushToCloud(words)  — POST the full words array; Apps Script rewrites all rows.
- *   • fetchFromCloud()    — GET; Apps Script returns { data: [...] } built from sheet rows.
+ * Backward-compatible with earlier deployments that returned:
+ *   { data: [...] }  or a bare array.
  *
  * ─── CORS behaviour with Google Apps Script ──────────────────────────────────
  *
@@ -46,24 +46,25 @@ function isConfigured() {
 /**
  * POST the full words array to Google Sheets.
  *
- * Apps Script will clear all existing data rows and rewrite them one-per-row,
- * so the sheet always mirrors the local state exactly.
+ * Protocol 2: body is { words: [...], expectedRevision: N } so the backend
+ * can perform CAS validation before writing.
  *
  * Uses mode:'no-cors' (required for Apps Script POST — see header comment).
  * The response is opaque; absence of a network exception = success.
  *
  * @param {object[]} words
+ * @param {number}   [expectedRevision=0]  last revision received from cloud
  * @returns {Promise<boolean>} true if the request was dispatched without error
  */
-export async function pushToCloud(words) {
+export async function pushToCloud(words, expectedRevision = 0) {
   if (!isConfigured()) return false;
   try {
     await fetch(WEBHOOK_URL, {
       method: 'POST',
-      mode:   'no-cors',          // ← CRITICAL for Google Apps Script POST
-      body:   JSON.stringify(words), // bare array — doPost reads e.postData.contents
-      // No Content-Type header: no-cors strips custom headers anyway, and
-      // Apps Script reads the raw body regardless of content-type.
+      mode:   'no-cors',   // ← CRITICAL for Google Apps Script POST
+      // Wrap in protocol 2 envelope: { words, expectedRevision }.
+      // no-cors strips custom headers, so body is the only data channel.
+      body:   JSON.stringify({ words, expectedRevision: Number(expectedRevision) || 0 }),
     });
     // Response is opaque with no-cors — treat no-throw as success
     return true;
@@ -76,14 +77,19 @@ export async function pushToCloud(words) {
 /**
  * GET the words array from Google Sheets.
  *
- * Apps Script returns { data: [ ...wordObjects ] } built from the sheet rows.
+ * Protocol 2 (deployed) returns:
+ *   { ok: true, words: [...], revision: N, stats: {...} }
+ *
+ * Also accepts older deployment shapes for backward-compatibility:
+ *   { data: [...] }  or a bare JSON array.
+ *
  * Returns null (not []) when there is no usable data, so the caller can
  * distinguish "cloud is empty / broken" from "successfully fetched 0 words"
  * and avoid accidentally overwriting local data with an empty list.
  *
- * @returns {Promise<object[] | null>}
- *   - Array of word objects (length >= 1) on success
- *   - null if unconfigured, network error, malformed response, or 0 rows
+ * @returns {Promise<{ words: object[], revision: number, stats: object|null } | null>}
+ *   - Result object on success (words.length >= 1)
+ *   - null if unconfigured, network error, malformed response, or 0 words
  */
 export async function fetchFromCloud() {
   if (!isConfigured()) return null;
@@ -103,19 +109,23 @@ export async function fetchFromCloud() {
 
     const json = await res.json();
 
-    // Apps Script returns { data: [...] }; also accept a bare array for
-    // backwards-compatibility with any old deployment that returned one.
-    const rows = Array.isArray(json?.data)
-      ? json.data
-      : Array.isArray(json)
-        ? json
-        : null;
+    // ── Word-list field resolution (protocol 2 first, then legacy) ──────────
+    //  Protocol 2 : { ok, words: [...], revision, stats }
+    //  Legacy v1   : { data: [...] }
+    //  Very old    : bare array
+    const rows = Array.isArray(json?.words)   // ← protocol 2  (primary)
+      ? json.words
+      : Array.isArray(json?.data)             // ← legacy { data: [...] }
+        ? json.data
+        : Array.isArray(json)                 // ← very old bare array
+          ? json
+          : null;
 
     // Safety guard: never overwrite local words with an empty list
     if (!rows || rows.length === 0) return null;
 
     // Normalise fields so the app never crashes on unexpected cloud data
-    return rows
+    const words = rows
       .map(w => ({
         id:            String(w.id || (Date.now() + Math.random())),
         english:       (w.english      ?? '').trim(),
@@ -127,6 +137,14 @@ export async function fetchFromCloud() {
         createdAt:     Number(w.createdAt)      || Date.now(),
       }))
       .filter(w => w.english); // drop any blank rows from the sheet
+
+    if (words.length === 0) return null;
+
+    return {
+      words,
+      revision: Number(json?.revision) || 0,   // protocol 2 CAS counter
+      stats:    json?.stats ?? null,            // protocol 2 aggregate stats (informational)
+    };
 
   } catch {
     return null;
