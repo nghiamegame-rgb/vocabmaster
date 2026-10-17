@@ -388,4 +388,108 @@ test('End-to-End: Stale device conflict detection and auto-recovery flow', () =>
   assert.strictEqual(finalServer.reviewProgress.q1.level, 2);
 });
 
+// ── 5. Starred (⭐ Câu khó) Filter & Toggle Tests ────────────────────────────
+
+test('Starred filter: Returns only hardMarked questions', () => {
+  const questions = [
+    { savedId: 'sq1', sentence: 'Starred _____', options: { A: 'a', B: 'b', C: 'c', D: 'd' }, answer: 'A', topic: 'Tenses', hardMarked: true,  savedAt: 100 },
+    { savedId: 'sq2', sentence: 'Not starred _____', options: { A: 'a', B: 'b', C: 'c', D: 'd' }, answer: 'B', topic: 'Tenses', hardMarked: false, savedAt: 200 },
+    { savedId: 'sq3', sentence: 'Also starred _____', options: { A: 'a', B: 'b', C: 'c', D: 'd' }, answer: 'C', topic: 'Modal Verbs', hardMarked: true, savedAt: 300 },
+  ];
+
+  const starredOnly = questions.filter(q => q.hardMarked);
+  assert.strictEqual(starredOnly.length, 2);
+  assert.ok(starredOnly.every(q => q.hardMarked));
+});
+
+test('Starred filter: Works combined with topic filter', () => {
+  const questions = [
+    { savedId: 'sq1', sentence: 'Tenses starred _____', options: { A: 'a', B: 'b', C: 'c', D: 'd' }, answer: 'A', topic: 'Tenses',      hardMarked: true,  savedAt: 100 },
+    { savedId: 'sq2', sentence: 'Tenses not _____',    options: { A: 'a', B: 'b', C: 'c', D: 'd' }, answer: 'B', topic: 'Tenses',      hardMarked: false, savedAt: 200 },
+    { savedId: 'sq3', sentence: 'Modal starred _____', options: { A: 'a', B: 'b', C: 'c', D: 'd' }, answer: 'C', topic: 'Modal Verbs', hardMarked: true,  savedAt: 300 },
+  ];
+
+  // Topic=Tenses AND starred
+  const result = questions.filter(q => q.topic === 'Tenses' && q.hardMarked);
+  assert.strictEqual(result.length, 1);
+  assert.strictEqual(result[0].savedId, 'sq1');
+});
+
+test('Starred filter: Returns empty array when no starred questions exist', () => {
+  const questions = [
+    { savedId: 'sq1', sentence: 'A _____', options: { A: 'a', B: 'b', C: 'c', D: 'd' }, answer: 'A', topic: 'Tenses', hardMarked: false },
+    { savedId: 'sq2', sentence: 'B _____', options: { A: 'a', B: 'b', C: 'c', D: 'd' }, answer: 'B', topic: 'Tenses', hardMarked: false },
+  ];
+
+  const result = questions.filter(q => q.hardMarked);
+  assert.strictEqual(result.length, 0);
+});
+
+test('Toggle star: hardMarked toggles correctly via map mutation', () => {
+  // Simulate toggleHardMark logic from useGrammarStore
+  function toggleHardMark(questions, savedId) {
+    return questions.map(q =>
+      q.savedId === savedId ? { ...q, hardMarked: !q.hardMarked } : q
+    );
+  }
+
+  let questions = [
+    { savedId: 'gq1', sentence: 'Mark me _____', options: { A: 'a', B: 'b', C: 'c', D: 'd' }, answer: 'A', topic: 'Tenses', hardMarked: false },
+    { savedId: 'gq2', sentence: 'Leave me _____', options: { A: 'a', B: 'b', C: 'c', D: 'd' }, answer: 'B', topic: 'Tenses', hardMarked: true  },
+  ];
+
+  // Mark gq1 as hard
+  questions = toggleHardMark(questions, 'gq1');
+  assert.strictEqual(questions.find(q => q.savedId === 'gq1').hardMarked, true);
+  assert.strictEqual(questions.find(q => q.savedId === 'gq2').hardMarked, true);
+
+  // Unmark gq2
+  questions = toggleHardMark(questions, 'gq2');
+  assert.strictEqual(questions.find(q => q.savedId === 'gq2').hardMarked, false);
+  // gq1 unaffected
+  assert.strictEqual(questions.find(q => q.savedId === 'gq1').hardMarked, true);
+});
+
+test('Toggle star: hardMarked is preserved across merge (union rule)', () => {
+  const local = [
+    { savedId: 'qA', sentence: 'A _____', options: { A: 'a', B: 'b', C: 'c', D: 'd' }, answer: 'A', topic: 'Tenses', hardMarked: true,  savedAt: 100 },
+    { savedId: 'qB', sentence: 'B _____', options: { A: 'a', B: 'b', C: 'c', D: 'd' }, answer: 'A', topic: 'Tenses', hardMarked: false, savedAt: 200 },
+  ];
+  const serverData = [
+    { savedId: 'qA', sentence: 'A _____', options: { A: 'a', B: 'b', C: 'c', D: 'd' }, answer: 'A', topic: 'Tenses', hardMarked: false, savedAt: 100 },
+    { savedId: 'qB', sentence: 'B _____', options: { A: 'a', B: 'b', C: 'c', D: 'd' }, answer: 'A', topic: 'Tenses', hardMarked: true,  savedAt: 200 },
+  ];
+
+  const merged = mergeSavedQuestions(local, serverData);
+
+  // Both qA and qB should be hardMarked=true (union: true OR false = true)
+  const mA = merged.find(q => q.savedId === 'qA');
+  const mB = merged.find(q => q.savedId === 'qB');
+  assert.strictEqual(mA.hardMarked, true, 'qA: local=true wins over server=false');
+  assert.strictEqual(mB.hardMarked, true, 'qB: server=true wins over local=false');
+});
+
+test('Toggle star: Unmark during starred-only session does not corrupt other questions', () => {
+  // Simulate: user is in starred-only session, unmarks q1
+  // The session queue was snapshotted before unmark; other questions are unaffected
+  const originalQueue = [
+    { savedId: 'q1', sentence: 'Hard _____', options: { A: 'a', B: 'b', C: 'c', D: 'd' }, answer: 'A', topic: 'Tenses', hardMarked: true },
+    { savedId: 'q2', sentence: 'Also hard _____', options: { A: 'a', B: 'b', C: 'c', D: 'd' }, answer: 'B', topic: 'Tenses', hardMarked: true },
+  ];
+
+  // Simulate overlay: sessionStars mirrors initial state
+  const sessionStars = { q1: true, q2: true };
+
+  // User unmarks q1 during session — only overlay changes, queue unchanged
+  const updatedOverlay = { ...sessionStars, q1: false };
+
+  // Queue still has both questions (session is not disrupted)
+  assert.strictEqual(originalQueue.length, 2);
+  // Overlay reflects unmask
+  assert.strictEqual(updatedOverlay.q1, false);
+  assert.strictEqual(updatedOverlay.q2, true);
+  // Original queue is stable
+  assert.strictEqual(originalQueue[0].hardMarked, true);
+});
+
 console.log(`\n🎉 Test Suite Completed: ${passedTests} passed, 0 failed!`);

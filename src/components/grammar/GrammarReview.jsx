@@ -12,16 +12,20 @@ const OPTION_KEYS = ['A', 'B', 'C', 'D'];
  * GrammarReview — Spaced repetition review for saved questions.
  * Answers are hidden until user selects an option.
  * Tracks review level independently (L1–L5, separate from Vocabulary levels).
+ * Supports filtering by grammar topic and by starred (⭐ Câu khó) status.
+ * Allows toggling star marks on each question during an active session.
  */
 export default function GrammarReview({
   savedQuestions,
   reviewProgress,
   onRecordReview,
   onAddToVocab,
+  onToggleHard,
 }) {
   const [mode,        setMode]        = useState('select'); // 'select'|'session'|'done'
   const [reviewMode,  setReviewMode]  = useState('due');    // 'due'|'wrong'|'all'
   const [topicFilter, setTopicFilter] = useState('All');    // 'All' | topic key
+  const [starredOnly, setStarredOnly] = useState(false);    // ⭐ Câu khó filter
   const [queue,       setQueue]       = useState([]);
   const [current,     setCurrent]     = useState(0);
   const [answers,     setAnswers]     = useState({});
@@ -29,28 +33,38 @@ export default function GrammarReview({
   const [showDetail,  setShowDetail]  = useState({});       // { [idx]: bool }
   const [vocabNotice,  setVocabNotice]  = useState({});     // { [`${idx}_${widx}`]: 'added'|'duplicate' }
   const [sessionResult, setSessionResult] = useState(null);
+  // Track in-session star state separately so toggling doesn't remove card from view mid-session
+  const [sessionStars, setSessionStars] = useState({});    // { [savedId]: bool } — overlays for session
 
   // ── Compute available questions ───────────────────────────────────────────
-  // Apply topic filter first, then derive due/wrong subsets from the filtered pool
+  // Apply topic filter, then starred filter, then derive due/wrong subsets
   const topicFiltered = useMemo(() =>
     topicFilter === 'All'
       ? savedQuestions
       : savedQuestions.filter(q => q.topic === topicFilter),
     [savedQuestions, topicFilter]
   );
+
+  const baseFiltered = useMemo(() =>
+    starredOnly
+      ? topicFiltered.filter(q => q.hardMarked)
+      : topicFiltered,
+    [topicFiltered, starredOnly]
+  );
+
   const dueQuestions   = useMemo(() =>
-    topicFiltered.filter(q => isGrammarDueForReview(reviewProgress[q.savedId])),
-    [topicFiltered, reviewProgress]
+    baseFiltered.filter(q => isGrammarDueForReview(reviewProgress[q.savedId])),
+    [baseFiltered, reviewProgress]
   );
   const wrongQuestions = useMemo(() =>
-    topicFiltered.filter(q => (reviewProgress[q.savedId]?.wrongCount ?? 0) > 0),
-    [topicFiltered, reviewProgress]
+    baseFiltered.filter(q => (reviewProgress[q.savedId]?.wrongCount ?? 0) > 0),
+    [baseFiltered, reviewProgress]
   );
 
   function getQueue() {
     if (reviewMode === 'due')   return dueQuestions;
     if (reviewMode === 'wrong') return wrongQuestions;
-    return topicFiltered;
+    return baseFiltered;
   }
 
   function startSession() {
@@ -65,6 +79,12 @@ export default function GrammarReview({
     setShowDetail({});
     setVocabNotice({});
     setSessionResult(null);
+    // Seed session star overlay from current hardMarked values
+    const stars = {};
+    for (const item of shuffled) {
+      stars[item.savedId] = Boolean(item.hardMarked);
+    }
+    setSessionStars(stars);
     setMode('session');
   }
 
@@ -76,6 +96,13 @@ export default function GrammarReview({
     setAnswers(prev => ({ ...prev, [idx]: option }));
     setShowAnswer(prev => ({ ...prev, [idx]: true }));
     onRecordReview(q.savedId, correct);
+  }
+
+  // ── Toggle star during session ────────────────────────────────────────────
+  function handleSessionToggleStar(savedId) {
+    if (!onToggleHard) return;
+    onToggleHard(savedId);
+    setSessionStars(prev => ({ ...prev, [savedId]: !prev[savedId] }));
   }
 
   // ── Add word to Vocab ────────────────────────────────────────────────────
@@ -111,8 +138,13 @@ export default function GrammarReview({
     const stats = [
       { label: '⚡ Đến hạn ôn',    count: dueQuestions.length,   key: 'due',   color: 'from-purple-600 to-indigo-600' },
       { label: '❌ Đã sai',         count: wrongQuestions.length, key: 'wrong', color: 'from-rose-600 to-pink-600' },
-      { label: '📚 Trong chủ đề',  count: topicFiltered.length,  key: 'all',   color: 'from-slate-600 to-slate-700' },
+      { label: '📚 Trong chủ đề',  count: baseFiltered.length,   key: 'all',   color: 'from-slate-600 to-slate-700' },
     ];
+
+    // Determine empty state reason
+    const noQuestionsAtAll = savedQuestions.length === 0;
+    const noStarredMatch   = !noQuestionsAtAll && starredOnly && baseFiltered.length === 0;
+    const noTopicMatch     = !noQuestionsAtAll && !starredOnly && topicFiltered.length === 0;
 
     return (
       <div className="space-y-6 animate-fade-in">
@@ -128,10 +160,12 @@ export default function GrammarReview({
           </div>
         </div>
 
-        {/* Topic filter */}
+        {/* Filters row */}
         {savedQuestions.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
             <Filter size={14} className="text-slate-500 shrink-0" />
+
+            {/* Topic filter */}
             <select
               value={topicFilter}
               onChange={e => setTopicFilter(e.target.value)}
@@ -148,9 +182,26 @@ export default function GrammarReview({
                 <option value="Mixed">{getTopicLabel('Mixed')} ({savedQuestions.filter(q => q.topic === 'Mixed').length})</option>
               )}
             </select>
-            {topicFilter !== 'All' && (
+
+            {/* Starred filter toggle */}
+            <button
+              id="review-starred-filter-btn"
+              onClick={() => setStarredOnly(v => !v)}
+              title={starredOnly ? 'Bỏ lọc câu khó' : 'Chỉ xem câu khó (⭐)'}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 border ${
+                starredOnly
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                  : 'bg-slate-800 text-slate-400 hover:text-amber-300 hover:border-amber-500/30 border-slate-700'
+              }`}
+            >
+              <Star size={12} fill={starredOnly ? 'currentColor' : 'none'} />
+              Câu khó
+            </button>
+
+            {/* Clear filters */}
+            {(topicFilter !== 'All' || starredOnly) && (
               <button
-                onClick={() => setTopicFilter('All')}
+                onClick={() => { setTopicFilter('All'); setStarredOnly(false); }}
                 className="text-xs text-slate-500 hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-slate-800"
               >
                 ✕ Xoá lọc
@@ -159,13 +210,27 @@ export default function GrammarReview({
           </div>
         )}
 
-        {savedQuestions.length === 0 ? (
+        {noQuestionsAtAll ? (
           <div className="text-center py-16">
             <Brain size={48} className="text-slate-700 mx-auto mb-4" />
             <h3 className="text-slate-400 font-medium mb-2">Chưa có câu hỏi nào để ôn</h3>
             <p className="text-slate-600 text-sm">Lưu câu hỏi trong khi luyện tập để tạo danh sách ôn tập.</p>
           </div>
-        ) : topicFiltered.length === 0 ? (
+        ) : noStarredMatch ? (
+          <div className="text-center py-16">
+            <Star size={40} className="text-slate-700 mx-auto mb-4" />
+            <h3 className="text-slate-400 font-medium mb-2">Không có câu khó nào{topicFilter !== 'All' ? ' cho chủ đề này' : ''}</h3>
+            <p className="text-slate-600 text-sm">
+              Đánh dấu câu hỏi bằng ⭐ trong tab <strong className="text-slate-400">Saved Questions</strong> hoặc trong phiên ôn tập.
+            </p>
+            <button
+              onClick={() => { setStarredOnly(false); setTopicFilter('All'); }}
+              className="mt-4 text-xs text-amber-400 hover:text-amber-300 underline transition-colors"
+            >
+              Xem tất cả câu hỏi
+            </button>
+          </div>
+        ) : noTopicMatch ? (
           <div className="text-center py-16">
             <Filter size={40} className="text-slate-700 mx-auto mb-4" />
             <h3 className="text-slate-400 font-medium mb-2">Không có câu hỏi nào cho chủ đề này</h3>
@@ -220,6 +285,7 @@ export default function GrammarReview({
             >
               <Zap size={18} />
               Bắt đầu ôn tập ({getQueue().length} câu)
+              {starredOnly && <Star size={14} className="text-amber-300" fill="currentColor" />}
             </button>
           </>
         )}
@@ -271,6 +337,8 @@ export default function GrammarReview({
   const userAnswer = answers[current];
   const isCorrect  = isAnswered && userAnswer === q.answer;
   const correctCount = Object.entries(answers).filter(([i, a]) => queue[i]?.answer === a).length;
+  // Use session overlay for star state so it stays stable mid-session
+  const isStarred = sessionStars[q.savedId] ?? Boolean(q.hardMarked);
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -288,12 +356,29 @@ export default function GrammarReview({
 
       {/* Card */}
       <div className="bg-slate-900/80 border border-slate-700/50 rounded-2xl p-6 space-y-5">
-        <div className="flex items-center gap-2">
-          <span className="px-2.5 py-1 rounded-lg bg-purple-600/20 text-purple-300 text-xs font-semibold border border-purple-500/20">
-            {getTopicLabel(q.topic)}
-          </span>
-          {getLevelBadge(q.savedId)}
-          {q.hardMarked && <Star size={14} className="text-amber-400" fill="currentColor" />}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="px-2.5 py-1 rounded-lg bg-purple-600/20 text-purple-300 text-xs font-semibold border border-purple-500/20">
+              {getTopicLabel(q.topic)}
+            </span>
+            {getLevelBadge(q.savedId)}
+          </div>
+
+          {/* Star toggle button — visible during session */}
+          {onToggleHard && (
+            <button
+              id={`review-star-btn-${q.savedId}`}
+              onClick={() => handleSessionToggleStar(q.savedId)}
+              title={isStarred ? 'Bỏ đánh dấu câu khó' : 'Đánh dấu là câu khó (⭐)'}
+              className={`shrink-0 p-1.5 rounded-lg transition-all duration-200 ${
+                isStarred
+                  ? 'text-amber-400 bg-amber-500/10 hover:bg-amber-500/20'
+                  : 'text-slate-600 hover:text-amber-400 hover:bg-amber-500/10'
+              }`}
+            >
+              <Star size={16} fill={isStarred ? 'currentColor' : 'none'} />
+            </button>
+          )}
         </div>
 
         {/* Sentence */}
