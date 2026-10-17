@@ -185,6 +185,7 @@ export default function Grammar({ addWord }) {
             reviewProgress={reviewProgress}
             onRecordReview={recordReview}
             onAddToVocab={handleAddToVocab}
+            onToggleHard={toggleHardMark}
           />
         )}
 
