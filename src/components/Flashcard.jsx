@@ -291,8 +291,12 @@ export default function Flashcard({ words, updateWordLevel }) {
   // ── Card content ──────────────────────────────────────────────────────────
   const frontContent = mode === 'eng-vie' ? (
     <div className="flex flex-col items-center justify-center h-full p-8">
-      <h2 className="text-4xl md:text-5xl font-bold text-white mb-2 text-center">{currentWord.english}</h2>
-      {/* annotation is NOT shown on the front to avoid giving away the answer */}
+      <h2 className="text-4xl md:text-5xl font-bold text-white mb-2 text-center">
+        {currentWord.english}
+        {currentWord.annotation?.trim() && (
+          <span className="ml-2 text-sm md:text-base font-normal text-slate-400">({currentWord.annotation.trim()})</span>
+        )}
+      </h2>
       <button
         onClick={playPronunciation}
         className="mt-6 p-4 rounded-full bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white transition-colors border border-indigo-500/30 shadow-lg"
@@ -334,10 +338,12 @@ export default function Flashcard({ words, updateWordLevel }) {
         />
       )}
       {/* Show english + annotation on the back in vie-eng mode */}
-      <h2 className="text-4xl md:text-5xl font-bold text-indigo-400 text-center mb-1">{currentWord.english}</h2>
-      {currentWord.annotation && (
-        <p className="text-slate-400 text-sm mb-3">({currentWord.annotation})</p>
-      )}
+      <h2 className="text-4xl md:text-5xl font-bold text-indigo-400 text-center mb-1">
+        {currentWord.english}
+        {currentWord.annotation?.trim() && (
+          <span className="ml-2 text-sm md:text-base font-normal text-slate-400">({currentWord.annotation.trim()})</span>
+        )}
+      </h2>
       <p className="text-slate-400 text-sm font-medium px-3 py-1 bg-slate-900/50 rounded-lg border border-slate-700">{currentWord.wordType}</p>
     </div>
   );

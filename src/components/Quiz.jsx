@@ -637,6 +637,17 @@ function optionClass(idx, answered, correctIndex, selected) {
   return 'bg-slate-700/30 border-slate-700 text-slate-500 cursor-not-allowed';
 }
 
+/** Look up display-only notes without changing option or answer text. */
+function QuizAnnotation({ english, words }) {
+  const annotation = words.find(
+    w => w.english.trim().toLowerCase() === (english || '').trim().toLowerCase()
+  )?.annotation;
+
+  return annotation?.trim() ? (
+    <span className="ml-1 text-xs font-normal text-slate-400">({annotation.trim()})</span>
+  ) : null;
+}
+
 /**
  * Play pronunciation using the shared audio utility (Web Speech API → Google TTS).
  * Named wrapper kept so existing call-sites in QuizGame don't need renaming.
@@ -928,7 +939,10 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent" />
               <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
                 <Volume2 size={13} className="text-white/80" />
-                <span className="text-white font-bold text-sm drop-shadow">{q.wordEnglish}</span>
+                <span className="text-white font-bold text-sm drop-shadow">
+                  {q.wordEnglish}
+                  <QuizAnnotation english={q.wordEnglish} words={words} />
+                </span>
               </div>
             </div>
           )}
@@ -950,7 +964,10 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
               <span className="shrink-0 w-8 h-8 rounded-lg bg-black/20 flex items-center justify-center font-bold text-sm">
                 {OPTION_LABELS[idx]}
               </span>
-              <span className="font-medium flex-1">{opt}</span>
+              <span className="font-medium flex-1">
+                {opt}
+                <QuizAnnotation english={opt} words={words} />
+              </span>
               {answered && idx === q.correctIndex && (
                 <CheckCircle size={18} className="ml-auto text-emerald-400 shrink-0" />
               )}
@@ -990,7 +1007,10 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
             <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-2 animate-fade-in">
               <AlertCircle size={14} className="text-amber-400 shrink-0" />
               <span className="text-amber-300 text-sm">
-                Hint: <strong className="text-amber-200">{q.wordEnglish}</strong>
+                Hint: <strong className="text-amber-200">
+                  {q.wordEnglish}
+                  <QuizAnnotation english={q.wordEnglish} words={words} />
+                </strong>
               </span>
             </div>
           )}
@@ -1054,7 +1074,10 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
               }`}>
                 {dictCorrect
                   ? 'Correct! 🎉'
-                  : <>Wrong. The answer is <strong className="text-white">{q.wordEnglish}</strong></>}
+                  : <>Wrong. The answer is <strong className="text-white">
+                      {q.wordEnglish}
+                      <QuizAnnotation english={q.wordEnglish} words={words} />
+                    </strong></>}
               </span>
             </div>
           )}
