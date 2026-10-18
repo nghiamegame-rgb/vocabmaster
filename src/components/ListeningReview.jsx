@@ -123,7 +123,12 @@ function ImageCard({ word, state, onClick, showMeaning, onToggleMeaning, index, 
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-800/80 text-slate-500">
             <span className="text-4xl mb-2">📷</span>
-            <span className="text-xs text-center px-2">{word.english}</span>
+            <span className="text-xs text-center px-2">
+              {word.english}
+              {word.annotation?.trim() && (
+                <span className="ml-1 text-[10px] font-normal text-slate-400">({word.annotation.trim()})</span>
+              )}
+            </span>
           </div>
         )}
 
@@ -543,7 +548,12 @@ export default function ListeningReview({ words, updateWordLevel }) {
                 {/* Show the word as a hint after 4 listens */}
                 {listenCount > 4 && !answered ? (
                   <p className="text-amber-300 font-bold text-lg animate-fade-in">
-                    💡 Hint: <span className="underline underline-offset-4">{round.correct.english}</span>
+                    💡 Hint: <span className="underline underline-offset-4">
+                      {round.correct.english}
+                      {round.correct.annotation?.trim() && (
+                        <span className="ml-1 text-xs font-normal text-slate-400">({round.correct.annotation.trim()})</span>
+                      )}
+                    </span>
                   </p>
                 ) : (
                   <p className="text-white text-lg font-bold">
@@ -605,8 +615,18 @@ export default function ListeningReview({ words, updateWordLevel }) {
               }
             `}>
               {isCorrectAnswer
-                ? <><CheckCircle2 size={18} className="shrink-0" /> Excellent! +1 streak for <span className="underline underline-offset-2 ml-1">{round.correct.english}</span></>
-                : <><XCircle size={18} className="shrink-0" /> Wrong — streak reset. The answer was <span className="font-bold ml-1">{round.correct.english}</span></>
+                ? <><CheckCircle2 size={18} className="shrink-0" /> Excellent! +1 streak for <span className="underline underline-offset-2 ml-1">
+                    {round.correct.english}
+                    {round.correct.annotation?.trim() && (
+                      <span className="ml-1 text-xs font-normal text-slate-400">({round.correct.annotation.trim()})</span>
+                    )}
+                  </span></>
+                : <><XCircle size={18} className="shrink-0" /> Wrong — streak reset. The answer was <span className="font-bold ml-1">
+                    {round.correct.english}
+                    {round.correct.annotation?.trim() && (
+                      <span className="ml-1 text-xs font-normal text-slate-400">({round.correct.annotation.trim()})</span>
+                    )}
+                  </span></>
               }
             </div>
           )}
