@@ -176,6 +176,7 @@ export default function Flashcard({ words, updateWordLevel }) {
 
   const playPronunciation = (e) => {
     e.stopPropagation();
+    // TTS reads only the clean english word, not the annotation
     if (currentWord) playAudio(currentWord.english);
   };
 
@@ -290,10 +291,11 @@ export default function Flashcard({ words, updateWordLevel }) {
   // ── Card content ──────────────────────────────────────────────────────────
   const frontContent = mode === 'eng-vie' ? (
     <div className="flex flex-col items-center justify-center h-full p-8">
-      <h2 className="text-4xl md:text-5xl font-bold text-white mb-8 text-center">{currentWord.english}</h2>
+      <h2 className="text-4xl md:text-5xl font-bold text-white mb-2 text-center">{currentWord.english}</h2>
+      {/* annotation is NOT shown on the front to avoid giving away the answer */}
       <button
         onClick={playPronunciation}
-        className="p-4 rounded-full bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white transition-colors border border-indigo-500/30 shadow-lg"
+        className="mt-6 p-4 rounded-full bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white transition-colors border border-indigo-500/30 shadow-lg"
       >
         <Volume2 size={32} />
       </button>
@@ -331,7 +333,11 @@ export default function Flashcard({ words, updateWordLevel }) {
           className="w-full max-h-56 object-cover rounded-xl mb-6 shadow-lg border border-slate-700"
         />
       )}
-      <h2 className="text-4xl md:text-5xl font-bold text-indigo-400 text-center mb-3">{currentWord.english}</h2>
+      {/* Show english + annotation on the back in vie-eng mode */}
+      <h2 className="text-4xl md:text-5xl font-bold text-indigo-400 text-center mb-1">{currentWord.english}</h2>
+      {currentWord.annotation && (
+        <p className="text-slate-400 text-sm mb-3">({currentWord.annotation})</p>
+      )}
       <p className="text-slate-400 text-sm font-medium px-3 py-1 bg-slate-900/50 rounded-lg border border-slate-700">{currentWord.wordType}</p>
     </div>
   );
