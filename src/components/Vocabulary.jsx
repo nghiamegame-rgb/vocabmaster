@@ -37,6 +37,7 @@ function WordCard({ word, onDelete, onUpdate, selected, onToggleSelect }) {
   const [editing,    setEditing]    = useState(false);
   const [editFields, setEditFields] = useState({
     english:    word.english,
+    annotation: word.annotation || '',
     vietnamese: word.vietnamese,
     imageUrl:   word.imageUrl || '',
     wordType:   word.wordType || 'Word',
@@ -49,6 +50,7 @@ function WordCard({ word, onDelete, onUpdate, selected, onToggleSelect }) {
   const isDue    = isDueForReview(word);
 
   function speak() {
+    // TTS reads only the clean english word, not the annotation
     playAudio(word.english);
   }
 
@@ -56,6 +58,7 @@ function WordCard({ word, onDelete, onUpdate, selected, onToggleSelect }) {
     if (!editFields.english.trim() || !editFields.vietnamese.trim()) return;
     onUpdate(word.id, {
       english:    editFields.english.trim(),
+      annotation: editFields.annotation.trim(),
       vietnamese: editFields.vietnamese.trim(),
       imageUrl:   editFields.imageUrl.trim(),
       wordType:   editFields.wordType,
@@ -67,6 +70,7 @@ function WordCard({ word, onDelete, onUpdate, selected, onToggleSelect }) {
   function cancelEdit() {
     setEditFields({
       english:    word.english,
+      annotation: word.annotation || '',
       vietnamese: word.vietnamese,
       imageUrl:   word.imageUrl || '',
       wordType:   word.wordType || 'Word',
@@ -124,6 +128,13 @@ function WordCard({ word, onDelete, onUpdate, selected, onToggleSelect }) {
               className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
             />
             <input
+              id={`edit-annotation-${word.id}`}
+              value={editFields.annotation}
+              onChange={e => setEditFields(f => ({ ...f, annotation: e.target.value }))}
+              placeholder="Từ loại / Ghi chú (adj, v - n, adv…)"
+              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-slate-300 text-xs focus:outline-none focus:border-indigo-500"
+            />
+            <input
               id={`edit-vietnamese-${word.id}`}
               value={editFields.vietnamese}
               onChange={e => setEditFields(f => ({ ...f, vietnamese: e.target.value }))}
@@ -167,7 +178,12 @@ function WordCard({ word, onDelete, onUpdate, selected, onToggleSelect }) {
         ) : (
           <>
             <div className="flex items-start justify-between gap-2 mb-1">
-              <h3 className="text-white font-bold text-lg leading-tight">{word.english}</h3>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-white font-bold text-lg leading-tight">{word.english}</h3>
+                {word.annotation && (
+                  <span className="text-slate-400 text-xs font-medium">({word.annotation})</span>
+                )}
+              </div>
               <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium border ${level.badge}`}>
                 L{word.level} {level.label}
               </span>
@@ -224,6 +240,7 @@ export default function Vocabulary({
   vocabFilter, setVocabFilter,
 }) {
   const [english,     setEnglish]     = useState('');
+  const [annotation,  setAnnotation]  = useState('');
   const [vietnamese,  setVietnamese]  = useState('');
   const [imageUrl,    setImageUrl]    = useState('');
   const [wordType,    setWordType]    = useState('Word');
@@ -244,7 +261,11 @@ export default function Vocabulary({
   const filtered   = searchQuery.trim()
     ? afterType.filter(w => {
         const q = searchQuery.trim().toLowerCase();
-        return w.english.toLowerCase().includes(q) || w.vietnamese.toLowerCase().includes(q);
+        return (
+          w.english.toLowerCase().includes(q) ||
+          w.vietnamese.toLowerCase().includes(q) ||
+          (w.annotation || '').toLowerCase().includes(q)
+        );
       })
     : afterType;
 
@@ -283,12 +304,12 @@ export default function Vocabulary({
       setError('English word and Vietnamese meaning are required.');
       return;
     }
-    const ok = addWord({ english, vietnamese, imageUrl, wordType });
+    const ok = addWord({ english, annotation, vietnamese, imageUrl, wordType });
     if (!ok) {
       setError(`"${english.trim()}" already exists in your vocabulary.`);
       return;
     }
-    setEnglish(''); setVietnamese(''); setImageUrl(''); setWordType('Word');
+    setEnglish(''); setAnnotation(''); setVietnamese(''); setImageUrl(''); setWordType('Word');
     setSuccess('Word added successfully!');
     setTimeout(() => setSuccess(''), 2000);
   }
@@ -407,13 +428,24 @@ export default function Vocabulary({
           </div>
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <input
-            id="input-english"
-            value={english}
-            onChange={e => setEnglish(e.target.value)}
-            placeholder="English word / phrase *"
-            className="bg-slate-700 border border-slate-600 rounded-xl px-4 py-2.5 text-white text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-colors"
-          />
+          {/* Row 1: English + Annotation */}
+          <div className="flex gap-2 sm:col-span-2 lg:col-span-2">
+            <input
+              id="input-english"
+              value={english}
+              onChange={e => setEnglish(e.target.value)}
+              placeholder="English word / phrase *"
+              className="flex-1 bg-slate-700 border border-slate-600 rounded-xl px-4 py-2.5 text-white text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-colors"
+            />
+            <input
+              id="input-annotation"
+              value={annotation}
+              onChange={e => setAnnotation(e.target.value)}
+              placeholder="Từ loại (adj, v…)"
+              title="Từ loại / Ghi chú"
+              className="w-36 bg-slate-700 border border-slate-600 rounded-xl px-3 py-2.5 text-slate-300 text-xs placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+            />
+          </div>
           <input
             id="input-vietnamese"
             value={vietnamese}

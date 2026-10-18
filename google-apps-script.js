@@ -2,7 +2,7 @@
  * VocabMaster — Google Apps Script (paste into Apps Script editor & redeploy)
  *
  * Sheet layout (Sheet1):
- *   Row 1  → headers: id | english | vietnamese | imageUrl | wordType | level | currentStreak | createdAt | lastReviewedDate
+ *   Row 1  → headers: id | english | vietnamese | imageUrl | wordType | level | currentStreak | createdAt | lastReviewedDate | annotation
  *   Row 2+ → one vocabulary word per row
  *
  * Endpoints
@@ -18,17 +18,19 @@
  * ── Column history ───────────────────────────────────────────────────────────
  *  v6 (deployed): 8 columns — id…createdAt
  *  v7 (local ref): 9 columns — adds lastReviewedDate (column index 8)
+ *  v8 (current):  10 columns — adds annotation (column index 9)
  *
- *  The frontend handles the missing column gracefully: if lastReviewedDate is
- *  absent from a GET response row, fetchFromCloud() sets it to undefined and
- *  isDueForReview() treats the word as due (safest default).
+ *  The frontend handles missing columns gracefully: if a column is absent,
+ *  fetchFromCloud() treats it as '' or undefined, and the migration utility
+ *  extracts annotations from the english field as a fallback.
  *
- *  To persist review dates, redeploy this script as a new version.
+ *  To add the annotation column to the sheet, redeploy this script as a
+ *  new version (Deploy → Manage deployments → Create new version).
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 // Column order must match HEADERS exactly.
-var HEADERS = ['id', 'english', 'vietnamese', 'imageUrl', 'wordType', 'level', 'currentStreak', 'createdAt', 'lastReviewedDate'];
+var HEADERS = ['id', 'english', 'vietnamese', 'imageUrl', 'wordType', 'level', 'currentStreak', 'createdAt', 'lastReviewedDate', 'annotation'];
 
 // ─── GET ────────────────────────────────────────────────────────────────────
 
@@ -60,6 +62,7 @@ function doGet() {
           currentStreak:    Number(row[6]) || 0,
           createdAt:        Number(row[7]) || Date.now(),
           lastReviewedDate: Number(row[8]) || null, // col 8: may be empty in v6 sheets
+          annotation:       String(row[9] || '').trim(), // col 9: may be empty in v7 sheets
         };
       });
 
@@ -104,6 +107,7 @@ function doPost(e) {
           w.currentStreak    ?? 0,
           w.createdAt        ?? Date.now(),
           w.lastReviewedDate ?? '', // col 8: empty string if never reviewed
+          w.annotation       ?? '', // col 9: empty string if no annotation
         ];
       });
 

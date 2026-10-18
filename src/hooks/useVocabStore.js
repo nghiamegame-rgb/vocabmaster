@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getWords, saveWords, clearWords, getStats, saveStats } from '../utils/storage';
 import { pushToCloud, fetchFromCloud, verifyPush } from '../utils/cloud';
+import { migrateWordList } from '../utils/annotation';
 
 /**
  * Merge cloud words with local words safely.
@@ -97,7 +98,9 @@ const VERIFY_DELAY_MS = 3000;
  * ─────────────────────────────────────────────────────────────────────────────
  */
 export function useVocabStore() {
-  const [words, setWords] = useState(() => getWords());
+  // Run migration once on first load so existing words get their annotation
+  // field separated from the english field. Idempotent — safe to re-run.
+  const [words, setWords] = useState(() => migrateWordList(getWords()));
   const [stats, setStats] = useState(() => getStats());
 
   // Cloud sync state — exposed so the Navbar Sync button can reflect it
@@ -308,12 +311,13 @@ export function useVocabStore() {
     const newWord = {
       id:            Date.now().toString(),
       english:       wordObj.english.trim(),
+      annotation:    typeof wordObj.annotation === 'string' ? wordObj.annotation.trim() : '',
       vietnamese:    wordObj.vietnamese.trim(),
       imageUrl:      wordObj.imageUrl?.trim() || '',
       wordType:      wordObj.wordType || 'Word',
-      level:         1,
-      currentStreak: 0,
-      createdAt:     Date.now(),
+      level:         wordObj.level         ?? 1,
+      currentStreak: wordObj.currentStreak ?? 0,
+      createdAt:     wordObj.createdAt     ?? Date.now(),
     };
     setWords(prev => [newWord, ...prev]);
     return true;
@@ -324,10 +328,16 @@ export function useVocabStore() {
     setWords(prev => prev.filter(w => w.id !== id));
   }
 
-  /** Update word fields */
+  /** Update word fields (annotation is preserved across updates) */
   function updateWord(id, fields) {
     setWords(prev =>
-      prev.map(w => (w.id === id ? { ...w, ...fields } : w))
+      prev.map(w => {
+        if (w.id !== id) return w;
+        const updated = { ...w, ...fields };
+        // Always ensure annotation field is a string
+        if (typeof updated.annotation !== 'string') updated.annotation = '';
+        return updated;
+      })
     );
   }
 

@@ -26,6 +26,7 @@
  */
 
 import { WEBHOOK_URL } from '../config';
+import { migrateWordList } from './annotation';
 
 // ---------------------------------------------------------------------------
 // Helper
@@ -116,10 +117,11 @@ export async function fetchFromCloud() {
     if (!rows || rows.length === 0) return null;
 
     // Normalise fields so the app never crashes on unexpected cloud data
-    return rows
+    const normalized = rows
       .map(w => ({
         id:            String(w.id || (Date.now() + Math.random())),
         english:       (w.english      ?? '').trim(),
+        annotation:    typeof w.annotation === 'string' ? w.annotation.trim() : undefined, // may be undefined for old sheets
         vietnamese:    (w.vietnamese   ?? '').trim(),
         imageUrl:      (w.imageUrl     ?? '').trim(),
         wordType:      w.wordType      ?? 'Word',
@@ -129,6 +131,10 @@ export async function fetchFromCloud() {
         lastReviewedDate: w.lastReviewedDate ? Number(w.lastReviewedDate) : undefined,
       }))
       .filter(w => w.english); // drop any blank rows from the sheet
+
+    // Run migration so cloud words without the annotation field get it extracted
+    // from any embedded parenthetical in the english field (backward compatibility).
+    return migrateWordList(normalized);
 
   } catch {
     return null;
