@@ -1,307 +1,256 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   getSavedQuestions, saveSavedQuestions,
-  getGrammarStats,   saveGrammarStats,
+  getGrammarStats, saveGrammarStats,
   getReviewProgress, saveReviewProgress,
   getGrammarRevision, saveGrammarRevision,
-  hasGrammarPending, setGrammarPending,
-  isGrammarDueForReview, calcNextReviewAt,
-  GRAMMAR_REVIEW_INTERVALS,
+  getGrammarCloudUrl, hasGrammarPending, setGrammarPending,
+  isGrammarDueForReview, calcNextReviewAt, GRAMMAR_REVIEW_INTERVALS,
 } from '../utils/grammarStorage';
-import { pushGrammarToCloud, fetchGrammarFromCloud, isGrammarCloudConfigured } from '../utils/grammarCloud';
+import { pushGrammarToCloud, fetchGrammarFromCloud } from '../utils/grammarCloud';
 import { mergeSavedQuestions, mergeReviewProgress } from '../utils/grammarSyncMerge';
 
 const PUSH_DEBOUNCE_MS = 2500;
 
-/**
- * Central state hook for the Grammar module with robust cloud synchronization.
- *
- * Guarantees:
- * - Strict server-side Compare-and-Swap (CAS).
- * - Automatic conflict resolution with deterministic 3-way merge.
- * - Local pending changes are preserved during network or server failures.
- * - Both saved question mutations and review progress are synchronized.
- */
 export function useGrammarStore() {
-  const [savedQuestions,  setSavedQuestions]  = useState(() => getSavedQuestions());
-  const [reviewProgress,  setReviewProgress]  = useState(() => getReviewProgress());
-  const [grammarStats,    setGrammarStats]    = useState(() => getGrammarStats());
-  const [syncStatus,      setSyncStatus]      = useState('idle'); // 'idle' | 'syncing' | 'ok' | 'error' | 'conflict'
-  const [hasPending,      setHasPending]      = useState(() => hasGrammarPending());
-  const [cloudConfigured, setCloudConfigured] = useState(() => isGrammarCloudConfigured());
+  const [savedQuestions, setSavedQuestions] = useState(() => getSavedQuestions());
+  const [reviewProgress, setReviewProgress] = useState(() => getReviewProgress());
+  const [grammarStats, setGrammarStats] = useState(() => getGrammarStats());
+  const [syncStatus, setSyncStatus] = useState('syncing');
+  const [hasPending, setHasPending] = useState(() => hasGrammarPending());
+  const [endpoint, setEndpoint] = useState(() => getGrammarCloudUrl());
+  const cloudConfigured = Boolean(endpoint);
 
-  // Refs for tracking latest values in asynchronous callbacks
   const savedQuestionsRef = useRef(savedQuestions);
   const reviewProgressRef = useRef(reviewProgress);
-  const pushTimerRef      = useRef(null);
-  const isSyncingRef      = useRef(false);
+  const pendingRef = useRef(hasPending);
+  const changeVersionRef = useRef(0);
+  const sessionRef = useRef(0);
+  const readyRef = useRef(false);
+  const isSyncingRef = useRef(false);
+  const pushTimerRef = useRef(null);
+  const pushRef = useRef(null);
+  const editsDuringSyncRef = useRef([]);
+  // Only an explicit removal after hydration can authorize an empty write.
+  const emptyDeletionRef = useRef(false);
 
-  useEffect(() => {
-    savedQuestionsRef.current = savedQuestions;
-  }, [savedQuestions]);
+  const persistData = useCallback((questions, review) => {
+    savedQuestionsRef.current = questions;
+    reviewProgressRef.current = review;
+    saveSavedQuestions(questions);
+    saveReviewProgress(review);
+    setSavedQuestions(questions);
+    setReviewProgress(review);
+  }, []);
 
-  useEffect(() => {
-    reviewProgressRef.current = reviewProgress;
-  }, [reviewProgress]);
+  const markPending = useCallback(value => {
+    pendingRef.current = value;
+    setGrammarPending(value);
+    setHasPending(value);
+  }, []);
 
-  // ── Persist locally immediately on any change ─────────────────────────────
-  useEffect(() => {
-    saveSavedQuestions(savedQuestions);
-  }, [savedQuestions]);
+  useEffect(() => { saveGrammarStats(grammarStats); }, [grammarStats]);
 
-  useEffect(() => {
-    saveReviewProgress(reviewProgress);
-  }, [reviewProgress]);
+  const queuePush = useCallback(() => {
+    clearTimeout(pushTimerRef.current);
+    if (readyRef.current && !isSyncingRef.current && pendingRef.current) {
+      pushTimerRef.current = setTimeout(() => pushRef.current(), PUSH_DEBOUNCE_MS);
+    }
+  }, []);
 
-  useEffect(() => {
-    saveGrammarStats(grammarStats);
-  }, [grammarStats]);
-
-  // ── Core Push Function with CAS & Conflict Resolution ──────────────────────
+  // Retain Smart Merge, then replay edits made during the request. This also
+  // preserves clearing notes, unmarking stars, deleting and lowering levels.
+  const mergeCloud = useCallback(cloud => {
+    let data = {
+      questions: mergeSavedQuestions(savedQuestionsRef.current, cloud.savedQuestions),
+      review: mergeReviewProgress(reviewProgressRef.current, cloud.reviewProgress),
+    };
+    for (const edit of editsDuringSyncRef.current) data = edit(data);
+    editsDuringSyncRef.current = [];
+    persistData(data.questions, data.review);
+  }, [persistData]);
 
   const executePush = useCallback(async () => {
-    if (!isGrammarCloudConfigured() || isSyncingRef.current) return false;
-    isSyncingRef.current = true;
-    setSyncStatus('syncing');
-
-    try {
-      const currentQuestions = savedQuestionsRef.current;
-      const currentReview    = reviewProgressRef.current;
-      const baseRev          = getGrammarRevision();
-
-      const result = await pushGrammarToCloud({
-        savedQuestions:   currentQuestions,
-        reviewProgress:   currentReview,
-        expectedRevision: baseRev,
-        confirmEmpty:     currentQuestions.length === 0,
-      });
-
-      if (result.ok) {
-        // Confirmed persistence on server
-        saveGrammarRevision(result.revision);
-        setGrammarPending(false);
-        setHasPending(false);
-        setSyncStatus('ok');
-        setTimeout(() => setSyncStatus('idle'), 3000);
-        isSyncingRef.current = false;
-        return true;
-      }
-
-      if (result.error === 'conflict') {
-        // CAS conflict: server revision != expected revision
-        setSyncStatus('conflict');
-
-        // Automatic Smart Merge
-        const cloudData = await fetchGrammarFromCloud();
-        if (cloudData) {
-          const mergedQ = mergeSavedQuestions(currentQuestions, cloudData.savedQuestions);
-          const mergedR = mergeReviewProgress(currentReview, cloudData.reviewProgress);
-
-          setSavedQuestions(mergedQ);
-          setReviewProgress(mergedR);
-          savedQuestionsRef.current = mergedQ;
-          reviewProgressRef.current = mergedR;
-
-          const targetRev = cloudData.serverRevision;
-          saveGrammarRevision(targetRev);
-
-          // Retry push with merged data and updated revision
-          const retry = await pushGrammarToCloud({
-            savedQuestions:   mergedQ,
-            reviewProgress:   mergedR,
-            expectedRevision: targetRev,
-            confirmEmpty:     mergedQ.length === 0,
-          });
-
-          if (retry.ok) {
-            saveGrammarRevision(retry.revision);
-            setGrammarPending(false);
-            setHasPending(false);
-            setSyncStatus('ok');
-            setTimeout(() => setSyncStatus('idle'), 3000);
-            isSyncingRef.current = false;
-            return true;
-          }
-        }
-      }
-
-      // If push or retry failed: preserve local pending changes!
-      setGrammarPending(true);
-      setHasPending(true);
-      setSyncStatus('error');
-      setTimeout(() => setSyncStatus('idle'), 4000);
-      isSyncingRef.current = false;
-      return false;
-
-    } catch {
-      setGrammarPending(true);
-      setHasPending(true);
-      setSyncStatus('error');
-      setTimeout(() => setSyncStatus('idle'), 4000);
-      isSyncingRef.current = false;
-      return false;
-    }
-  }, []);
-
-  // ── Debounced auto-sync trigger ───────────────────────────────────────────
-
-  const schedulePush = useCallback(() => {
-    setGrammarPending(true);
-    setHasPending(true);
+    if (!readyRef.current || isSyncingRef.current || !pendingRef.current) return;
+    const session = sessionRef.current;
+    const active = () => session === sessionRef.current && endpoint === getGrammarCloudUrl();
+    if (!active()) return;
     clearTimeout(pushTimerRef.current);
-    pushTimerRef.current = setTimeout(() => {
-      executePush(false);
-    }, PUSH_DEBOUNCE_MS);
-  }, [executePush]);
+    isSyncingRef.current = true;
+    editsDuringSyncRef.current = [];
+    setSyncStatus('syncing');
+    let succeeded = false;
+    try {
+      // One conflict fetch/merge and one CAS retry, as before.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const version = changeVersionRef.current;
+        const questions = savedQuestionsRef.current;
+        if (questions.length === 0 && !emptyDeletionRef.current) {
+          setSyncStatus('error');
+          return;
+        }
+        const result = await pushGrammarToCloud({
+          url: endpoint,
+          savedQuestions: questions,
+          reviewProgress: reviewProgressRef.current,
+          expectedRevision: getGrammarRevision(),
+          confirmEmpty: questions.length === 0 && emptyDeletionRef.current,
+        });
+        if (!active()) return;
+        if (result.ok) {
+          saveGrammarRevision(result.revision);
+          // A newer local edit is not acknowledged by this response.
+          markPending(changeVersionRef.current !== version);
+          setSyncStatus(pendingRef.current ? 'syncing' : 'ok');
+          succeeded = true;
+          return;
+        }
+        if (result.error !== 'conflict' || attempt === 1) break;
+        setSyncStatus('conflict');
+        readyRef.current = false;
+        const cloud = await fetchGrammarFromCloud(endpoint);
+        if (!active()) return;
+        if (!cloud) break;
+        mergeCloud(cloud);
+        saveGrammarRevision(cloud.serverRevision);
+        readyRef.current = true;
+        if (savedQuestionsRef.current.length > 0) emptyDeletionRef.current = false;
+      }
+      setSyncStatus('error');
+    } catch {
+      if (active()) setSyncStatus('error');
+    } finally {
+      if (active()) {
+        isSyncingRef.current = false;
+        if (succeeded) queuePush();
+      }
+    }
+  }, [endpoint, markPending, mergeCloud, queuePush]);
 
-  // Clean up timer on unmount
-  useEffect(() => {
-    return () => clearTimeout(pushTimerRef.current);
-  }, []);
-
-  // ── Manual Sync from Cloud (Sync Button) ──────────────────────────────────
+  useEffect(() => { pushRef.current = executePush; }, [executePush]);
 
   const syncFromCloud = useCallback(async () => {
-    if (!isGrammarCloudConfigured()) return;
+    if (isSyncingRef.current) return;
+    const session = sessionRef.current;
+    const active = () => session === sessionRef.current && endpoint === getGrammarCloudUrl();
+    if (!active()) return;
     clearTimeout(pushTimerRef.current);
-
+    readyRef.current = false;
+    isSyncingRef.current = true;
+    editsDuringSyncRef.current = [];
     setSyncStatus('syncing');
     try {
-      const cloudData = await fetchGrammarFromCloud();
-      if (!cloudData) {
-        setSyncStatus('error');
-        setTimeout(() => setSyncStatus('idle'), 4000);
-        return;
-      }
-
-      const currentQ = savedQuestionsRef.current;
-      const currentR = reviewProgressRef.current;
-      const isPending = hasGrammarPending();
-
-      if (isPending) {
-        // Local has pending changes: merge local with cloud, then push merged state
-        const mergedQ = mergeSavedQuestions(currentQ, cloudData.savedQuestions);
-        const mergedR = mergeReviewProgress(currentR, cloudData.reviewProgress);
-
-        setSavedQuestions(mergedQ);
-        setReviewProgress(mergedR);
-        savedQuestionsRef.current = mergedQ;
-        reviewProgressRef.current = mergedR;
-
-        const targetRev = cloudData.serverRevision;
-        saveGrammarRevision(targetRev);
-
-        const pushRes = await pushGrammarToCloud({
-          savedQuestions:   mergedQ,
-          reviewProgress:   mergedR,
-          expectedRevision: targetRev,
-          confirmEmpty:     mergedQ.length === 0,
-        });
-
-        if (pushRes.ok) {
-          saveGrammarRevision(pushRes.revision);
-          setGrammarPending(false);
-          setHasPending(false);
-          setSyncStatus('ok');
-        } else {
-          setSyncStatus('error');
-        }
+      const cloud = await fetchGrammarFromCloud(endpoint);
+      if (!active()) return;
+      if (!cloud) { setSyncStatus('error'); return; }
+      // Legacy caches may contain useful data without a pending flag.
+      // Merge before adopting the cloud revision and using the existing CAS push.
+      const preserveLocal = savedQuestionsRef.current.length > 0
+        || Object.keys(reviewProgressRef.current).length > 0;
+      if (pendingRef.current || preserveLocal) {
+        mergeCloud(cloud);
+        // An already-empty cloud needs no empty POST from an empty cache.
+        markPending(savedQuestionsRef.current.length > 0 || Object.keys(reviewProgressRef.current).length > 0);
       } else {
-        // No local pending changes: accept cloud state
-        setSavedQuestions(cloudData.savedQuestions);
-        setReviewProgress(cloudData.reviewProgress);
-        savedQuestionsRef.current = cloudData.savedQuestions;
-        reviewProgressRef.current = cloudData.reviewProgress;
-        saveGrammarRevision(cloudData.serverRevision);
-        setGrammarPending(false);
-        setHasPending(false);
-        setSyncStatus('ok');
+        persistData(cloud.savedQuestions, cloud.reviewProgress);
       }
-
-      setTimeout(() => setSyncStatus('idle'), 3000);
+      saveGrammarRevision(cloud.serverRevision);
+      readyRef.current = true;
+      setSyncStatus(pendingRef.current ? 'syncing' : 'ok');
     } catch {
-      setSyncStatus('error');
-      setTimeout(() => setSyncStatus('idle'), 4000);
+      if (active()) setSyncStatus('error');
+    } finally {
+      if (active()) {
+        isSyncingRef.current = false;
+        queuePush();
+      }
     }
-  }, []);
+  }, [endpoint, markPending, mergeCloud, persistData, queuePush]);
 
-  // ── Saved Questions Mutations ─────────────────────────────────────────────
+  // Handle URL A -> URL B even though both are configured.
+  const setCloudConfigured = useCallback(() => {
+    if (getGrammarCloudUrl() === endpoint) { syncFromCloud(); return; }
+    sessionRef.current++;
+    readyRef.current = false;
+    isSyncingRef.current = false;
+    emptyDeletionRef.current = false;
+    clearTimeout(pushTimerRef.current);
+    setSyncStatus('syncing');
+    setEndpoint(getGrammarCloudUrl());
+  }, [endpoint, syncFromCloud]);
+
+  useEffect(() => {
+    readyRef.current = false;
+    isSyncingRef.current = false;
+    emptyDeletionRef.current = false;
+    syncFromCloud();
+    const retry = () => syncFromCloud();
+    window.addEventListener('online', retry);
+    return () => {
+      sessionRef.current++;
+      readyRef.current = false;
+      clearTimeout(pushTimerRef.current);
+      window.removeEventListener('online', retry);
+    };
+  }, [syncFromCloud]);
+
+  function commitEdit(edit) {
+    const data = edit({ questions: savedQuestionsRef.current, review: reviewProgressRef.current });
+    changeVersionRef.current++;
+    if (isSyncingRef.current) editsDuringSyncRef.current.push(edit);
+    // Persist synchronously so switching tabs cannot leave pending without data.
+    persistData(data.questions, data.review);
+    markPending(true);
+    if (data.questions.length > 0) emptyDeletionRef.current = false;
+    queuePush();
+  }
 
   function saveQuestion(question) {
-    const isDuplicate = savedQuestions.some(q =>
+    if (savedQuestionsRef.current.some(q =>
       q.sentence?.trim().toLowerCase() === question.sentence?.trim().toLowerCase()
-    );
-    if (isDuplicate) return 'duplicate';
-
+    )) return 'duplicate';
     const newQ = {
       ...question,
-      savedId:    `gq_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-      savedAt:    Date.now(),
-      hardMarked: false,
-      userNotes:  '',
+      savedId: `gq_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      savedAt: Date.now(), hardMarked: false, userNotes: '',
     };
-
-    setSavedQuestions(prev => [newQ, ...prev]);
-    schedulePush();
+    commitEdit(data => ({ ...data, questions: [newQ, ...data.questions.filter(q => q.savedId !== newQ.savedId)] }));
     return 'saved';
   }
 
   function unsaveQuestion(savedId) {
-    setSavedQuestions(prev => prev.filter(q => q.savedId !== savedId));
-    setReviewProgress(prev => {
-      const next = { ...prev };
-      delete next[savedId];
-      return next;
+    const explicitEmpty = readyRef.current && savedQuestionsRef.current.length === 1
+      && savedQuestionsRef.current[0].savedId === savedId;
+    commitEdit(data => {
+      const review = { ...data.review };
+      delete review[savedId];
+      return { questions: data.questions.filter(q => q.savedId !== savedId), review };
     });
-    schedulePush();
+    if (explicitEmpty) emptyDeletionRef.current = true;
   }
 
   function isQuestionSaved(sentence) {
-    return savedQuestions.some(q =>
-      q.sentence?.trim().toLowerCase() === sentence?.trim().toLowerCase()
-    );
+    return savedQuestionsRef.current.some(q => q.sentence?.trim().toLowerCase() === sentence?.trim().toLowerCase());
   }
 
   function toggleHardMark(savedId) {
-    setSavedQuestions(prev =>
-      prev.map(q => q.savedId === savedId ? { ...q, hardMarked: !q.hardMarked } : q)
-    );
-    schedulePush();
+    const hardMarked = !savedQuestionsRef.current.find(q => q.savedId === savedId)?.hardMarked;
+    commitEdit(data => ({ ...data, questions: data.questions.map(q => q.savedId === savedId ? { ...q, hardMarked } : q) }));
   }
 
-  function updateNotes(savedId, notes) {
-    setSavedQuestions(prev =>
-      prev.map(q => q.savedId === savedId ? { ...q, userNotes: notes } : q)
-    );
-    schedulePush();
+  function updateNotes(savedId, userNotes) {
+    commitEdit(data => ({ ...data, questions: data.questions.map(q => q.savedId === savedId ? { ...q, userNotes } : q) }));
   }
-
-  // ── Review Progress Mutations ─────────────────────────────────────────────
 
   function recordReview(savedId, isCorrect) {
-    setReviewProgress(prev => {
-      const rec = prev[savedId] ?? { level: 1, wrongCount: 0, totalReviews: 0 };
-      let newLevel = rec.level;
-      if (isCorrect) {
-        newLevel = Math.min(5, rec.level + 1);
-      } else {
-        newLevel = Math.max(1, rec.level - 1);
-      }
-      return {
-        ...prev,
-        [savedId]: {
-          level:        newLevel,
-          wrongCount:   isCorrect ? rec.wrongCount : rec.wrongCount + 1,
-          totalReviews: rec.totalReviews + 1,
-          lastReviewAt: Date.now(),
-          nextReviewAt: calcNextReviewAt(newLevel),
-        },
-      };
-    });
-    schedulePush();
+    const rec = reviewProgressRef.current[savedId] ?? { level: 1, wrongCount: 0, totalReviews: 0 };
+    const level = isCorrect ? Math.min(5, rec.level + 1) : Math.max(1, rec.level - 1);
+    const next = {
+      level, wrongCount: isCorrect ? rec.wrongCount : rec.wrongCount + 1,
+      totalReviews: rec.totalReviews + 1, lastReviewAt: Date.now(), nextReviewAt: calcNextReviewAt(level),
+    };
+    commitEdit(data => ({ ...data, review: { ...data.review, [savedId]: next } }));
   }
-
-  // ── Stats Mutations ───────────────────────────────────────────────────────
 
   function recordGrammarSession(result) {
     setGrammarStats(prev => {

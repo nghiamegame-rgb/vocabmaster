@@ -10,6 +10,7 @@ export const LS_GRAMMAR_REVIEW     = 'vocabmaster_grammar_review';
 export const LS_GRAMMAR_CLOUD_URL  = 'vocabmaster_grammar_cloud_url';
 export const LS_GRAMMAR_REVISION   = 'vocabmaster_grammar_revision';
 export const LS_GRAMMAR_PENDING    = 'vocabmaster_grammar_pending';
+export const DEFAULT_GRAMMAR_CLOUD_URL = '/api/grammar-sync';
 
 // ── Revision & Pending Changes ─────────────────────────────────────────────
 
@@ -91,7 +92,7 @@ export function saveReviewProgress(progress) {
 // ── Grammar Cloud URL (separate from vocabulary webhook) ───────────────────
 
 export function getGrammarCloudUrl() {
-  return localStorage.getItem(LS_GRAMMAR_CLOUD_URL) || '';
+  return localStorage.getItem(LS_GRAMMAR_CLOUD_URL)?.trim() || DEFAULT_GRAMMAR_CLOUD_URL;
 }
 
 export function saveGrammarCloudUrl(url) {

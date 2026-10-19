@@ -82,6 +82,17 @@ export default function Grammar({ addWord }) {
         </div>
 
         <div className="flex items-center gap-2">
+          {syncStatus === 'error' ? (
+            <button onClick={syncFromCloud} className="text-xs text-rose-400" title="Dữ liệu cục bộ được giữ nguyên">
+              Lỗi đồng bộ · Thử lại
+            </button>
+          ) : (
+            <span className="text-xs text-slate-400" role="status">
+              {syncStatus === 'syncing' || syncStatus === 'conflict'
+                ? 'Đang đồng bộ…'
+                : hasPending ? 'Chờ đồng bộ' : syncStatus === 'ok' ? 'Đã đồng bộ' : ''}
+            </span>
+          )}
           {/* Local-only badge */}
           {!cloudConfigured && (
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold">
