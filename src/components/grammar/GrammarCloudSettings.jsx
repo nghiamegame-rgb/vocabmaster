@@ -25,9 +25,9 @@ export default function GrammarCloudSettings({ onClose, onConfigChanged, syncSta
       setError('URL phải là Vercel Proxy (/api/grammar-sync) hoặc Google Apps Script URL (https://script.google.com/macros/s/...)');
       return;
     }
-    setUrl(trimmed);
     saveGrammarCloudUrl(trimmed);
-    onConfigChanged(trimmed.length > 0);
+    setUrl(getGrammarCloudUrl());
+    onConfigChanged();
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   }
@@ -51,7 +51,7 @@ export default function GrammarCloudSettings({ onClose, onConfigChanged, syncSta
       {/* Status badge */}
       <div className={`flex flex-col gap-1 px-3.5 py-2.5 rounded-xl border text-sm ${
         configured
-          ? (hasPending
+          ? (syncStatus === 'error' || hasPending
               ? 'bg-amber-500/10 border-amber-500/25 text-amber-300'
               : 'bg-emerald-500/10 border-emerald-500/25 text-emerald-300')
           : 'bg-slate-800/50 border-slate-700 text-slate-400'
@@ -59,9 +59,15 @@ export default function GrammarCloudSettings({ onClose, onConfigChanged, syncSta
         <div className="flex items-center gap-2 font-medium">
           {configured ? <Cloud size={15} /> : <HardDrive size={15} />}
           {configured
-            ? (hasPending
+            ? (syncStatus === 'error'
+                ? '⚠️ Đồng bộ thất bại — giữ dữ liệu trên máy. Bấm Thử lại.'
+                : syncStatus === 'syncing' || syncStatus === 'conflict'
+                ? 'Đang đồng bộ với Cloud…'
+                : hasPending
                 ? '⚠️ Có thay đổi cục bộ chưa lưu lên Cloud'
-                : '✅ Đã kết nối Cloud — Dữ liệu đã đồng bộ hoàn tất')
+                : syncStatus === 'ok'
+                ? '✅ Đã đồng bộ Cloud'
+                : 'Sẵn sàng kết nối Cloud')
             : '⚠️ Chưa kết nối — Dữ liệu chỉ lưu cục bộ trên trình duyệt (Local Only)'}
         </div>
         {configured && (
@@ -141,10 +147,10 @@ export default function GrammarCloudSettings({ onClose, onConfigChanged, syncSta
         )}
 
         <button
-          onClick={() => { setUrl(''); saveGrammarCloudUrl(''); onConfigChanged(false); }}
+          onClick={() => handleSave('')}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-slate-800 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-all duration-200"
         >
-          Xoá URL
+          Dùng mặc định
         </button>
       </div>
 

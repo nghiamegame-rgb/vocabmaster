@@ -12,6 +12,7 @@
  */
 
 import { getGrammarCloudUrl } from './grammarStorage';
+import { validateQuestion } from './grammarSyncMerge';
 
 /** True when a grammar sync URL has been configured. */
 export function isGrammarCloudConfigured() {
@@ -34,12 +35,12 @@ export async function pushGrammarToCloud({
   reviewProgress = {},
   expectedRevision = 0,
   confirmEmpty = false,
+  url = getGrammarCloudUrl(),
 }) {
-  if (!isGrammarCloudConfigured()) {
+  if (!url.trim()) {
     return { ok: false, error: 'unconfigured', message: 'Cloud sync is not configured.' };
   }
 
-  const url = getGrammarCloudUrl().trim();
   const payload = {
     action:           'save',
     expectedRevision: Number(expectedRevision) || 0,
@@ -69,7 +70,9 @@ export async function pushGrammarToCloud({
       };
     }
 
-    if (json && json.ok === true) {
+    if (res.ok && json?.ok === true && Number.isInteger(json.revision)
+        && json.revision === payload.expectedRevision + 1
+        && json.written === payload.savedQuestions.length) {
       return {
         ok:       true,
         revision: Number(json.revision) || 0,
@@ -108,11 +111,10 @@ export async function pushGrammarToCloud({
  *
  * @returns {Promise<{savedQuestions: object[], reviewProgress: object, serverRevision: number} | null>}
  */
-export async function fetchGrammarFromCloud() {
-  if (!isGrammarCloudConfigured()) return null;
+export async function fetchGrammarFromCloud(url = getGrammarCloudUrl()) {
+  if (!url.trim()) return null;
 
   try {
-    const url = getGrammarCloudUrl().trim();
     const bustUrl = `${url}${url.includes('?') ? '&' : '?'}_cb=${Date.now()}`;
     const res = await fetch(bustUrl, {
       method:   'GET',
@@ -122,7 +124,11 @@ export async function fetchGrammarFromCloud() {
     if (!res.ok) return null;
 
     const json = await res.json();
-    if (!json || json.ok === false || !Array.isArray(json.savedQuestions)) {
+    if (!json || json.ok !== true || !Array.isArray(json.savedQuestions)
+        || !Number.isInteger(json.revision) || json.revision < 0
+        || json.savedQuestions.some(q => validateQuestion(q))
+        || !json.reviewProgress || typeof json.reviewProgress !== 'object'
+        || Array.isArray(json.reviewProgress)) {
       return null;
     }
 
