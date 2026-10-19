@@ -25,6 +25,7 @@ const TYPE_FILTER_OPTIONS = [
   { value: 'Word',   label: 'Từ đơn (Word)',         icon: '📝' },
   { value: 'Phrase', label: 'Cụm từ (Phrase)',       icon: '💬' },
   { value: 'Family', label: 'Gia đình từ (Family)',  icon: '🌳' },
+  { value: 'Preposition', label: 'Giới từ (Preposition)', icon: '🔗' },
 ];
 
 /** Level badge background colours for the image card overlay */
@@ -220,7 +221,7 @@ export default function ListeningReview({ words, updateWordLevel }) {
 
   /* ── Filter state ── */
   const [levelFilter, setLevelFilter] = useState(null);    // null = All Levels
-  const [typeFilter,  setTypeFilter]  = useState('All');   // 'All' | 'Word' | 'Phrase' | 'Family'
+  const [typeFilter,  setTypeFilter]  = useState('All');   // 'All' | 'Word' | 'Phrase' | 'Family' | 'Preposition'
   const [dueOnly,     setDueOnly]     = useState(false);   // spaced-repetition "due today" filter
 
   /* ── Game state ── */

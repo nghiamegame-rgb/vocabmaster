@@ -18,6 +18,7 @@ const TYPE_OPTS = [
   { value: 'Word',   label: 'Words',     icon: '📝' },
   { value: 'Phrase', label: 'Phrases',   icon: '💬' },
   { value: 'Family', label: 'Families',  icon: '🌳' },
+  { value: 'Preposition', label: 'Prepositions', icon: '🔗' },
 ];
 
 /**

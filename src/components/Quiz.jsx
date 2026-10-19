@@ -25,6 +25,7 @@ const WORD_TYPE_FILTERS = [
   { id: 'Word',   label: 'Single Words', icon: '📝' },
   { id: 'Phrase', label: 'Phrases',      icon: '💬' },
   { id: 'Family', label: 'Word Families',icon: '🌳' },
+  { id: 'Preposition', label: 'Prepositions', icon: '🔗' },
 ];
 const QUIZ_MODES = [
   {
@@ -312,7 +313,7 @@ function QuizConfig({ words, onStart }) {
   const [priority,       setPriority]       = useState('all');
   const [mode,           setMode]           = useState('vn');
   const [answerMode,     setAnswerMode]     = useState('mc');
-  const [wordTypeFilter, setWordTypeFilter] = useState('All'); // 'All'|'Word'|'Phrase'|'Family'
+  const [wordTypeFilter, setWordTypeFilter] = useState('All'); // 'All'|'Word'|'Phrase'|'Family'|'Preposition'
 
   const [copied,     setCopied]     = useState(false);
   const [jsonPaste,  setJsonPaste]  = useState('');
