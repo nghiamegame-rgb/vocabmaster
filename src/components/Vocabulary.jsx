@@ -22,12 +22,14 @@ const WORD_TYPES = [
   { value: 'Word',   label: 'Từ đơn (Word)'      },
   { value: 'Phrase', label: 'Cụm từ (Phrase)'     },
   { value: 'Family', label: 'Gia đình từ (Family)'},
+  { value: 'Preposition', label: 'Giới từ (Preposition)' },
 ];
 
 const TYPE_META = {
   Word:   { color: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',  icon: '📝' },
   Phrase: { color: 'bg-purple-500/20 text-purple-300 border-purple-500/30',  icon: '💬' },
   Family: { color: 'bg-sky-500/20    text-sky-300    border-sky-500/30',     icon: '🌳' },
+  Preposition: { color: 'bg-teal-500/20 text-teal-300 border-teal-500/30', icon: '🔗' },
 };
 
 /* ------------------------------------------------------------------ */
@@ -246,7 +248,7 @@ export default function Vocabulary({
   const [wordType,    setWordType]    = useState('Word');
   const [error,       setError]       = useState('');
   const [success,     setSuccess]     = useState('');
-  const [typeFilter,  setTypeFilter]  = useState('All'); // All | Word | Phrase | Family
+  const [typeFilter,  setTypeFilter]  = useState('All'); // All | Word | Phrase | Family | Preposition
   const [selected,    setSelected]    = useState(new Set());
   const [bulkLevel,   setBulkLevel]   = useState('');
   const [showBulkDd,  setShowBulkDd]  = useState(false);
@@ -369,6 +371,7 @@ export default function Vocabulary({
     { value: 'Word',   label: 'Từ đơn (Word)',          icon: '📝' },
     { value: 'Phrase', label: 'Cụm từ (Phrase)',        icon: '💬' },
     { value: 'Family', label: 'Gia đình từ (Family)',   icon: '🌳' },
+    { value: 'Preposition', label: 'Giới từ (Preposition)', icon: '🔗' },
   ];
 
   const allSelected = filtered.length > 0 && selected.size === filtered.length;
