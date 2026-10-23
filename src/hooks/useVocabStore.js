@@ -303,7 +303,7 @@ export function useVocabStore() {
   // ── Vocabulary mutations ───────────────────────────────────────────────────
 
   /** Add a new word (returns false if duplicate) */
-  function addWord(wordObj) {
+  const addWord = useCallback((wordObj) => {
     const exists = words.some(
       w => w.english.toLowerCase() === wordObj.english.toLowerCase()
     );
@@ -321,15 +321,15 @@ export function useVocabStore() {
     };
     setWords(prev => [newWord, ...prev]);
     return true;
-  }
+  }, [words]);
 
   /** Delete a word by id */
-  function deleteWord(id) {
+  const deleteWord = useCallback((id) => {
     setWords(prev => prev.filter(w => w.id !== id));
-  }
+  }, []);
 
   /** Update word fields (annotation is preserved across updates) */
-  function updateWord(id, fields) {
+  const updateWord = useCallback((id, fields) => {
     setWords(prev =>
       prev.map(w => {
         if (w.id !== id) return w;
@@ -339,7 +339,7 @@ export function useVocabStore() {
         return updated;
       })
     );
-  }
+  }, []);
 
   /**
    * Promote or demote word level after quiz using streak-based spaced repetition.
@@ -371,7 +371,7 @@ export function useVocabStore() {
   }
 
   /** Bulk update level for a set of word IDs */
-  function bulkUpdateLevel(ids, newLevel) {
+  const bulkUpdateLevel = useCallback((ids, newLevel) => {
     setWords(prev =>
       prev.map(w =>
         ids.has(w.id)
@@ -379,7 +379,7 @@ export function useVocabStore() {
           : w
       )
     );
-  }
+  }, []);
 
   /** Record quiz results */
   function recordQuizResult(correct, total) {
