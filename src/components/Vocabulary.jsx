@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
+import { memo, useCallback, useMemo, useState, useRef } from 'react';
 import {
   Plus, Trash2, Pencil, Volume2, Download, Upload, X, Check,
   BookOpen, AlertCircle, Image as ImageIcon, CheckSquare, Square,
-  ChevronDown, Tag, Layers, Search,
+  ChevronDown, ChevronLeft, ChevronRight, Tag, Layers, Search,
 } from 'lucide-react';
 import { playAudio } from '../utils/audio';
 import { isDueForReview } from '../hooks/useVocabStore';
@@ -32,10 +32,51 @@ const TYPE_META = {
   Preposition: { color: 'bg-teal-500/20 text-teal-300 border-teal-500/30', icon: '🔗' },
 };
 
+const PAGE_SIZE = 24;
+
+function Pagination({ page, pageCount, onChange, position }) {
+  return (
+    <nav aria-label={`Vocabulary pages (${position})`} className="flex items-center justify-end gap-2 text-sm">
+      <button
+        type="button"
+        onClick={() => onChange(page - 1)}
+        disabled={page === 1}
+        aria-label="Previous page"
+        className="p-2 bg-slate-800 border border-slate-700 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700"
+      >
+        <ChevronLeft size={16} />
+      </button>
+      <label className="flex items-center gap-2 text-slate-400">
+        Page
+        <select
+          aria-label="Vocabulary page"
+          value={page}
+          onChange={e => onChange(Number(e.target.value))}
+          className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-white"
+        >
+          {Array.from({ length: pageCount }, (_, i) => (
+            <option key={i + 1} value={i + 1}>{i + 1}</option>
+          ))}
+        </select>
+        / {pageCount}
+      </label>
+      <button
+        type="button"
+        onClick={() => onChange(page + 1)}
+        disabled={page === pageCount}
+        aria-label="Next page"
+        className="p-2 bg-slate-800 border border-slate-700 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700"
+      >
+        <ChevronRight size={16} />
+      </button>
+    </nav>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* WordCard                                                             */
 /* ------------------------------------------------------------------ */
-function WordCard({ word, onDelete, onUpdate, selected, onToggleSelect }) {
+const WordCard = memo(function WordCard({ word, onDelete, onUpdate, selected, onToggleSelect }) {
   const [editing,    setEditing]    = useState(false);
   const [editFields, setEditFields] = useState({
     english:    word.english,
@@ -105,6 +146,8 @@ function WordCard({ word, onDelete, onUpdate, selected, onToggleSelect }) {
           <img
             src={word.imageUrl}
             alt={word.english}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover"
             onError={() => setImgError(true)}
           />
@@ -232,12 +275,12 @@ function WordCard({ word, onDelete, onUpdate, selected, onToggleSelect }) {
       </div>
     </div>
   );
-}
+});
 
 /* ------------------------------------------------------------------ */
 /* Main Vocabulary Component                                           */
 /* ------------------------------------------------------------------ */
-export default function Vocabulary({
+export default memo(function Vocabulary({
   words, addWord, deleteWord, updateWord, bulkUpdateLevel,
   vocabFilter, setVocabFilter,
 }) {
@@ -253,35 +296,65 @@ export default function Vocabulary({
   const [bulkLevel,   setBulkLevel]   = useState('');
   const [showBulkDd,  setShowBulkDd]  = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
   const fileInputRef = useRef(null);
+  const listRef = useRef(null);
 
-  // Apply level filter, then type filter, then search query
-  const afterLevel = vocabFilter ? words.filter(w => w.level === vocabFilter) : words;
-  const afterType  = typeFilter === 'All'
-    ? afterLevel
-    : afterLevel.filter(w => (w.wordType || 'Word') === typeFilter);
-  const filtered   = searchQuery.trim()
-    ? afterType.filter(w => {
-        const q = searchQuery.trim().toLowerCase();
-        return (
-          w.english.toLowerCase().includes(q) ||
-          w.vietnamese.toLowerCase().includes(q) ||
-          (w.annotation || '').toLowerCase().includes(q)
-        );
-      })
-    : afterType;
+  const levelCounts = useMemo(() => {
+    const counts = {};
+    for (const word of words) counts[word.level] = (counts[word.level] || 0) + 1;
+    return counts;
+  }, [words]);
+
+  const afterLevel = useMemo(
+    () => vocabFilter ? words.filter(w => w.level === vocabFilter) : words,
+    [words, vocabFilter],
+  );
+  const typeCounts = useMemo(() => {
+    const counts = {};
+    for (const word of afterLevel) {
+      const type = word.wordType || 'Word';
+      counts[type] = (counts[type] || 0) + 1;
+    }
+    return counts;
+  }, [afterLevel]);
+
+  // Filtering and select-all cover the entire collection, before pagination.
+  const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return afterLevel.filter(w =>
+      (typeFilter === 'All' || (w.wordType || 'Word') === typeFilter) &&
+      (!q || (
+        w.english.toLowerCase().includes(q) ||
+        w.vietnamese.toLowerCase().includes(q) ||
+        (w.annotation || '').toLowerCase().includes(q)
+      )),
+    );
+  }, [afterLevel, typeFilter, searchQuery]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  // Deleting or moving the last word on a page must not leave an empty page.
+  const currentPage = Math.min(page, pageCount);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const visibleWords = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+  const allSelected = filtered.length > 0 && filtered.every(w => selected.has(w.id));
+
+  function changePage(nextPage) {
+    setPage(Math.max(1, Math.min(nextPage, pageCount)));
+    listRef.current?.scrollIntoView({ block: 'start' });
+  }
 
   /* ── Selection helpers ── */
-  function toggleSelect(id) {
+  const toggleSelect = useCallback((id) => {
     setSelected(prev => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
-  }
+  }, []);
 
   function toggleSelectAll() {
-    if (selected.size === filtered.length && filtered.length > 0) {
+    if (allSelected) {
       setSelected(new Set());
     } else {
       setSelected(new Set(filtered.map(w => w.id)));
@@ -312,6 +385,7 @@ export default function Vocabulary({
       return;
     }
     setEnglish(''); setAnnotation(''); setVietnamese(''); setImageUrl(''); setWordType('Word');
+    setPage(1);
     setSuccess('Word added successfully!');
     setTimeout(() => setSuccess(''), 2000);
   }
@@ -373,8 +447,6 @@ export default function Vocabulary({
     { value: 'Family', label: 'Gia đình từ (Family)',   icon: '🌳' },
     { value: 'Preposition', label: 'Giới từ (Preposition)', icon: '🔗' },
   ];
-
-  const allSelected = filtered.length > 0 && selected.size === filtered.length;
 
   return (
     <div className="animate-fade-in">
@@ -490,7 +562,7 @@ export default function Vocabulary({
           id="vocab-search"
           type="text"
           value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
+          onChange={e => { setSearchQuery(e.target.value); setPage(1); }}
           placeholder="Search by English word or Vietnamese meaning…"
           autoComplete="off"
           spellCheck={false}
@@ -499,7 +571,7 @@ export default function Vocabulary({
         {searchQuery && (
           <button
             id="vocab-search-clear"
-            onClick={() => setSearchQuery('')}
+            onClick={() => { setSearchQuery(''); setPage(1); }}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
             title="Clear search"
           >
@@ -514,7 +586,7 @@ export default function Vocabulary({
           <button
             key={String(opt.value)}
             id={`filter-level-${opt.value ?? 'all'}`}
-            onClick={() => setVocabFilter(opt.value)}
+            onClick={() => { setVocabFilter(opt.value); setPage(1); }}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
               vocabFilter === opt.value
                 ? 'bg-indigo-600 text-white shadow-md'
@@ -523,7 +595,7 @@ export default function Vocabulary({
           >
             {opt.label}
             <span className="ml-1.5 text-xs opacity-70">
-              ({opt.value === null ? words.length : words.filter(w => w.level === opt.value).length})
+              ({opt.value === null ? words.length : levelCounts[opt.value] || 0})
             </span>
           </button>
         ))}
@@ -535,7 +607,7 @@ export default function Vocabulary({
           <button
             key={opt.value}
             id={`filter-type-${opt.value.toLowerCase()}`}
-            onClick={() => setTypeFilter(opt.value)}
+            onClick={() => { setTypeFilter(opt.value); setPage(1); }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
               typeFilter === opt.value
                 ? 'bg-slate-700 text-white shadow'
@@ -547,7 +619,7 @@ export default function Vocabulary({
             <span className="text-xs opacity-60">
               ({opt.value === 'All'
                 ? afterLevel.length
-                : afterLevel.filter(w => (w.wordType || 'Word') === opt.value).length})
+                : typeCounts[opt.value] || 0})
             </span>
           </button>
         ))}
@@ -595,19 +667,26 @@ export default function Vocabulary({
 
       {/* Select-All row */}
       {filtered.length > 0 && (
-        <div className="flex items-center gap-2 mb-3 px-1">
-          <button
-            id="select-all-btn"
-            onClick={toggleSelectAll}
-            className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors"
-          >
-            {allSelected
-              ? <CheckSquare size={16} className="text-indigo-400" />
-              : <Square size={16} />
-            }
-            {allSelected ? 'Deselect All' : 'Select All'}
-          </button>
-          <span className="text-slate-600 text-xs">({filtered.length} shown)</span>
+        <div ref={listRef} className="flex items-center justify-between gap-3 mb-3 px-1 flex-wrap scroll-mt-24">
+          <div className="flex items-center gap-2">
+            <button
+              id="select-all-btn"
+              onClick={toggleSelectAll}
+              className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors"
+            >
+              {allSelected
+                ? <CheckSquare size={16} className="text-indigo-400" />
+                : <Square size={16} />
+              }
+              {allSelected ? 'Deselect All' : 'Select All'}
+            </button>
+            <span className="text-slate-500 text-xs">
+              ({filtered.length} matching; {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, filtered.length)} shown)
+            </span>
+          </div>
+          {pageCount > 1 && (
+            <Pagination page={currentPage} pageCount={pageCount} onChange={changePage} position="top" />
+          )}
         </div>
       )}
 
@@ -628,7 +707,7 @@ export default function Vocabulary({
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filtered.map(word => (
+          {visibleWords.map(word => (
             <WordCard
               key={word.id}
               word={word}
@@ -640,6 +719,11 @@ export default function Vocabulary({
           ))}
         </div>
       )}
+      {pageCount > 1 && (
+        <div className="mt-4">
+          <Pagination page={currentPage} pageCount={pageCount} onChange={changePage} position="bottom" />
+        </div>
+      )}
     </div>
   );
-}
+});
