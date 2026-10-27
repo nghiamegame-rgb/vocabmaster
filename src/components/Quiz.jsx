@@ -528,7 +528,7 @@ function QuizConfig({ words, onStart }) {
             {answerMode === 'dictation' && (
               <span className="block mt-1 text-purple-300">
                 🎧 <strong className="text-purple-200">Listening & Typing mode:</strong> You'll hear
-                the word and type your answer. A hint appears after 4 audio plays.
+                the word, see the answer immediately, and type it manually.
               </span>
             )}
           </p>
@@ -653,8 +653,8 @@ function QuizAnnotation({ english, words }) {
  * Play pronunciation using the shared audio utility (Web Speech API → Google TTS).
  * Named wrapper kept so existing call-sites in QuizGame don't need renaming.
  */
-function playWordAudio(wordEnglish) {
-  playAudio(wordEnglish);
+function playWordAudio(wordEnglish, options) {
+  return playAudio(wordEnglish, options);
 }
 
 function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
@@ -692,6 +692,10 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
   const [dictCorrect,  setDictCorrect]  = useState(false);
   const [playCount,    setPlayCount]    = useState(0);
   const inputRef = useRef(null);
+  const repeatingAudioRef = useRef(null);
+  const repeatTimerRef = useRef(null);
+  const repeatGenerationRef = useRef(0);
+  const advanceTimerRef = useRef(null);
 
   const isDictation = answerMode === 'dictation';
 
@@ -714,12 +718,46 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
       ? `https://source.unsplash.com/featured/300x200/?${encodeURIComponent(q.wordEnglish)}`
       : null;
 
-  // Auto-play audio when answer is revealed
-  useEffect(() => {
-    if (answered && q.wordEnglish) {
-      playWordAudio(q.wordEnglish);
+  function stopRepeatingPlayback() {
+    repeatGenerationRef.current += 1;
+    if (repeatTimerRef.current) {
+      clearTimeout(repeatTimerRef.current);
+      repeatTimerRef.current = null;
     }
-  }, [answered, q.wordEnglish]);
+    repeatingAudioRef.current?.cancel();
+    repeatingAudioRef.current = null;
+  }
+
+  function startRepeatingPlayback(wordEnglish) {
+    stopRepeatingPlayback();
+    if (!isDictation || dictAnswered || !wordEnglish) return;
+    const generation = repeatGenerationRef.current;
+    const playNext = () => {
+      if (generation !== repeatGenerationRef.current || dictAnswered || !isDictation) return;
+      repeatingAudioRef.current = playWordAudio(wordEnglish, {
+        onEnd: () => {
+          if (generation !== repeatGenerationRef.current || dictAnswered || !isDictation) return;
+          repeatTimerRef.current = setTimeout(playNext, 2000);
+        }
+      });
+    };
+    playNext();
+  }
+
+  // Start a fresh, non-overlapping pronunciation loop for each question.
+  useEffect(() => {
+    startRepeatingPlayback(q?.wordEnglish);
+    return stopRepeatingPlayback;
+  }, [queueIndex, isDictation, dictAnswered, q?.wordEnglish]);
+
+  // Nothing from the current question may continue after the quiz unmounts.
+  useEffect(() => () => {
+    stopRepeatingPlayback();
+    if (advanceTimerRef.current) {
+      clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = null;
+    }
+  }, []);
 
   // Reset dictation state when question advances
   useEffect(() => {
@@ -832,7 +870,9 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
    * Reads only from live refs — immune to stale-closure bugs.
    */
   function advanceAfterDelay() {
-    setTimeout(() => {
+    if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+    advanceTimerRef.current = setTimeout(() => {
+      advanceTimerRef.current = null;
       const liveQueue   = queueRef.current;
       const liveIdx     = idxRef.current;
       const liveResults = resultsRef.current;
@@ -860,7 +900,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
   // Dictation: play audio and count plays
   function handleDictationPlay() {
     if (q.wordEnglish) {
-      playWordAudio(q.wordEnglish);
+      startRepeatingPlayback(q.wordEnglish);
       setPlayCount(c => c + 1);
     }
   }
@@ -868,6 +908,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
   // Dictation: submit typed answer
   function handleDictationSubmit() {
     if (!typedAnswer.trim() || dictAnswered) return;
+    stopRepeatingPlayback();
     const isCorrect =
       typedAnswer.trim().toLowerCase() === (q.wordEnglish || '').toLowerCase();
     setDictCorrect(isCorrect);
@@ -879,6 +920,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
   // Dictation: I Know It (auto-skip)
   function handleIKnowIt() {
     if (dictAnswered) return;
+    stopRepeatingPlayback();
     setTypedAnswer(q.wordEnglish || '');
     setDictCorrect(true);
     setDictAnswered(true);
@@ -994,21 +1036,18 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
               <Headphones size={17} />
               {playCount === 0 ? 'Play Word' : `Play Again (×${playCount})`}
             </button>
-            {playCount > 0 && !dictAnswered && (
+            {!dictAnswered && (
               <span className="text-slate-500 text-xs">
-                {playCount < 4
-                  ? `${4 - playCount} play${4 - playCount === 1 ? '' : 's'} until hint`
-                  : 'Hint available ↓'}
+                Audio repeats automatically; Play Again replays immediately.
               </span>
             )}
           </div>
-
-          {/* Hint: shown after 4+ plays */}
-          {playCount >= 4 && !dictAnswered && (
+          {/* The answer is visible immediately so learners can listen and type it. */}
+          {!dictAnswered && (
             <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-2 animate-fade-in">
               <AlertCircle size={14} className="text-amber-400 shrink-0" />
               <span className="text-amber-300 text-sm">
-                Hint: <strong className="text-amber-200">
+                Answer: <strong className="text-amber-200">
                   {q.wordEnglish}
                   <QuizAnnotation english={q.wordEnglish} words={words} />
                 </strong>
