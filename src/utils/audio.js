@@ -52,26 +52,27 @@ if ('speechSynthesis' in window) {
 // ---------------------------------------------------------------------------
 
 /**
- * Returns a no-op cancel handle (used as a uniform return shape when Web
- * Speech API is used, since there is no Audio element to pause).
- */
-const _noopHandle = { cancel: () => window.speechSynthesis?.cancel() };
-
-/**
  * Google TTS fallback — American accent, phrase-safe URL encoding.
  *
  * @param {string} text
  * @returns {{ cancel: () => void }}
  */
-function _googleTTS(text) {
+function _googleTTS(text, onEnd) {
   const url =
     'https://translate.google.com/translate_tts' +
     '?ie=UTF-8&client=tw-ob&tl=en-US&q=' +
     encodeURIComponent(text);
 
   const audio = new Audio(url);
+  if (onEnd) audio.onended = onEnd;
   audio.play().catch(() => {/* network blocked — silent failure */});
-  return { cancel: () => { audio.pause(); audio.currentTime = 0; } };
+  return {
+    cancel: () => {
+      audio.onended = null;
+      audio.pause();
+      audio.currentTime = 0;
+    },
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -84,7 +85,7 @@ function _googleTTS(text) {
  * @param {string} text  — English word or phrase to speak
  * @returns {{ cancel: () => void }}  — call `.cancel()` to stop playback early
  */
-export function playAudio(text) {
+export function playAudio(text, { onEnd } = {}) {
   if (!text || !text.trim()) return { cancel: () => {} };
 
   // ── Primary: Web Speech API ────────────────────────────────────────────────
@@ -92,20 +93,35 @@ export function playAudio(text) {
     window.speechSynthesis.cancel(); // stop any previous utterance
 
     const utt = new SpeechSynthesisUtterance(text.trim());
+    let canceled = false;
+    let fallbackHandle = null;
     utt.voice = _cachedVoice;
     utt.lang  = _cachedVoice.lang;  // 'en-US' or 'en-GB'
     utt.rate  = 0.9;                // slightly slower for TOEIC learners
 
-    // If the utterance errors mid-play, fall back silently to Google TTS
-    utt.onerror = () => _googleTTS(text);
+    // If the utterance errors mid-play, fall back silently to Google TTS.
+    // Do not report an end for the canceled utterance; the fallback owns it.
+    utt.onerror = (event) => {
+      if (canceled || event?.error === 'canceled' || event?.error === 'interrupted') return;
+      fallbackHandle = _googleTTS(text, () => {
+        if (!canceled) onEnd?.();
+      });
+    };
+    if (onEnd) utt.onend = onEnd;
 
     window.speechSynthesis.speak(utt);
-    return _noopHandle;
+    return {
+      cancel: () => {
+        canceled = true;
+        window.speechSynthesis.cancel();
+        fallbackHandle?.cancel();
+      },
+    };
   }
 
   // ── Fallback: Google TTS (en-US) ───────────────────────────────────────────
   // Reached when: Web Speech API unsupported, or no English voice cached yet.
   // For the "no voice yet" case (Chrome on first render), this gives immediate
   // audio while the voice list loads in the background for subsequent calls.
-  return _googleTTS(text);
+  return _googleTTS(text, onEnd);
 }
