@@ -947,9 +947,9 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
         </div>
       </div>
 
-      {/* Question card — image on the right when answered */}
+      {/* Question card — Listening & Typing shows the image immediately */}
       <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6 mb-5 shadow-xl">
-        <div className={`flex gap-5 ${answered && imageUrl ? 'flex-col sm:flex-row' : ''}`}>
+        <div className={`flex gap-5 ${isDictation && imageUrl ? 'flex-col sm:flex-row' : ''}`}>
 
           {/* Left: question text + explanation */}
           <div className="flex-1 min-w-0">
@@ -970,8 +970,8 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
             )}
           </div>
 
-          {/* Right: vocabulary image — only visible after answering */}
-          {answered && imageUrl && (
+          {/* Right: vocabulary image — visible immediately in Listening & Typing */}
+          {isDictation && imageUrl && (
             <div className="animate-fade-in sm:w-56 sm:shrink-0 rounded-2xl overflow-hidden border border-slate-700/50 shadow-lg relative">
               <img
                 src={imageUrl}
