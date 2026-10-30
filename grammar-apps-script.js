@@ -26,6 +26,8 @@
 
 var SHEET_QUESTIONS   = 'SavedQuestions';
 var SHEET_META        = 'Meta';
+var SHEET_STRUCTURES  = 'Structures';
+var SHEET_STRUCTURES_BACKUP = 'StructuresBackup';
 var SHEET_BACKUP      = 'Backup';
 var LOCK_TIMEOUT_MS   = 10000; // 10 seconds timeout for script lock
 var MAX_QUESTIONS     = 5000;
@@ -143,6 +145,8 @@ function createBackup(ss, questionsSheet, metaSheet, currentRevision) {
 // ── GET Endpoint ─────────────────────────────────────────────────────────────
 
 function doGet(e) {
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(LOCK_TIMEOUT_MS)) return buildResponse({ ok: false, error: 'busy' });
   try {
     var auth = checkAuth(e, null);
     if (!auth.ok) {
@@ -150,6 +154,7 @@ function doGet(e) {
     }
 
     var ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (e && e.parameter && e.parameter.scope === 'structures') return buildResponse(readStructures(ss));
     ensureSheet(ss, SHEET_QUESTIONS);
     ensureSheet(ss, SHEET_META);
 
@@ -191,6 +196,8 @@ function doGet(e) {
 
   } catch(e) {
     return buildResponse({ ok: false, error: e.message });
+  } finally {
+    lock.releaseLock();
   }
 }
 
@@ -221,6 +228,9 @@ function doPost(e) {
     if (!auth.ok) {
       return buildResponse(auth);
     }
+
+    // Structures have an independent revision and never write questions/review.
+    if (payload.action === 'saveStructures') return buildResponse(saveStructuresPayload(payload));
 
     // 3. Payload validation
     var validationErr = validatePayload(payload);
@@ -408,4 +418,173 @@ function testGrammarBackend() {
   }
 
   Logger.log('🎉 All isolated Grammar backend tests passed successfully!');
+}
+
+// Structures protocol v1: Meta!E1 revision, separate backup, same ScriptLock.
+// Legacy action=save never touches these sheets or this revision.
+function readStructures(ss) {
+  ensureSheet(ss, SHEET_STRUCTURES);
+  ensureSheet(ss, SHEET_META);
+  if (ss.getSheetByName(SHEET_META).getRange(1, 6).getValue()) throw new Error('Structures write interrupted; restore StructuresBackup before syncing.');
+  var sheet = ss.getSheetByName(SHEET_STRUCTURES);
+  var records = sheet.getLastRow() ? sheet.getRange(1, 1, sheet.getLastRow(), 1).getValues().map(function(row) {
+    // Corrupt rows abort hydration instead of disappearing on the next save.
+    var item = JSON.parse(row[0]);
+    var error = validateStructure(item);
+    if (error) throw new Error(error);
+    return item;
+  }) : [];
+  if (new Set(records.map(function(item) { return item.id; })).size !== records.length) throw new Error('Duplicate structure IDs.');
+  return { ok: true, structuresSchema: 1, structures: records,
+    structuresRevision: Number(ss.getSheetByName(SHEET_META).getRange(1, 5).getValue()) || 0 };
+}
+
+function saveStructuresPayload(payload) {
+  if (payload.structuresSchema !== 1 || !Number.isInteger(payload.expectedRevision) || payload.expectedRevision < 0
+      || !Array.isArray(payload.structures) || payload.structures.length > MAX_QUESTIONS) return { ok: false, error: 'validation' };
+  for (var i = 0; i < payload.structures.length; i++) {
+    if (validateStructure(payload.structures[i])) return { ok: false, error: 'validation' };
+    if (JSON.stringify(payload.structures[i]).length > 45000) return { ok: false, error: 'structure_too_large' };
+  }
+  if (new Set(payload.structures.map(function(item) { return item.id; })).size !== payload.structures.length) return { ok: false, error: 'validation' };
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var cloud = readStructures(ss);
+  if (payload.expectedRevision !== cloud.structuresRevision) return { ok: false, error: 'conflict' };
+  // Reject missing IDs, removed tombstones/events and stale snapshots even with matching CAS.
+  var merged = mergeStructures(payload.structures, cloud.structures);
+  function canonical(value) {
+    if (Array.isArray(value)) return value.map(canonical);
+    if (value && typeof value === 'object') {
+      var result = {};
+      Object.keys(value).sort().forEach(function(key) { if (value[key] !== undefined) result[key] = canonical(value[key]); });
+      return result;
+    }
+    return value;
+  }
+  if (JSON.stringify(canonical(merged)) !== JSON.stringify(canonical(mergeStructures([], payload.structures)))) return { ok: false, error: 'conflict' };
+  ensureSheet(ss, SHEET_STRUCTURES_BACKUP);
+  var backup = ss.getSheetByName(SHEET_STRUCTURES_BACKUP);
+  backup.clearContents();
+  backup.getRange(1, 1, 1, 2).setValues([[new Date().toISOString(), cloud.structuresRevision]]);
+  if (cloud.structures.length) backup.getRange(2, 1, cloud.structures.length, 1).setValues(cloud.structures.map(function(item) { return [JSON.stringify(item)]; }));
+  var sheet = ss.getSheetByName(SHEET_STRUCTURES);
+  var revision = cloud.structuresRevision + 1;
+  var meta = ss.getSheetByName(SHEET_META);
+  // Sheets has no multi-range transaction. A durable journal blocks reads after
+  // interrupted execution; ordinary errors restore the pre-write state in-lock.
+  meta.getRange(1, 6).setValue('structures-write-in-progress');
+  SpreadsheetApp.flush();
+  try {
+    if (merged.length) sheet.getRange(1, 1, merged.length, 1).setValues(merged.map(function(item) { return [JSON.stringify(item)]; }));
+    meta.getRange(1, 5).setValue(revision);
+    SpreadsheetApp.flush();
+    meta.getRange(1, 6).clearContent();
+    SpreadsheetApp.flush();
+  } catch (writeError) {
+    // Leave the backup and journal intact if rollback also fails.
+    meta.getRange(1, 6).setValue('structures-write-in-progress');
+    if (cloud.structures.length) sheet.getRange(1, 1, cloud.structures.length, 1).setValues(cloud.structures.map(function(item) { return [JSON.stringify(item)]; }));
+    if (sheet.getLastRow() > cloud.structures.length) sheet.getRange(cloud.structures.length + 1, 1, sheet.getLastRow() - cloud.structures.length, 1).clearContent();
+    meta.getRange(1, 5).setValue(cloud.structuresRevision);
+    SpreadsheetApp.flush();
+    meta.getRange(1, 6).clearContent();
+    SpreadsheetApp.flush();
+    throw writeError;
+  }
+  return { ok: true, structuresSchema: 1, structuresRevision: revision, writtenStructures: merged.length };
+}
+
+// Pure helpers shared in behavior with src/utils/grammarSyncMerge.js.
+function validateStructure(item, index = 0) {
+  if (!item || typeof item !== 'object') return `Structure at index ${index} must be a valid object.`;
+  if (!item.id || typeof item.id !== 'string') return `Structure at index ${index} missing valid id.`;
+  if (!item.english || typeof item.english !== 'string') return `Structure at index ${index} missing english pattern.`;
+  if (!item.vietnamese || typeof item.vietnamese !== 'string') return `Structure at index ${index} missing Vietnamese meaning.`;
+  if (item.level !== undefined && (!Number.isInteger(Number(item.level)) || Number(item.level) < 1 || Number(item.level) > 5)) {
+    return `Structure at index ${index} has invalid level.`;
+  }
+  if (Array.isArray(item)) return 'Invalid structure object.';
+  for (const key of ['example', 'notes', 'topic']) {
+    if (item[key] !== undefined && typeof item[key] !== 'string') return `Invalid structure ${key}.`;
+  }
+  for (const key of ['updatedAt', 'deletedAt', 'createdAt', 'lastReviewedAt', 'nextReviewAt', 'currentStreak', 'wrongCount', 'totalReviews']) {
+    if (item[key] != null && (!Number.isFinite(item[key]) || item[key] < 0)) return `Invalid structure ${key}.`;
+  }
+  if (item.reviewBase !== undefined) {
+    if (!item.reviewBase || typeof item.reviewBase !== 'object' || Array.isArray(item.reviewBase)) return 'Invalid review base.';
+    const error = validateStructure({ id: item.id, english: item.english, vietnamese: item.vietnamese, ...item.reviewBase, reviewBase: undefined, reviewEvents: undefined });
+    if (error) return error;
+  }
+  if (item.reviewEvents !== undefined) {
+    if (!item.reviewBase || !item.reviewEvents || typeof item.reviewEvents !== 'object' || Array.isArray(item.reviewEvents)) return 'Invalid review events.';
+    for (const event of Object.values(item.reviewEvents)) {
+      if (!event || typeof event.correct !== 'boolean' || !Number.isFinite(event.at) || event.at <= 0) return 'Invalid review event.';
+    }
+  }
+  return null;
+}
+
+/** Replay immutable review events so concurrent/offline answers are never discarded. */
+function structureProgress(item) {
+  const base = item.reviewBase || item;
+  let level = Number(base.level) || 1;
+  let currentStreak = Number(base.currentStreak) || 0;
+  let wrongCount = Number(base.wrongCount) || 0;
+  let totalReviews = Number(base.totalReviews) || 0;
+  let lastReviewedAt = base.lastReviewedAt || null;
+  let nextReviewAt = base.nextReviewAt || null;
+  const thresholds = { 1: 2, 2: 4, 3: 8, 4: 15 };
+  const days = { 1: 1, 2: 3, 3: 7, 4: 14, 5: 30 };
+  const events = Object.entries(item.reviewEvents || {}).sort(([a, x], [b, y]) => x.at - y.at || a.localeCompare(b));
+  for (const [, event] of events) {
+    totalReviews++;
+    if (event.correct) {
+      currentStreak++;
+      if (thresholds[level] && currentStreak >= thresholds[level]) {
+        level++;
+        currentStreak = 0;
+      }
+    } else {
+      level = Math.max(1, level - 1);
+      currentStreak = 0;
+      wrongCount++;
+    }
+    lastReviewedAt = event.at;
+    nextReviewAt = event.correct ? event.at + days[level] * 86400000 : event.at;
+  }
+  return { level, currentStreak, wrongCount, totalReviews, lastReviewedAt, nextReviewAt };
+}
+
+/** Field edits use deterministic last-write-wins; answers use a union of events.
+ * Tombstones remain permanently, including on older offline devices. */
+function mergeStructures(localStructures = [], serverStructures = []) {
+  const map = new Map();
+  for (const source of [...serverStructures, ...localStructures]) {
+    const item = {
+      ...source,
+      reviewBase: source.reviewBase || structureProgress({ ...source, reviewEvents: {} }),
+      reviewEvents: source.reviewEvents || {},
+    };
+    const old = map.get(item.id);
+    if (!old) {
+      map.set(item.id, { ...item, ...structureProgress(item) });
+      continue;
+    }
+    const newer = (Number(item.updatedAt) || 0) > (Number(old.updatedAt) || 0)
+      || ((Number(item.updatedAt) || 0) === (Number(old.updatedAt) || 0) && JSON.stringify(item) > JSON.stringify(old));
+    const winner = newer ? item : old;
+    // A content edit must not select an older pre-event migration baseline.
+    const bases = [old.reviewBase, item.reviewBase];
+    bases.sort((a, b) => (Number(b.lastReviewedAt) || 0) - (Number(a.lastReviewedAt) || 0)
+      || (Number(b.totalReviews) || 0) - (Number(a.totalReviews) || 0)
+      || JSON.stringify(b).localeCompare(JSON.stringify(a)));
+    const merged = {
+      ...old, ...winner,
+      deletedAt: Math.max(Number(old.deletedAt) || 0, Number(item.deletedAt) || 0) || null,
+      reviewBase: bases[0],
+      reviewEvents: { ...old.reviewEvents, ...item.reviewEvents },
+    };
+    map.set(item.id, { ...merged, ...structureProgress(merged) });
+  }
+  return [...map.values()].sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0) || a.id.localeCompare(b.id));
 }

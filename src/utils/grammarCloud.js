@@ -12,7 +12,7 @@
  */
 
 import { getGrammarCloudUrl } from './grammarStorage';
-import { validateQuestion } from './grammarSyncMerge';
+import { validateQuestion, validateStructure } from './grammarSyncMerge';
 
 /** True when a grammar sync URL has been configured. */
 export function isGrammarCloudConfigured() {
@@ -109,7 +109,7 @@ export async function pushGrammarToCloud({
 /**
  * Fetches latest saved questions and revision from cloud.
  *
- * @returns {Promise<{savedQuestions: object[], reviewProgress: object, serverRevision: number} | null>}
+ * @returns {Promise<{savedQuestions: object[], reviewProgress: object, structures: object[], hasStructures: boolean, serverRevision: number} | null>}
  */
 export async function fetchGrammarFromCloud(url = getGrammarCloudUrl()) {
   if (!url.trim()) return null;
@@ -131,10 +131,14 @@ export async function fetchGrammarFromCloud(url = getGrammarCloudUrl()) {
         || Array.isArray(json.reviewProgress)) {
       return null;
     }
+    const hasStructures = Array.isArray(json.structures);
+    if (hasStructures && json.structures.some(item => validateStructure(item))) return null;
 
     return {
       savedQuestions: json.savedQuestions,
       reviewProgress: json.reviewProgress ?? {},
+      structures: hasStructures ? json.structures : [],
+      hasStructures,
       serverRevision: Number(json.revision) || 0,
     };
   } catch {
