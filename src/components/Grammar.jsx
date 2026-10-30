@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Zap, Bookmark, Brain, BarChart2, Cloud } from 'lucide-react';
+import { Zap, Bookmark, Brain, BarChart2, Cloud, Layers } from 'lucide-react';
 import { useGrammarStore } from '../hooks/useGrammarStore';
 import GrammarPractice     from './grammar/GrammarPractice';
 import GrammarQuiz         from './grammar/GrammarQuiz';
@@ -7,12 +7,14 @@ import GrammarSaved        from './grammar/GrammarSaved';
 import GrammarReview       from './grammar/GrammarReview';
 import GrammarStats        from './grammar/GrammarStats';
 import GrammarCloudSettings from './grammar/GrammarCloudSettings';
+import GrammarStructures from './grammar/GrammarStructures';
 
 const SUB_TABS = [
   { id: 'practice',  label: 'Practice',         Icon: Zap       },
   { id: 'saved',     label: 'Saved Questions',   Icon: Bookmark  },
   { id: 'review',    label: 'Review',            Icon: Brain     },
   { id: 'stats',     label: 'Statistics',        Icon: BarChart2 },
+  { id: 'structures', label: 'Structures',        Icon: Layers },
 ];
 
 /**
@@ -20,7 +22,7 @@ const SUB_TABS = [
  * Manages sub-tab routing and bridges the grammar store with child components.
  * @param {{ addWord: Function }} props — addWord from the Vocabulary store for word integration.
  */
-export default function Grammar({ addWord }) {
+export default function Grammar({ addWord, structureStore }) {
   const [subTab,      setSubTab]      = useState('practice');
   const [session,     setSession]     = useState(null); // { questions, config } when quiz is active
   const [showCloud,   setShowCloud]   = useState(false);
@@ -122,7 +124,7 @@ export default function Grammar({ addWord }) {
       {showCloud && (
         <GrammarCloudSettings
           onClose={() => setShowCloud(false)}
-          onConfigChanged={setCloudConfigured}
+          onConfigChanged={() => { setCloudConfigured(); structureStore?.syncFromCloud(); }}
           syncStatus={syncStatus}
           hasPending={hasPending}
           onSync={syncFromCloud}
@@ -207,6 +209,18 @@ export default function Grammar({ addWord }) {
             savedQuestions={savedQuestions}
             dueForReview={dueForReview}
             wrongQuestions={wrongQuestions}
+          />
+        )}
+
+        {subTab === 'structures' && structureStore && (
+          <GrammarStructures
+            structures={structureStore.structures}
+            syncStatus={structureStore.syncStatus}
+            onSync={structureStore.syncFromCloud}
+            onAdd={structureStore.addStructure}
+            onUpdate={structureStore.updateStructure}
+            onDelete={structureStore.deleteStructure}
+            onImport={structureStore.importStructures}
           />
         )}
       </div>

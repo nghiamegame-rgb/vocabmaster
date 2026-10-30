@@ -45,6 +45,7 @@ export default async function handler(req, res) {
         url.searchParams.set('secret', syncSecret);
       }
       url.searchParams.set('_cb', String(Date.now()));
+      if (req.query?.scope === 'structures') url.searchParams.set('scope', 'structures');
 
       const upstream = await fetch(url.toString(), {
         method: 'GET',

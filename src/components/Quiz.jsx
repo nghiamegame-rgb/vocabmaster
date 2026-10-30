@@ -6,6 +6,8 @@ import {
   Headphones, Type, Send, FastForward
 } from 'lucide-react';
 import { playAudio } from '../utils/audio';
+import { selectStructures } from '../utils/structureStorage';
+import { buildStructurePrompt, validateStructureQuestions } from '../utils/structureQuiz';
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                            */
@@ -39,6 +41,12 @@ const QUIZ_MODES = [
     desc: 'Authentic English TOEIC Part 5 sentence with a [_____] blank — choose or type the correct word',
   },
 ];
+
+QUIZ_MODES.push({
+  id: 'structure',
+  label: 'Grammar Structures',
+  desc: 'TOEIC Part 5 dựa trên các Structures đã lưu, có liên kết ID để cập nhật tiến độ',
+});
 
 const ANSWER_MODES = [
   {
@@ -227,7 +235,7 @@ Bay gio hay tao chinh xac ${count} cau hoi, dam bao MOI cau co boi canh va cau t
  *  • Markdown fenced blocks (```json … ``` or ``` … ```)
  * Normalises answerIndex / correctIndex → correctIndex used by the quiz engine.
  */
-function parseResponse(text) {
+function parseResponse(text, structureMode = false) {
   if (!text || !text.trim()) throw new Error('The paste area is empty.');
 
   let src = text.trim();
@@ -254,6 +262,8 @@ function parseResponse(text) {
   }
 
   return raw.map((q, i) => {
+    if (!q || typeof q !== 'object') throw new Error(`Invalid question #${i + 1}.`);
+    if (structureMode && typeof q.answerIndex !== 'number' && typeof q.correctIndex !== 'number') throw new Error(`Question #${i + 1} missing answerIndex.`);
     if (!q.question) throw new Error(`Question #${i + 1} is missing the "question" field.`);
     if (!Array.isArray(q.options) || q.options.length < 2) {
       throw new Error(`Question #${i + 1} needs an "options" array with at least 2 items.`);
@@ -267,6 +277,8 @@ function parseResponse(text) {
       correctIndex,
       explanation: q.explanation || '',
       wordEnglish: q.wordEnglish || q.options[correctIndex] || '',
+      structureId: q.structureId || q.structure_id || '',
+      trapPoint: q.trapPoint || '',
     };
   });
 }
@@ -307,31 +319,51 @@ function Section({ title, children }) {
 /* ------------------------------------------------------------------ */
 /* Quiz Config + Prompt Screen                                          */
 /* ------------------------------------------------------------------ */
-function QuizConfig({ words, onStart }) {
+function QuizConfig({ words, structures = [], onStart }) {
   const [count,          setCount]          = useState(10);
   const [diff,           setDiff]           = useState('Medium');
   const [priority,       setPriority]       = useState('all');
   const [mode,           setMode]           = useState('vn');
   const [answerMode,     setAnswerMode]     = useState('mc');
   const [wordTypeFilter, setWordTypeFilter] = useState('All'); // 'All'|'Word'|'Phrase'|'Family'|'Preposition'
+  const [selectedStructureIds, setSelectedStructureIds] = useState(() => new Set(structures.map(item => item.id)));
 
   const [copied,     setCopied]     = useState(false);
   const [jsonPaste,  setJsonPaste]  = useState('');
   const [parseError, setParseError] = useState('');
 
   const textareaRef = useRef(null);
+  const promptIdsRef = useRef(null);
+  const knownStructureIdsRef = useRef(new Set(structures.map(item => item.id)));
 
   // Apply wordType filter before anything else
   const filteredWords = wordTypeFilter === 'All'
     ? words
     : words.filter(w => (w.wordType || 'Word') === wordTypeFilter);
   const hasWords = filteredWords.length >= 4;
+  const selectedStructures = structures.filter(item => selectedStructureIds.has(item.id));
+  const hasSource = mode === 'structure' ? selectedStructures.length > 0 : hasWords;
+
+  useEffect(() => {
+    const previousIds = knownStructureIdsRef.current;
+    knownStructureIdsRef.current = new Set(structures.map(item => item.id));
+    setSelectedStructureIds(prev => {
+      return new Set(structures.filter(item => prev.has(item.id) || !previousIds.has(item.id)).map(item => item.id));
+    });
+  }, [structures]);
+
+  useEffect(() => {
+    if (mode === 'structure') setAnswerMode('mc');
+  }, [mode]);
 
   /* Copy prompt to clipboard */
   function handleCopy() {
-    if (!hasWords) return;
-    const pool   = buildPool(filteredWords, priority, count);
-    const prompt = buildPrompt(pool, count, diff, mode);
+    if (!hasSource) return;
+    const pool = mode === 'structure' ? selectStructures(selectedStructures, count) : [];
+    promptIdsRef.current = mode === 'structure' ? pool.map(item => item.id) : null;
+    const prompt = mode === 'structure'
+      ? buildStructurePrompt(pool, count, diff)
+      : buildPrompt(buildPool(filteredWords, priority, count), count, diff, mode);
 
     const write = () => {
       setCopied(true);
@@ -362,8 +394,11 @@ function QuizConfig({ words, onStart }) {
   function handleStart() {
     setParseError('');
     try {
-      const questions = parseResponse(jsonPaste);
-      onStart(questions.slice(0, count), answerMode);
+      const questions = parseResponse(jsonPaste, mode === 'structure');
+      if (mode === 'structure') {
+        validateStructureQuestions(questions, promptIdsRef.current || selectedStructures.map(item => item.id), structures, count);
+      }
+      onStart(questions.slice(0, count), mode === 'structure' ? 'mc' : answerMode, mode);
     } catch (err) {
       setParseError(err.message || 'Failed to parse JSON.');
       textareaRef.current?.focus();
@@ -381,11 +416,13 @@ function QuizConfig({ words, onStart }) {
       </div>
 
       {/* Insufficient words warning */}
-      {!hasWords && (
+      {!hasSource && (
         <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-5">
           <AlertCircle size={17} className="text-amber-400 shrink-0 mt-0.5" />
           <p className="text-amber-300 text-sm">
-            {wordTypeFilter === 'All'
+            {mode === 'structure'
+              ? <>Chưa có cấu trúc được chọn. Hãy thêm cấu trúc trong tab <strong>Grammar → Structures</strong>.</>
+              : wordTypeFilter === 'All'
               ? <>You need at least <strong>4 vocabulary words</strong> to generate a quiz. Add words in the <strong>Vocabulary</strong> tab first.</>
               : <>Not enough <strong>{wordTypeFilter}</strong> words (need ≥ 4). Try <strong>All Types</strong> or add more words of this type.</>
             }
@@ -425,7 +462,7 @@ function QuizConfig({ words, onStart }) {
         </Section>
 
         {/* Level Priority */}
-        <Section title="Level Priority">
+        {mode !== 'structure' && <Section title="Level Priority">
           <div className="flex flex-wrap gap-2">
             {LEVEL_PRIORITIES.map(lp => (
               <Pill
@@ -437,10 +474,10 @@ function QuizConfig({ words, onStart }) {
               />
             ))}
           </div>
-        </Section>
+        </Section>}
 
         {/* Vocabulary Type */}
-        <Section title="Vocabulary Type">
+        {mode !== 'structure' && <Section title="Vocabulary Type">
           <div className="flex flex-wrap gap-2">
             {WORD_TYPE_FILTERS.map(wt => {
               const cnt = wt.id === 'All'
@@ -464,7 +501,19 @@ function QuizConfig({ words, onStart }) {
               );
             })}
           </div>
-        </Section>
+        </Section>}
+
+        {mode === 'structure' && (
+          <Section title="Structures to practice">
+            <div className="flex items-center justify-between mb-3 text-xs text-slate-400">
+              <span>{selectedStructures.length}/{structures.length} cấu trúc được chọn</span>
+              <div className="flex gap-2"><button type="button" onClick={() => setSelectedStructureIds(new Set(structures.map(item => item.id)))} className="text-indigo-300 hover:text-white">Chọn tất cả</button><button type="button" onClick={() => setSelectedStructureIds(new Set())} className="text-slate-400 hover:text-white">Bỏ chọn</button></div>
+            </div>
+            <div className="max-h-56 overflow-y-auto space-y-1 pr-1">
+              {structures.map(item => <label key={item.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-700/50 cursor-pointer"><input type="checkbox" checked={selectedStructureIds.has(item.id)} onChange={e => setSelectedStructureIds(prev => { const next = new Set(prev); e.target.checked ? next.add(item.id) : next.delete(item.id); return next; })} className="accent-indigo-500" /><span className="text-sm text-white">{item.english}</span><span className="text-xs text-slate-500">L{item.level}</span></label>)}
+            </div>
+          </Section>
+        )}
 
         {/* Quiz Mode */}
         <Section title="Question Format">
@@ -490,7 +539,7 @@ function QuizConfig({ words, onStart }) {
         {/* Answer Mode */}
         <Section title="Answer Mode">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {ANSWER_MODES.map(am => (
+            {ANSWER_MODES.filter(am => mode !== 'structure' || am.id === 'mc').map(am => (
               <button
                 key={am.id}
                 id={`answer-mode-${am.id}`}
@@ -521,6 +570,8 @@ function QuizConfig({ words, onStart }) {
               <><strong className="text-sky-200">TOEIC Part 5 (English):</strong> The AI generates
               authentic English sentences with a <strong>[_____] blank</strong>, common TOEIC collocations,
               and 4 English word choices. Explanation is in Vietnamese.</>
+            ) : mode === 'structure' ? (
+              <><strong className="text-sky-200">Cấu trúc ngữ pháp:</strong> AI tạo câu TOEIC Part 5 dựa trên cấu trúc đã chọn, có 4 đáp án và điểm bẫy.</>
             ) : (
               <><strong className="text-sky-200">Vietnamese → English:</strong> The AI writes a Vietnamese
               context sentence with a <strong>[_____] blank</strong> and 4 English word choices.</>
@@ -567,7 +618,7 @@ function QuizConfig({ words, onStart }) {
           <button
             id="copy-prompt-btn"
             onClick={handleCopy}
-            disabled={!hasWords}
+            disabled={!hasSource}
             className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
               copied
                 ? 'bg-emerald-600 text-white'
@@ -657,7 +708,7 @@ function playWordAudio(wordEnglish, options) {
   return playAudio(wordEnglish, options);
 }
 
-function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
+function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mode, recordStructureResult }) {
   /**
    * Live question queue — starts as all shuffled questions.
    * Re-test items for warned words are appended near the end transparently.
@@ -707,14 +758,14 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
   const progress = (Math.min(queueIndex, originalCount) / originalCount) * 100;
 
   // Find the word object for the current question
-  const wordObj = words.find(
+  const wordObj = mode === 'structure' ? null : words.find(
     w => w.english.toLowerCase() === (q.wordEnglish || '').toLowerCase()
   );
 
   // Determine image URL: use stored imageUrl or Unsplash fallback
   const imageUrl = wordObj?.imageUrl
     ? wordObj.imageUrl
-    : q.wordEnglish
+    : mode !== 'structure' && q.wordEnglish
       ? `https://source.unsplash.com/featured/300x200/?${encodeURIComponent(q.wordEnglish)}`
       : null;
 
@@ -804,6 +855,13 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
    * updateWordLevel(word, false) is called ONLY in Branch 2b. Nowhere else.
    */
   function grade(isCorrect, currentQ, currentResults) {
+    if (mode === 'structure') {
+      recordStructureResult?.(currentQ.structureId, isCorrect);
+      const newResults = [...currentResults, { correct: isCorrect, structureId: currentQ.structureId }];
+      resultsRef.current = newResults;
+      setResults(newResults);
+      return;
+    }
     const key      = (currentQ.wordEnglish || '').toLowerCase();
     const isWarned = warningSetRef.current.has(key);
 
@@ -965,6 +1023,9 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
                 <p className="text-slate-300 text-sm leading-relaxed">
                   <span className="text-indigo-400 font-semibold">💡 </span>
                   {q.explanation}
+                  {mode === 'structure' && q.trapPoint && (
+                    <span className="block mt-2 text-amber-300"><strong>Điểm bẫy: </strong>{q.trapPoint}</span>
+                  )}
                 </p>
               </div>
             )}
@@ -1141,7 +1202,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode }) {
 /* ------------------------------------------------------------------ */
 /* Results Screen                                                       */
 /* ------------------------------------------------------------------ */
-function QuizResults({ results, onRestart }) {
+function QuizResults({ results, onRestart, mode }) {
   const total   = results.length;
   const correct = results.filter(r => r.correct).length;
   const pct     = Math.round((correct / total) * 100);
@@ -1173,7 +1234,7 @@ function QuizResults({ results, onRestart }) {
 
         <div className="bg-slate-700/40 rounded-xl p-3 text-sm text-slate-400">
           <Zap size={14} className="inline text-indigo-400 mr-1.5" />
-          Word mastery levels &amp; streaks updated based on your answers.
+          {mode === 'structure' ? 'Tiến độ L1–L5 của cấu trúc được cập nhật theo câu trả lời.' : 'Word mastery levels &amp; streaks updated based on your answers.'}
         </div>
       </div>
 
@@ -1191,21 +1252,25 @@ function QuizResults({ results, onRestart }) {
 /* ------------------------------------------------------------------ */
 /* Root                                                                 */
 /* ------------------------------------------------------------------ */
-export default function Quiz({ words, updateWordLevel, recordQuizResult }) {
+export default function Quiz({ words, structures = [], updateWordLevel, recordQuizResult, recordStructureResult }) {
   const [phase,      setPhase]      = useState('config');
   const [questions,  setQuestions]  = useState([]);
   const [results,    setResults]    = useState([]);
   const [answerMode, setAnswerMode] = useState('mc');
+  const [quizMode, setQuizMode] = useState('vn');
 
-  function handleStart(qs, am) {
+  function handleStart(qs, am, selectedMode) {
     setQuestions(qs);
     setAnswerMode(am || 'mc');
+    setQuizMode(selectedMode || 'vn');
     setPhase('game');
   }
 
   function handleFinish(res) {
     setResults(res);
-    recordQuizResult(res.filter(r => r.correct).length, res.length);
+    if (quizMode !== 'structure') {
+      recordQuizResult(res.filter(r => r.correct).length, res.length);
+    }
     setPhase('results');
   }
 
@@ -1215,8 +1280,8 @@ export default function Quiz({ words, updateWordLevel, recordQuizResult }) {
     setResults([]);
   }
 
-  if (phase === 'config')  return <QuizConfig words={words} onStart={handleStart} />;
-  if (phase === 'game')    return <QuizGame   questions={questions} words={words} onFinish={handleFinish} updateWordLevel={updateWordLevel} answerMode={answerMode} />;
-  if (phase === 'results') return <QuizResults results={results} onRestart={handleRestart} />;
+  if (phase === 'config')  return <QuizConfig words={words} structures={structures} onStart={handleStart} />;
+  if (phase === 'game')    return <QuizGame   questions={questions} words={words} onFinish={handleFinish} updateWordLevel={updateWordLevel} answerMode={answerMode} mode={quizMode} recordStructureResult={recordStructureResult} />;
+  if (phase === 'results') return <QuizResults results={results} onRestart={handleRestart} mode={quizMode} />;
   return null;
 }

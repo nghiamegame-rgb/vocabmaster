@@ -7,6 +7,7 @@ import ListeningReview from './components/ListeningReview';
 import Flashcard       from './components/Flashcard';
 import Grammar         from './components/Grammar';
 import { useVocabStore } from './hooks/useVocabStore';
+import { useStructuresStore } from './hooks/useStructuresStore';
 
 export default function App() {
   const [activeTab,   setActiveTab]   = useState('dashboard');
@@ -26,6 +27,7 @@ export default function App() {
     pushStatus,
     syncFromCloud,
   } = useVocabStore();
+  const structureStore = useStructuresStore();
 
   function handleSetActiveTab(tab) {
     setActiveTab(tab);
@@ -68,8 +70,10 @@ export default function App() {
         {activeTab === 'quiz' && (
           <Quiz
             words={words}
+            structures={structureStore.structures}
             updateWordLevel={updateWordLevel}
             recordQuizResult={recordQuizResult}
+            recordStructureResult={structureStore.recordStructureResult}
           />
         )}
         {activeTab === 'listening' && (
@@ -87,6 +91,7 @@ export default function App() {
         {activeTab === 'grammar' && (
           <Grammar
             addWord={addWord}
+            structureStore={structureStore}
           />
         )}
       </main>

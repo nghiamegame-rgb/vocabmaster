@@ -11,6 +11,20 @@ body {
   padding: 0;
 }
 
+.field {
+  width: 100%;
+  background: rgb(15 23 42 / 0.7);
+  border: 1px solid rgb(71 85 105 / 0.9);
+  color: white;
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.field::placeholder { color: rgb(100 116 139); }
+.field:focus { border-color: rgb(99 102 241); }
+
 :root {
   --primary: #6366f1;
   --primary-dark: #4f46e5;
