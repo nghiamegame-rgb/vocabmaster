@@ -244,16 +244,45 @@ export function useGrammarStore() {
 
   function recordReview(savedId, isCorrect) {
     const rec = reviewProgressRef.current[savedId] ?? { level: 1, wrongCount: 0, totalReviews: 0 };
-    const level = isCorrect ? Math.min(5, rec.level + 1) : Math.max(1, rec.level - 1);
+    const previousLevel = Math.min(5, Math.max(1, Number(rec.level) || 1));
+    const level = isCorrect ? Math.min(5, previousLevel + 1) : Math.max(1, previousLevel - 1);
     const next = {
-      level, wrongCount: isCorrect ? rec.wrongCount : rec.wrongCount + 1,
-      totalReviews: rec.totalReviews + 1, lastReviewAt: Date.now(), nextReviewAt: calcNextReviewAt(level),
+      ...rec,
+      level, wrongCount: (Number(rec.wrongCount) || 0) + (isCorrect ? 0 : 1),
+      totalReviews: (Number(rec.totalReviews) || 0) + 1, lastReviewAt: Date.now(), nextReviewAt: calcNextReviewAt(level),
     };
     commitEdit(data => ({ ...data, review: { ...data.review, [savedId]: next } }));
+    recordGrammarSession({
+      mode: 'sentence-analysis', activity: 'review', total: 1,
+      understood: isCorrect ? 1 : 0,
+      topic: savedQuestionsRef.current.find(q => q.savedId === savedId)?.topic || 'Mixed',
+    });
   }
 
   function recordGrammarSession(result) {
     setGrammarStats(prev => {
+      // Separate self-assessment/activity from historical TOEIC accuracy.
+      if (result.mode === 'sentence-analysis') {
+        if (!result.total) return prev;
+        const activity = prev.sentenceActivity || {};
+        const review = result.activity === 'review';
+        const topic = result.topic || 'Mixed';
+        const byTopic = { ...activity.byTopic };
+        const old = byTopic[topic] || {};
+        byTopic[topic] = {
+          analyzed: (old.analyzed || 0) + (review ? 0 : result.total),
+          reviewed: (old.reviewed || 0) + (review ? result.total : 0),
+          understood: (old.understood || 0) + (result.understood || 0),
+        };
+        return { ...prev, sentenceActivity: {
+          ...activity,
+          analyzed: (activity.analyzed || 0) + (review ? 0 : result.total),
+          reviewed: (activity.reviewed || 0) + (review ? result.total : 0),
+          understood: (activity.understood || 0) + (result.understood || 0),
+          byTopic,
+          sessions: [{ ...result, date: Date.now() }, ...(activity.sessions || []).slice(0, 19)],
+        } };
+      }
       const byTopic = { ...prev.byTopic };
       const t = result.topic || 'Mixed';
       byTopic[t] = {

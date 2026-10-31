@@ -3,9 +3,10 @@ import {
   Bookmark, Search, Filter, Star, StarOff,
   ChevronDown, ChevronUp, Trash2, StickyNote, X, Cloud, HardDrive
 } from 'lucide-react';
-import { GRAMMAR_TOPICS, getTopicLabel } from '../../utils/grammarPrompt';
+import { getAvailableTopics, getTopicLabel } from '../../utils/grammarPrompt';
 
-const OPTION_KEYS = ['A', 'B', 'C', 'D'];
+import { GrammarAnalysis } from './GrammarAnalysis';
+import { getGrammarSentence } from '../../utils/grammarSentence';
 
 /**
  * GrammarSaved — Saved Questions library with search, filter, review progress.
@@ -36,6 +37,11 @@ export default function GrammarSaved({
           q.sentence?.toLowerCase().includes(s) ||
           q.topic?.toLowerCase().includes(s) ||
           q.shortExplanation?.toLowerCase().includes(s) ||
+          q.vietnameseSentence?.toLowerCase().includes(s) ||
+          q.userNotes?.toLowerCase().includes(s) ||
+          getTopicLabel(q.topic).toLowerCase().includes(s) ||
+          JSON.stringify(q.grammarPoints || []).toLowerCase().includes(s) ||
+          JSON.stringify([q.structures, q.readingNotes]).toLowerCase().includes(s) ||
           Object.values(q.options || {}).some(v => v.toLowerCase().includes(s));
         if (!matches) return false;
       }
@@ -78,7 +84,7 @@ export default function GrammarSaved({
             <Bookmark size={20} className="text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">Câu hỏi đã lưu</h2>
+            <h2 className="text-xl font-bold text-white">Câu đã lưu</h2>
             <p className="text-slate-400 text-sm">{savedQuestions.length} câu đã lưu</p>
           </div>
         </div>
@@ -122,7 +128,7 @@ export default function GrammarSaved({
             className="bg-slate-800 border border-slate-600 text-slate-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-purple-500 transition-colors"
           >
             <option value="All">Tất cả chủ đề</option>
-            {GRAMMAR_TOPICS.filter(t => t !== 'Mixed').map(t => (
+            {getAvailableTopics(savedQuestions).map(t => (
               <option key={t} value={t}>{getTopicLabel(t)}</option>
             ))}
           </select>
@@ -166,7 +172,6 @@ export default function GrammarSaved({
           const open   = expanded[q.savedId];
           const level  = getReviewLevel(q.savedId);
           const wrongs = getWrongCount(q.savedId);
-          const detail = q.detailedExplanation;
 
           return (
             <div
@@ -201,7 +206,7 @@ export default function GrammarSaved({
                       </span>
                       {wrongs > 0 && (
                         <span className="px-2 py-0.5 rounded-md bg-rose-600/15 text-rose-300 text-xs font-medium border border-rose-500/20">
-                          Sai {wrongs}×
+                          Cần ôn lại / sai {wrongs}×
                         </span>
                       )}
                       <span className="px-2 py-0.5 rounded-md bg-slate-700/50 text-slate-400 text-xs">
@@ -210,14 +215,14 @@ export default function GrammarSaved({
                     </div>
 
                     {/* Sentence */}
-                    <p className="text-white text-sm leading-relaxed">
-                      {q.sentence.replace('_____', `[${q.options?.[q.answer] ?? '?'}]`)}
+                    <p className="text-white text-sm leading-relaxed break-words">
+                      {getGrammarSentence(q)}
                     </p>
 
-                    {/* Answer line */}
-                    <p className="text-emerald-400 text-xs mt-1 font-medium">
-                      ✓ {q.answer}. {q.options?.[q.answer]}
-                    </p>
+                    <button type="button" aria-expanded={Boolean(open)} onClick={() => setExpanded(p => ({ ...p, [q.savedId]: !p[q.savedId] }))}
+                      className="text-purple-300 text-sm mt-2 hover:text-purple-200">
+                      {open ? 'Ẩn phân tích' : 'Hiện phân tích'}
+                    </button>
 
                     {/* Saved date */}
                     <p className="text-slate-600 text-xs mt-1">
@@ -228,6 +233,8 @@ export default function GrammarSaved({
                   <div className="flex items-center gap-1 shrink-0">
                     {/* Expand */}
                     <button
+                      aria-label={open ? 'Ẩn phân tích' : 'Hiện phân tích'}
+                      aria-expanded={Boolean(open)}
                       onClick={() => setExpanded(p => ({ ...p, [q.savedId]: !p[q.savedId] }))}
                       className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-800 transition-colors"
                     >
@@ -248,59 +255,7 @@ export default function GrammarSaved({
               {/* Expanded details */}
               {open && (
                 <div className="border-t border-slate-700/50 p-4 space-y-3 animate-fade-in">
-                  {/* Vietnamese */}
-                  <p className="text-slate-400 text-sm italic">{q.vietnameseSentence}</p>
-
-                  {/* Options */}
-                  <div className="grid grid-cols-2 gap-2">
-                    {OPTION_KEYS.map(k => (
-                      <div key={k} className={`px-3 py-2 rounded-lg text-sm border flex items-center gap-2 ${
-                        k === q.answer
-                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                          : 'bg-slate-800/50 border-slate-700/30 text-slate-500'
-                      }`}>
-                        <span className="font-bold shrink-0">{k}.</span>
-                        <span className="flex-1">{q.options?.[k]}</span>
-                        {q.optionLabels?.[k] && (
-                          <span className="text-xs px-1.5 py-0.5 rounded bg-slate-700/70 text-slate-400 font-mono shrink-0">
-                            {q.optionLabels[k]}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Short explanation */}
-                  <div className="bg-indigo-500/5 border border-indigo-500/15 rounded-xl p-3">
-                    <p className="text-slate-300 text-sm">{q.shortExplanation}</p>
-                  </div>
-
-                  {/* Detailed explanation */}
-                  {detail && (
-                    <div className="space-y-2">
-                      {detail.grammarRules && detail.grammarRules.length > 0 && (
-                        <div className="bg-purple-500/5 border border-purple-500/10 rounded-xl p-3">
-                          <p className="text-purple-400 text-xs font-semibold mb-1.5">Quy tắc ngữ pháp</p>
-                          <ul className="space-y-0.5">
-                            {detail.grammarRules.map((r, i) => (
-                              <li key={i} className="text-slate-400 text-sm">▸ {r}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      {detail.keyVocabulary && detail.keyVocabulary.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {detail.keyVocabulary.map((w, i) => (
-                            <span key={i} className="bg-slate-800 rounded-lg px-3 py-1 text-xs">
-                              <span className="text-white font-medium">{w.word}</span>
-                              <span className="text-slate-500 mx-1">—</span>
-                              <span className="text-slate-400">{w.meaning}</span>
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <GrammarAnalysis question={q} />
 
                   {/* User notes */}
                   <div className="border-t border-slate-700/30 pt-3">

@@ -10,10 +10,10 @@ import GrammarCloudSettings from './grammar/GrammarCloudSettings';
 import GrammarStructures from './grammar/GrammarStructures';
 
 const SUB_TABS = [
-  { id: 'practice',  label: 'Practice',         Icon: Zap       },
-  { id: 'saved',     label: 'Saved Questions',   Icon: Bookmark  },
-  { id: 'review',    label: 'Review',            Icon: Brain     },
-  { id: 'stats',     label: 'Statistics',        Icon: BarChart2 },
+  { id: 'practice',  label: 'Luyện tập',         Icon: Zap       },
+  { id: 'saved',     label: 'Câu đã lưu',   Icon: Bookmark  },
+  { id: 'review',    label: 'Ôn tập',            Icon: Brain     },
+  { id: 'stats',     label: 'Thống kê',        Icon: BarChart2 },
   { id: 'structures', label: 'Structures',        Icon: Layers },
 ];
 
@@ -53,7 +53,7 @@ export default function Grammar({ addWord, structureStore }) {
   }
 
   function handleFinishSession(result) {
-    recordGrammarSession(result);
+    if (!result.goBack) recordGrammarSession(result);
     if (result.goBack) {
       setSession(null);
     }
@@ -77,9 +77,9 @@ export default function Grammar({ addWord, structureStore }) {
           </div>
           <div>
             <h1 className="text-2xl font-black text-white">
-              Grammar <span className="text-purple-400">TOEIC</span>
+              Grammar <span className="text-purple-400">VSTEP B1</span>
             </h1>
-            <p className="text-slate-400 text-sm">Part 5 · Sentence Completion · AI-powered</p>
+            <p className="text-slate-400 text-sm">Nhận diện ngữ pháp · Phân tích cấu trúc câu</p>
           </div>
         </div>
 
@@ -206,6 +206,7 @@ export default function Grammar({ addWord, structureStore }) {
         {subTab === 'stats' && (
           <GrammarStats
             grammarStats={grammarStats}
+            reviewProgress={reviewProgress}
             savedQuestions={savedQuestions}
             dueForReview={dueForReview}
             wrongQuestions={wrongQuestions}

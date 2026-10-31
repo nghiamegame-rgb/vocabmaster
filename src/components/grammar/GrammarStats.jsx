@@ -4,7 +4,7 @@ import { getTopicLabel } from '../../utils/grammarPrompt';
 /**
  * GrammarStats — Grammar performance statistics dashboard.
  */
-export default function GrammarStats({
+function LegacyGrammarStats({
   grammarStats,
   savedQuestions,
   dueForReview,
@@ -175,4 +175,48 @@ export default function GrammarStats({
       )}
     </div>
   );
+}
+
+export default function GrammarStats(props) {
+  const { grammarStats, savedQuestions, dueForReview, reviewProgress = {} } = props;
+  const activity = grammarStats.sentenceActivity || {};
+  const reviewed = activity.reviewed || 0;
+  const understood = activity.understood || 0;
+  return <div className="space-y-6">
+    <h2 className="text-xl text-white font-bold">Thống kê phân tích và ôn câu</h2>
+    <p className="text-slate-400 text-sm">Mức hiểu do bạn tự đánh giá sau khi xem phân tích. Thống kê được lưu trên thiết bị này.</p>
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {[
+        ['Đã xem phân tích', activity.analyzed || 0], ['Lượt ôn', reviewed],
+        ['Đã hiểu', understood], ['Cần ôn lại', reviewed - understood],
+        ['Câu đã lưu', savedQuestions.length], ['Đến hạn ôn', dueForReview.length],
+      ].map(([label, value]) => <div key={label} className="bg-slate-900/80 border border-slate-700/50 rounded-2xl p-4 text-center">
+        <p className="text-2xl text-white font-bold">{value}</p><p className="text-slate-400 text-sm">{label}</p>
+      </div>)}
+    </div>
+    <div className="bg-slate-900/80 border border-slate-700/50 rounded-2xl p-4 space-y-3">
+      <h3 className="text-white font-semibold">Tiến độ câu đã lưu</h3>
+      <div className="flex flex-wrap gap-3">{[1, 2, 3, 4, 5].map(level => <span key={level} className="text-indigo-300 text-sm bg-slate-800 p-2 rounded-lg">
+        L{level}: {savedQuestions.filter(q => (reviewProgress[q.savedId]?.level ?? 1) === level).length}
+      </span>)}</div>
+    </div>
+    {Object.keys(activity.byTopic || {}).length > 0 && <div className="bg-slate-900/80 border border-slate-700/50 rounded-2xl p-4 space-y-3">
+      <h3 className="text-white font-semibold">Hoạt động theo chủ đề</h3>
+      {Object.entries(activity.byTopic).map(([topic, s]) => <div key={topic} className="flex flex-wrap justify-between gap-2 text-sm">
+        <span className="text-purple-300">{getTopicLabel(topic)}</span>
+        <span className="text-slate-400">{s.analyzed || 0} phân tích · {s.reviewed || 0} lượt ôn · {s.understood || 0} đã hiểu</span>
+      </div>)}
+    </div>}
+    {activity.sessions?.length > 0 && <div className="bg-slate-900/80 border border-slate-700/50 rounded-2xl p-4 space-y-3">
+      <h3 className="text-white font-semibold">Hoạt động gần đây</h3>
+      {activity.sessions.slice(0, 10).map((s, i) => <div key={i} className="text-sm text-slate-400 flex flex-wrap justify-between gap-2">
+        <span>{getTopicLabel(s.topic)} · {s.activity === 'review' ? `${s.total} lượt ôn, ${s.understood || 0} đã hiểu` : `${s.total} câu đã phân tích`}</span>
+        <span>{new Date(s.date).toLocaleDateString('vi-VN')}</span>
+      </div>)}
+    </div>}
+    {grammarStats.totalAnswered > 0 && <details className="bg-slate-900/50 border border-slate-700 rounded-2xl p-4">
+      <summary className="text-slate-300 cursor-pointer">Lịch sử trắc nghiệm TOEIC cũ (giữ nguyên)</summary>
+      <div className="mt-4"><LegacyGrammarStats {...props} /></div>
+    </details>}
+  </div>;
 }

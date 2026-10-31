@@ -41,6 +41,25 @@ export function backend() {
 const item = (extra = {}) => ({ id: 's1', english: 'despite + noun', vietnamese: 'meaning', level: 3, createdAt: 1, updatedAt: 1, ...extra });
 const payload = (structures, expectedRevision) => ({ action: 'saveStructures', structuresSchema: 1, structures, expectedRevision });
 
+test('mixed legacy and sentence-analysis writes round-trip without changing structures', () => {
+  const b = backend();
+  assert.equal(b.post(payload([item()], 0)).ok, true);
+  const structures = JSON.stringify(b.get());
+  const legacy = { savedId: 'old-1', sentence: 'We will _____ tomorrow.', options: { A: 'meet', B: 'met', C: 'meeting', D: 'meets' }, answer: 'A', topic: 'Tenses', hardMarked: true, userNotes: 'old note' };
+  const analysis = { savedId: 'new-1', schemaVersion: 2, type: 'sentence-analysis', sentence: 'We meet every week.', vietnameseSentence: 'Chúng tôi gặp nhau mỗi tuần.', topic: 'Tenses', grammarPoints: [{ category: 'Tenses', phrase: 'meet', explanation: 'Hiện tại đơn diễn tả thói quen.' }], userNotes: 'new note', hardMarked: true };
+  const review = { 'old-1': { level: 5, totalReviews: 10 }, 'new-1': { level: 2, totalReviews: 1 } };
+  const save = { action: 'save', savedQuestions: [legacy, analysis], reviewProgress: review, expectedRevision: 0 };
+  assert.equal(b.post(save).ok, true);
+  const snapshot = b.context.doGet({ parameter: {} });
+  assert.equal(JSON.stringify(snapshot.savedQuestions), JSON.stringify(save.savedQuestions));
+  assert.equal(JSON.stringify(snapshot.reviewProgress), JSON.stringify(review));
+  assert.equal(b.post(save).error, 'conflict');
+  assert.equal(b.post({ ...save, savedQuestions: [], expectedRevision: 1 }).error, 'empty_rejected');
+  assert.equal(b.post({ ...save, expectedRevision: 1, savedQuestions: [legacy, { ...analysis, grammarPoints: [] }] }).error, 'validation');
+  assert.equal(JSON.stringify(b.context.doGet({ parameter: {} }).savedQuestions), JSON.stringify(save.savedQuestions));
+  assert.equal(JSON.stringify(b.get()), structures);
+});
+
 test('actual backend: CAS, backup, stale/empty rejection, independent grammar writes', () => {
   const b = backend();
   assert.equal(b.get().structuresRevision, 0);

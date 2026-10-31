@@ -110,6 +110,42 @@ function harness({ questions = [], review = {}, pending = false, revision = 0, e
   };
 }
 
+test('sentence activity preserves legacy stats and uses existing L1–L5 scheduling', async () => {
+  const h = harness();
+  await h.settle();
+  h.state.recordGrammarSession({ topic: 'Tenses', total: 5, correct: 3 });
+  const before = JSON.parse(JSON.stringify(h.state.grammarStats));
+  h.state.recordGrammarSession({ mode: 'sentence-analysis', activity: 'practice', topic: 'Tenses', total: 4 });
+  h.state.recordReview('q1', true);
+  assert.equal(h.state.reviewProgress.q1.level, 2);
+  assert.ok(h.state.reviewProgress.q1.nextReviewAt > Date.now() + 2.9 * 86400000);
+  h.state.recordReview('q1', false);
+  assert.equal(h.state.reviewProgress.q1.level, 1);
+  assert.equal(h.state.reviewProgress.q1.totalReviews, 2);
+  assert.equal(h.state.reviewProgress.q1.wrongCount, 1);
+  assert.ok(h.state.reviewProgress.q1.nextReviewAt > Date.now() + 0.9 * 86400000);
+  const after = h.state.grammarStats;
+  for (const key of Object.keys(before)) assert.equal(JSON.stringify(after[key]), JSON.stringify(before[key]));
+  assert.equal(after.sentenceActivity.analyzed, 4);
+  assert.equal(after.sentenceActivity.reviewed, 2);
+  assert.equal(after.sentenceActivity.understood, 1);
+  // Empty sessions and returning from the results page must not create activity.
+  h.state.recordGrammarSession({ mode: 'sentence-analysis', activity: 'practice', total: 0 });
+  assert.equal(h.state.grammarStats.sentenceActivity.sessions.length, 3);
+  h.unmount();
+});
+
+test('review retains extra legacy progress fields and handles missing counters', async () => {
+  const h = harness({ review: { q1: { level: 5, legacyNote: 'keep' } }, fetchCloud: () => cloud([], 0) });
+  await h.settle();
+  h.state.recordReview('q1', true);
+  assert.equal(h.state.reviewProgress.q1.level, 5);
+  assert.equal(h.state.reviewProgress.q1.totalReviews, 1);
+  assert.equal(h.state.reviewProgress.q1.wrongCount, 0);
+  assert.equal(h.state.reviewProgress.q1.legacyNote, 'keep');
+  h.unmount();
+});
+
 test('default endpoint, startup hydration, no upload before successful GET', async () => {
   const get = deferred();
   const h = harness({ fetchCloud: () => get.promise });
