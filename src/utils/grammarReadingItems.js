@@ -38,9 +38,9 @@ export function getReadingDestinations(item) {
 export function buildReadingDraft(item, question, destination) {
   if (destination === 'structure') return {
     english: item.pattern || item.text,
-    vietnamese: item.explanation,
+    vietnamese: item.meaning || '',
     example: question.sentence,
-    notes: [item.usefulness, `Trích từ câu: ${item.text}`].filter(Boolean).join('\n'),
+    notes: [item.explanation, item.usefulness, `Trích từ câu: ${item.text}`].filter(Boolean).join('\n'),
     topic: question.topic,
   };
   return {

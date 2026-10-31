@@ -55,9 +55,32 @@ test('destinations and prefills keep English separate from notes and seed struct
   assert.ok(vocab.annotation.includes(prep.usefulness));
   const pattern = buildReadingDraft(structure, question, 'structure');
   assert.equal(pattern.english, structure.pattern);
-  assert.equal(pattern.vietnamese, structure.explanation);
+  assert.equal(pattern.vietnamese, ''); // Missing meaning must be supplied, not replaced with technical commentary.
+  assert.ok(pattern.notes.includes(structure.explanation));
   assert.equal(pattern.example, question.sentence);
   assert.equal(pattern.topic, question.topic);
+});
+
+test('structure meaning describes the expression, while grammar explanation remains in editable notes', () => {
+  const item = {
+    category: 'structure', text: 'throw plastic bottles into', pattern: 'throw something into somewhere',
+    meaning: 'Vứt/bỏ cái gì vào trong một nơi nào đó.',
+    explanation: 'Giới từ into chỉ sự chuyển động vào bên trong một địa điểm hoặc vật chứa.',
+  };
+  const source = { sentence: 'People should not throw plastic bottles into the river.', topic: 'Prepositions' };
+  const draft = buildReadingDraft(item, source, 'structure');
+  assert.equal(draft.english, item.pattern);
+  assert.equal(draft.vietnamese, item.meaning);
+  assert.ok(draft.notes.includes(item.explanation));
+  assert.equal(draft.topic, 'Prepositions');
+  assert.equal(draft.example, source.sentence);
+  let saved;
+  const result = saveReadingDraft('structure', { ...draft, english: 'throw something into a place', vietnamese: 'Nghĩa đã sửa', notes: 'Ghi chú đã sửa', topic: 'Chủ đề đã sửa', example: 'Ví dụ đã sửa' }, {
+    addStructure: input => { saved = input; return { ok: true }; },
+  });
+  assert.equal(result.ok, true);
+  assert.deepEqual(saved, { english: 'throw something into a place', vietnamese: 'Nghĩa đã sửa', notes: 'Ghi chú đã sửa', topic: 'Chủ đề đã sửa', example: 'Ví dụ đã sửa' });
+  assert.equal(saveReadingDraft('structure', buildReadingDraft({ ...item, meaning: undefined }, source, 'structure'), { addStructure() { assert.fail('Missing meaning must not save'); } }).ok, false);
 });
 
 test('quick-add routes only new editable content into the correct store without overwrites', () => {
@@ -81,7 +104,7 @@ test('quick-add routes only new editable content into the correct store without 
   assert.equal(addedWords[0].english, draft.english);
   assert.equal(addedWords[0].annotation, draft.annotation);
   assert.equal(addedStructures.length, 0);
-  const pattern = buildReadingDraft(question.readingItems[2], question, 'structure');
+  const pattern = buildReadingDraft({ ...question.readingItems[2], meaning: 'tiếp tục làm một việc' }, question, 'structure');
   assert.equal(saveReadingDraft('structure', pattern, stores).ok, true);
   assert.equal(addedStructures[0].example, question.sentence);
   assert.ok(!('level' in addedStructures[0])); // Progress is initialized by the target store.
