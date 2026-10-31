@@ -43,14 +43,18 @@ Prefer common, reusable language over rare or unnecessarily academic vocabulary,
 
 MAIN FOCUS: ${topic} (${getTopicLabel(topic)}).
 ${topic === 'Mixed' ? 'Vary primary topics; use the actual dominant topic for each sentence.' : `Every sentence must demonstrate ${topic}; set its topic to "${topic}".`}
-The selected topic is only the main focus. Identify ALL meaningful grammar points in EACH sentence, including other topics (tenses, agreement, word forms, prepositions, articles, clauses, passive voice, etc.). Do not restrict analysis to the selected topic. Do not add irrelevant points to reach a quota.
-For every grammar point, provide its category, an EXACT contiguous English phrase copied from the sentence (preserve case and punctuation), and a clear Vietnamese explanation of its function, meaning and contextual clues.
-Explain how the sentence is built: identify the main subject and verb, objects/complements and how clauses connect where relevant. Explain references and time relationships when useful.
+NATURAL QUICK EXPLANATION (reuse grammarPoints; no new fields):
+${topic === 'Mixed'
+  ? 'Mixed: choose only a few of the most useful points across grammar topics. Do not inventory every possible feature or narrate the whole sentence structure.'
+  : `Explain ONLY parts relevant to ${topic}. Use "${topic}" as the category of these points. Do not add unrelated tense, agreement, article or sentence-structure explanations. At most one brief supporting note may be included within a relevant explanation if essential to understand it.`}
+Usually provide 3–6 short grammarPoints per sentence, fewer when that is all the selected topic needs. Never pad to reach a count. Each point quotes an EXACT contiguous English phrase from the sentence and gives ONE short, natural Vietnamese explanation of why that part is used here (roughly 15–35 Vietnamese words). Sound like a practical teacher, not a grammar textbook. Explain meaning or a useful contextual clue; avoid repetitive definitions and academic narration.
+Do NOT use mechanical sentence formulas such as S + V + O, Prep Phrase 1 + Prep Phrase 2, or noun phrase + clause. Do NOT generate a long formal sentence-structure paragraph. Omit optional structures unless genuinely needed; keep any such note brief.
+Examples of tone: "depend on": "Mang nghĩa phụ thuộc vào; depend đi với on để chỉ điều mình dựa vào."; "sensitive": "Đứng trước documents để nói tài liệu thuộc loại nhạy cảm, nên dùng tính từ."; "for sharing": "Ở đây for nói mục đích sử dụng; động từ share theo sau được viết thành sharing." Choose only examples relevant to the selected topic, never all of them by default.
 Provide a natural Vietnamese translation. All explanations and optional structures/reading notes must be in Vietnamese.
 NO blanks, NO A/B/C/D options, NO answer field, NO correct-answer selection.
 
 READING LEARNING ITEMS (readingItems, shown as "Lưu ý đọc hiểu"):
-Extract only meaningful, reusable learning items actually occurring in each sentence: important vocabulary, structures, parts of speech / word forms, prepositions, collocations, useful phrases or recurring patterns. Do NOT invent or force items to reach a quantity; an empty array is acceptable when nothing is useful.
+Extract only meaningful, reusable learning items actually occurring in each sentence: important vocabulary, structures, parts of speech / word forms, prepositions, collocations, useful phrases or recurring patterns. Keep this optional learning section short (usually 0–3 worthwhile items); avoid restating the quick explanation. Do NOT invent or force items to reach a quantity; an empty array is acceptable when nothing is useful.
 Each item must have category (vocabulary, structure, word-form, preposition, phrase, collocation, or pattern), text (EXACT contiguous English text from the sentence, preserving case and punctuation), and explanation (short Vietnamese explanation).
 Optional: meaning (concise Vietnamese meaning suggestion), usefulness (why it helps VSTEP reading), pattern (a reusable English grammar pattern, grounded in the exact text; only when genuinely useful for saving to Grammar Structures).
 For structure/pattern items and any item with a pattern, include meaning as a clear Vietnamese meaning of the ENTIRE reusable expression or pattern, not just the grammatical role of one word or preposition. Keep technical grammar commentary in explanation and the topic in topic, never substitute either for meaning. For example, text "throw plastic bottles into", pattern "throw something into somewhere", meaning "Vứt/bỏ cái gì vào trong một nơi nào đó.", explanation "Giới từ into chỉ sự chuyển động vào bên trong một địa điểm hoặc vật chứa." Use this only when the exact text occurs in the sentence; do not invent extracts.
@@ -63,24 +67,18 @@ Return ONLY a JSON array, without markdown or surrounding text. Each item uses t
   "schemaVersion": 2,
   "type": "sentence-analysis",
   "id": "s1",
-  "sentence": "Students who live near the library often study there after class.",
-  "vietnameseSentence": "Những sinh viên sống gần thư viện thường học ở đó sau giờ học.",
-  "topic": "Relative Clauses",
+  "sentence": "Employees depend on secure cloud platforms for sharing documents with remote colleagues.",
+  "vietnameseSentence": "Nhân viên dựa vào các nền tảng đám mây an toàn để chia sẻ tài liệu với đồng nghiệp làm việc từ xa.",
+  "topic": "Prepositions",
   "grammarPoints": [
-    { "category": "Sentence Structure & Word Order", "phrase": "Students who live near the library", "explanation": "Cả cụm là chủ ngữ của động từ chính study; mệnh đề who live near the library bổ nghĩa cho Students." },
-    { "category": "Relative Clauses", "phrase": "who live near the library", "explanation": "Mệnh đề quan hệ xác định sinh viên nào; who thay cho Students và làm chủ ngữ của live." },
-    { "category": "Tenses", "phrase": "often study", "explanation": "Hiện tại đơn diễn tả thói quen; often cho biết việc học xảy ra thường xuyên." },
-    { "category": "Subject-Verb Agreement", "phrase": "Students", "explanation": "Students là chủ ngữ số nhiều nên study và live không thêm s." },
-    { "category": "Prepositions", "phrase": "after class", "explanation": "After đứng trước danh từ class, chỉ thời điểm sau giờ học." },
-    { "category": "Articles & Determiners", "phrase": "the library", "explanation": "The chỉ thư viện cụ thể, có thể xác định trong ngữ cảnh." },
-    { "category": "Prepositions", "phrase": "near the library", "explanation": "Cụm giới từ chỉ nơi sinh viên sống, gần thư viện." },
-    { "category": "Word Forms", "phrase": "there", "explanation": "Trạng từ chỉ nơi chốn thay cho at the library để tránh lặp lại địa điểm." }
+    { "category": "Prepositions", "phrase": "depend on", "explanation": "Mang nghĩa phụ thuộc vào; depend đi với on để chỉ điều mình dựa vào." },
+    { "category": "Prepositions", "phrase": "for sharing", "explanation": "For nói mục đích sử dụng nền tảng; động từ share theo sau được viết thành sharing." },
+    { "category": "Prepositions", "phrase": "with remote colleagues", "explanation": "With cho biết tài liệu được chia sẻ với ai; ở đây là các đồng nghiệp làm việc từ xa." }
   ],
-  "structures": ["Chủ ngữ được mở rộng bằng mệnh đề quan hệ; động từ chính là study."],
-  "readingNotes": ["There chỉ thư viện; không nhầm live trong mệnh đề phụ với động từ chính study."],
+  "readingNotes": [],
   "readingItems": [
-    { "category": "preposition", "text": "after class", "meaning": "sau giờ học", "explanation": "After + danh từ chỉ thời điểm sau một hoạt động.", "usefulness": "Giúp xác định trình tự thời gian trong đoạn đọc." },
-    { "category": "structure", "text": "Students who live near the library", "pattern": "noun + who + verb", "meaning": "Người / những người mà làm một việc gì đó.", "explanation": "Mệnh đề quan hệ với who bổ nghĩa cho danh từ chỉ người.", "usefulness": "Giúp tìm đúng chủ ngữ dù có mệnh đề xen giữa." }
+    { "category": "collocation", "text": "cloud platforms", "meaning": "các nền tảng đám mây", "explanation": "Cụm thường dùng khi nói về công cụ làm việc và lưu trữ trực tuyến." },
+    { "category": "structure", "text": "sharing documents with remote colleagues", "pattern": "share something with somebody", "meaning": "Chia sẻ thứ gì với ai.", "explanation": "Sau share, nêu thứ được chia sẻ rồi dùng with để giới thiệu người nhận." }
   ]
 }
 The example illustrates the schema only; adapt topic and analysis to the requested focus.

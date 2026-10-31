@@ -62,6 +62,7 @@ export default function GrammarReview({ savedQuestions, reviewProgress, onRecord
       }}>{starred ? '★ Bỏ sao' : '☆ Đánh dấu sao'}</button>
     </div>
     <GrammarSentenceCard key={current} question={q} onAssess={assess} assessed={assessments[current]} onQuickAdd={onQuickAdd}
+      analysisTopic={topic === 'All' ? undefined : topic}
       onNext={() => current + 1 < queue.length ? setCurrent(c => c + 1) : finish()}
       nextLabel={current + 1 < queue.length ? 'Câu tiếp' : 'Hoàn tất'} />
     <div className="flex justify-between gap-3">
