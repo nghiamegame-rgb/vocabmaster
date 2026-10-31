@@ -63,6 +63,27 @@ try {
   const { default: Saved } = await server.ssrLoadModule('/src/components/grammar/GrammarSaved.jsx');
   const { default: Quiz } = await server.ssrLoadModule('/src/components/grammar/GrammarQuiz.jsx');
   const { default: Stats } = await server.ssrLoadModule('/src/components/grammar/GrammarStats.jsx');
+  test('sentence structure follows translation, precedes topic and preserves other point order without mutating data', () => {
+    const structure = { category: 'Sentence Structure & Word Order', phrase: 'The book', explanation: 'Chủ ngữ chính là The book.' };
+    for (const index of [0, 1, 2]) {
+      const points = [...sentence.grammarPoints];
+      points.splice(index, 0, structure);
+      const question = { ...sentence, grammarPoints: points };
+      const before = JSON.stringify(question);
+      const html = renderToStaticMarkup(createElement(GrammarAnalysis, { question }));
+      const ordered = [question.vietnameseSentence, structure.explanation, 'Chủ đề chính:', ...sentence.grammarPoints.map(p => p.explanation)];
+      for (let i = 1; i < ordered.length; i++) assert.ok(html.indexOf(ordered[i - 1]) < html.indexOf(ordered[i]));
+      assert.equal(html.split(structure.explanation).length - 1, 1);
+      assert.equal(JSON.stringify(question), before);
+      const hidden = renderToStaticMarkup(createElement(Card, { question }));
+      assert.ok(!hidden.includes(structure.explanation));
+    }
+    const grouped = renderToStaticMarkup(createElement(GrammarAnalysis, { question: { ...sentence, grammarPoints: [structure, ...sentence.grammarPoints, { ...structure, phrase: 'is', explanation: 'Động từ chính là is.' }] } }));
+    assert.equal(grouped.split('>Cấu trúc câu<').length - 1, 1);
+    assert.ok(grouped.includes('Động từ chính là is.'));
+    const missing = renderToStaticMarkup(createElement(GrammarAnalysis, { question: sentence }));
+    assert.ok(!missing.includes('>Cấu trúc câu<'));
+  });
   test('reading learning actions are hidden initially and render with the revealed analysis', () => {
     const enriched = { ...sentence, readingItems: [
       { category: 'vocabulary', text: 'borrowed', explanation: 'Dạng quá khứ của borrow.', meaning: 'đã mượn' },
@@ -82,20 +103,27 @@ try {
     const saved = renderToStaticMarkup(createElement(Saved, { savedQuestions: [enriched], reviewProgress: {}, onQuickAdd }));
     assert.ok(!saved.includes('+ Vocab'));
   });
-  test('practice/review sentence card initially hides translation, analysis, notes and assessments', () => {
+  test('review actions and next stay available before analysis, while learning content stays hidden', () => {
     for (const q of [sentence, legacy]) {
-      const html = renderToStaticMarkup(createElement(Card, { question: q, onAssess() {} }));
+      const html = renderToStaticMarkup(createElement(Card, { question: q, onAssess() {}, onNext() {} }));
       assert.ok(html.includes(getGrammarSentence(q)));
       assert.ok(html.includes('Hiện phân tích'));
       assert.ok(html.includes('aria-expanded="false"'));
-      assert.ok(!html.includes('Đã hiểu'));
-      assert.ok(!html.includes('Cần ôn lại'));
+      assert.ok(html.includes('Đã hiểu'));
+      assert.ok(html.includes('Cần ôn lại'));
+      assert.ok(html.indexOf('Đã hiểu') < html.indexOf('Hiện phân tích'));
+      assert.ok(html.indexOf('Câu tiếp') < html.indexOf('Hiện phân tích'));
+      assert.ok(!html.match(/<button[^>]*>Câu tiếp<\/button>/)[0].includes('disabled'));
       assert.ok(!html.includes(q.userNotes));
       if (q.vietnameseSentence) assert.ok(!html.includes(q.vietnameseSentence));
     }
     const html = renderToStaticMarkup(createElement(Quiz, { questions: [sentence], config: { topic: 'Mixed' }, isQuestionSaved: () => false, savedQuestions: [] }));
     assert.ok(html.includes(sentence.sentence));
     assert.ok(!html.includes(sentence.vietnameseSentence));
+    assert.ok(!html.includes('Đã hiểu'));
+    const assessed = renderToStaticMarkup(createElement(Card, { question: sentence, onAssess() {}, assessed: false, onNext() {} }));
+    assert.equal((assessed.match(/disabled=""/g) || []).length, 2);
+    assert.ok(!assessed.match(/<button[^>]*>Câu tiếp<\/button>/)[0].includes('disabled'));
   });
   test('saved mixed-format library renders safely, expanded analysis includes all points', () => {
     const html = renderToStaticMarkup(createElement(Saved, { savedQuestions: [sentence, legacy], reviewProgress: {}, cloudConfigured: true }));

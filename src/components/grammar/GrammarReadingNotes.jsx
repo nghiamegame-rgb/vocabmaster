@@ -44,10 +44,21 @@ function ReadingItem({ item, question, onQuickAdd }) {
         <label className="block text-xs text-slate-400">{form.destination === 'vocab' ? 'Từ / cụm từ tiếng Anh' : 'Cấu trúc / mẫu tiếng Anh'}
           <input required value={form.draft.english} onChange={e => change('english', e.target.value)} className="field mt-1" />
         </label>
-        <label className="block text-xs text-slate-400">Nghĩa / giải thích tiếng Việt
+        <label className="block text-xs text-slate-400">{form.destination === 'structure' ? 'Nghĩa tiếng Việt của cả cụm / mẫu' : 'Nghĩa / giải thích tiếng Việt'}
           <textarea required rows={2} value={form.draft.vietnamese} onChange={e => change('vietnamese', e.target.value)} className="field mt-1 resize-y" />
         </label>
       </div>
+      {form.destination === 'structure' && <>
+        {!item.meaning && <p className="text-amber-300 text-xs">Mục này chưa có gợi ý nghĩa. Hãy nhập nghĩa của cả cụm / mẫu trước khi lưu; giải thích ngữ pháp nằm trong ghi chú.</p>}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <label className="block text-xs text-slate-400">Câu ví dụ
+            <textarea rows={2} value={form.draft.example} onChange={e => change('example', e.target.value)} className="field mt-1 resize-y" />
+          </label>
+          <label className="block text-xs text-slate-400">Chủ đề
+            <input value={form.draft.topic} onChange={e => change('topic', e.target.value)} className="field mt-1" />
+          </label>
+        </div>
+      </>}
       <label className="block text-xs text-slate-400">Ghi chú
         <textarea rows={2} value={form.destination === 'vocab' ? form.draft.annotation : form.draft.notes}
           onChange={e => change(form.destination === 'vocab' ? 'annotation' : 'notes', e.target.value)} className="field mt-1 resize-y" />

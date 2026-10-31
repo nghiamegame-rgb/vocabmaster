@@ -34,7 +34,7 @@ export default function GrammarReview({ savedQuestions, reviewProgress, onRecord
   }
   if (mode === 'select') return <div className="space-y-5">
     <h2 className="text-xl text-white font-bold">Ôn tập cấu trúc câu</h2>
-    <p className="text-sm text-slate-400">Tự nhận diện cấu trúc, xem phân tích rồi đánh giá mức hiểu. Đã hiểu tăng một cấp; cần ôn lại giảm một cấp (L1–L5).</p>
+    <p className="text-sm text-slate-400">Tự nhận diện cấu trúc và đánh giá mức hiểu; xem phân tích khi cần. Đã hiểu tăng một cấp; cần ôn lại giảm một cấp (L1–L5). Chuyển câu khi chưa đánh giá sẽ giữ nguyên tiến độ.</p>
     <div className="flex flex-wrap items-center gap-3">
       <select aria-label="Lọc chủ đề ôn tập" value={topic} onChange={e => setTopic(e.target.value)} className="max-w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-slate-300 text-sm">
         <option value="All">Tất cả chủ đề</option>
@@ -61,11 +61,11 @@ export default function GrammarReview({ savedQuestions, reviewProgress, onRecord
         onToggleHard?.(q.savedId); setStars(prev => ({ ...prev, [q.savedId]: !starred }));
       }}>{starred ? '★ Bỏ sao' : '☆ Đánh dấu sao'}</button>
     </div>
-    <GrammarSentenceCard key={current} question={q} onAssess={assess} assessed={assessments[current]} onQuickAdd={onQuickAdd} />
+    <GrammarSentenceCard key={current} question={q} onAssess={assess} assessed={assessments[current]} onQuickAdd={onQuickAdd}
+      onNext={() => current + 1 < queue.length ? setCurrent(c => c + 1) : finish()}
+      nextLabel={current + 1 < queue.length ? 'Câu tiếp' : 'Hoàn tất'} />
     <div className="flex justify-between gap-3">
       <button onClick={finish} className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl">Kết thúc phiên</button>
-      <button disabled={assessments[current] === undefined} onClick={() => current + 1 < queue.length ? setCurrent(c => c + 1) : finish()}
-        className="px-4 py-2 bg-purple-600 text-white rounded-xl disabled:opacity-40">{current + 1 < queue.length ? 'Câu tiếp' : 'Hoàn tất'}</button>
     </div>
   </div>;
 }
