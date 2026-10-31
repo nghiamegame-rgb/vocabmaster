@@ -48,7 +48,7 @@ export default function GrammarPractice({ onStartSession }) {
           .trim();
 
         const parsed = JSON.parse(cleaned);
-        const { valid, errors } = validateGrammarJSON(parsed);
+        const { valid, errors } = validateGrammarJSON(parsed, { count, topic });
 
         if (!valid) { setError(errors); setValidating(false); return; }
 
@@ -70,7 +70,7 @@ export default function GrammarPractice({ onStartSession }) {
         </div>
         <div>
           <h2 className="text-xl font-bold text-white">Grammar Practice</h2>
-          <p className="text-slate-400 text-sm">TOEIC Part 5 — Sentence Completion</p>
+          <p className="text-slate-400 text-sm">VSTEP B1 · Nhận diện ngữ pháp và phân tích câu</p>
         </div>
       </div>
 
@@ -84,7 +84,7 @@ export default function GrammarPractice({ onStartSession }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Count */}
           <div>
-            <label className="block text-slate-400 text-xs font-medium mb-2">Số câu hỏi</label>
+            <label className="block text-slate-400 text-xs font-medium mb-2">Số câu</label>
             <div className="flex gap-2 flex-wrap">
               {GRAMMAR_COUNTS.map(n => (
                 <button
@@ -167,7 +167,7 @@ export default function GrammarPractice({ onStartSession }) {
         <textarea
           value={jsonInput}
           onChange={e => { setJsonInput(e.target.value); setError(null); }}
-          placeholder={`Dán toàn bộ JSON từ ChatGPT/Gemini vào đây...\n\nVí dụ:\n[\n  {\n    "id": "q1",\n    "sentence": "The report will be _____ to the board...",\n    ...\n  }\n]`}
+          placeholder={`Dán toàn bộ JSON từ ChatGPT/Gemini vào đây...\n\nVí dụ:\n[\n  {\n    "id": "q1",\n    "sentence": "The library is open to everyone.",\n    ...\n  }\n]`}
           rows={10}
           className="w-full bg-slate-950 border border-slate-600 text-slate-200 rounded-xl px-4 py-3 text-sm font-mono placeholder-slate-600 focus:outline-none focus:border-purple-500 transition-colors resize-y"
         />
@@ -214,7 +214,7 @@ export default function GrammarPractice({ onStartSession }) {
       <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-2xl p-4">
         <h4 className="text-indigo-400 font-semibold text-sm mb-2">💡 Mẹo sử dụng</h4>
         <ul className="space-y-1 text-slate-400 text-sm">
-          <li>• Với <span className="text-white">ChatGPT-4o</span> hoặc <span className="text-white">Gemini Pro</span> cho kết quả tốt nhất.</li>
+          <li>• Các chủ đề là nhóm tự học, không phải đề cương VSTEP chính thức.</li>
           <li>• Nếu AI không trả về JSON đúng định dạng, thêm: <span className="text-purple-300 font-mono text-xs">"Return ONLY the JSON array, starting with [ and ending with ]"</span></li>
           <li>• Bạn có thể lưu các câu hỏi hay bằng nút bookmark ⭐ trong khi luyện.</li>
           <li>• Câu hỏi đã lưu sẽ xuất hiện trong tab <span className="text-white">Saved Questions</span> và <span className="text-white">Review</span>.</li>

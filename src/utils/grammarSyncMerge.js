@@ -1,3 +1,5 @@
+import { validateSentenceAnalysis } from './grammarSentence.js';
+
 /**
  * grammarSyncMerge.js — Deterministic merging and validation utilities
  * for Grammar cloud synchronization.
@@ -21,6 +23,7 @@ export function validateQuestion(q, index = 0) {
   if (!q.savedId || typeof q.savedId !== 'string' || q.savedId.trim().length === 0) {
     return `Question at index ${index} missing valid savedId.`;
   }
+  if (q.schemaVersion !== undefined || q.type !== undefined) return validateSentenceAnalysis(q);
   if (!q.sentence || typeof q.sentence !== 'string' || !q.sentence.includes('_____')) {
     return `Question at index ${index} missing sentence with "_____".`;
   }
