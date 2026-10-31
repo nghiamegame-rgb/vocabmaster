@@ -47,6 +47,8 @@ test('mixed legacy and sentence-analysis writes round-trip without changing stru
   const structures = JSON.stringify(b.get());
   const legacy = { savedId: 'old-1', sentence: 'We will _____ tomorrow.', options: { A: 'meet', B: 'met', C: 'meeting', D: 'meets' }, answer: 'A', topic: 'Tenses', hardMarked: true, userNotes: 'old note' };
   const analysis = { savedId: 'new-1', schemaVersion: 2, type: 'sentence-analysis', sentence: 'We meet every week.', vietnameseSentence: 'Chúng tôi gặp nhau mỗi tuần.', topic: 'Tenses', grammarPoints: [{ category: 'Tenses', phrase: 'meet', explanation: 'Hiện tại đơn diễn tả thói quen.' }], userNotes: 'new note', hardMarked: true };
+  analysis.readingNotes = ['Hiện tại đơn chỉ thói quen.'];
+  analysis.readingItems = [{ category: 'phrase', text: 'every week', explanation: 'Cụm chỉ tần suất hàng tuần.', meaning: 'mỗi tuần', usefulness: 'Nhận biết thói quen.' }];
   const review = { 'old-1': { level: 5, totalReviews: 10 }, 'new-1': { level: 2, totalReviews: 1 } };
   const save = { action: 'save', savedQuestions: [legacy, analysis], reviewProgress: review, expectedRevision: 0 };
   assert.equal(b.post(save).ok, true);

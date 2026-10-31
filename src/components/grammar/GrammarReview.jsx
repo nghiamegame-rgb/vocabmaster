@@ -3,7 +3,7 @@ import { isGrammarDueForReview } from '../../utils/grammarStorage';
 import { getAvailableTopics, getTopicLabel } from '../../utils/grammarPrompt';
 import GrammarSentenceCard from './GrammarAnalysis';
 
-export default function GrammarReview({ savedQuestions, reviewProgress, onRecordReview, onToggleHard }) {
+export default function GrammarReview({ savedQuestions, reviewProgress, onRecordReview, onToggleHard, onQuickAdd }) {
   const [mode, setMode] = useState('select');
   const [reviewMode, setReviewMode] = useState('due');
   const [topic, setTopic] = useState('All');
@@ -61,7 +61,7 @@ export default function GrammarReview({ savedQuestions, reviewProgress, onRecord
         onToggleHard?.(q.savedId); setStars(prev => ({ ...prev, [q.savedId]: !starred }));
       }}>{starred ? '★ Bỏ sao' : '☆ Đánh dấu sao'}</button>
     </div>
-    <GrammarSentenceCard key={current} question={q} onAssess={assess} assessed={assessments[current]} />
+    <GrammarSentenceCard key={current} question={q} onAssess={assess} assessed={assessments[current]} onQuickAdd={onQuickAdd} />
     <div className="flex justify-between gap-3">
       <button onClick={finish} className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl">Kết thúc phiên</button>
       <button disabled={assessments[current] === undefined} onClick={() => current + 1 < queue.length ? setCurrent(c => c + 1) : finish()}

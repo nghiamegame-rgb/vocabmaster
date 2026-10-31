@@ -4,6 +4,16 @@ Luyện tập dùng câu hoàn chỉnh và phân tích tiếng Việt. Chủ đ�
 
 Không migrate hoặc xóa dữ liệu. Câu TOEIC cũ giữ nguyên savedId, options, answer, ghi chú, dấu sao và tiến độ. Giao diện chỉ điền đáp án cũ khi hiển thị câu; không ghi ngược thành bản ghi mới. Bạn tự xóa các câu cũ trong thư viện khi muốn.
 
+## Lưu ý đọc hiểu và thêm nhanh
+
+Prompt mới phân bố khoảng 40% B1, 30% B1+/B2 vừa, 20% B2 khó và 10% tiếp xúc C1, đi từ dễ đến khó; phần khó vẫn được giải thích cho người học hướng tới B1.
+
+Trường bổ sung `readingItems` là mảng mục học: `category` (vocabulary, structure, word-form, preposition, phrase, collocation hoặc pattern), `text` trích nguyên văn từ câu, `explanation` tiếng Việt; tùy chọn `meaning`, `usefulness`, `pattern` (mẫu ngữ pháp khái quát). Không ép số lượng; mảng rỗng hợp lệ. Giữ nguyên `readingNotes` dạng mảng chuỗi để tương thích câu cũ. Hai trường cùng hiển thị trong “Lưu ý đọc hiểu” sau khi mở phân tích.
+
+Ở Luyện tập, Câu đã lưu và Ôn tập, `+ Vocab` / `+ Structure` mở biểu mẫu nhỏ cho phép chỉnh nội dung trước khi lưu bằng store hiện có. Vocabulary giữ nguyên phần tiếng Anh, lưu ghi chú vào annotation; Structures lấy pattern nếu có, giữ câu gốc làm ví dụ và gợi ý giải thích/chủ đề. Kiểm tra trùng sau chuẩn hóa chữ hoa/thường, khoảng trắng và dấu nháy; không ghi đè mục trùng hay tiến độ hiện có. Thông báo thêm thành công là thêm vào thư viện local; đồng bộ tiếp tục do store đích thực hiện.
+
+Đây là phần mở rộng bổ sung của v2: backend hỗ trợ v2 hiện có giữ nguyên trường `readingItems` trong JSON, nên nâng cấp này không cần sửa Apps Script/proxy hoặc triển khai backend mới. Validation mục học được thực hiện khi nhập JSON ở frontend. Câu cũ thiếu `readingItems` vẫn hợp lệ, hiển thị ghi chú cũ và không tự suy diễn mục để thêm nhanh; cần tạo bộ câu mới để có các mục học mới. Kiểm tra thêm bằng `node test/grammar-reading-items.test.js`.
+
 ## Bước cập nhật cloud thủ công
 
 Backend cũ yêu cầu dấu trống và A/B/C/D nên không nhận bản ghi v2. Trước khi đồng bộ câu VSTEP, cần cập nhật Apps Script đang chạy:
