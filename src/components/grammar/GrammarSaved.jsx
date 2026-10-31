@@ -257,7 +257,7 @@ export default function GrammarSaved({
               {/* Expanded details */}
               {open && (
                 <div className="border-t border-slate-700/50 p-4 space-y-3 animate-fade-in">
-                  <GrammarAnalysis question={q} onQuickAdd={onQuickAdd} />
+                  <GrammarAnalysis question={q} onQuickAdd={onQuickAdd} analysisTopic={topicFilter === 'All' ? undefined : topicFilter} />
 
                   {/* User notes */}
                   <div className="border-t border-slate-700/30 pt-3">

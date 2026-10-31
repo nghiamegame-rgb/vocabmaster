@@ -1,34 +1,23 @@
 import { useState } from 'react';
 import { getTopicLabel } from '../../utils/grammarPrompt';
-import { getGrammarSentence, isSentenceAnalysis } from '../../utils/grammarSentence';
+import { getGrammarSentence, getQuickGrammarPoints, isSentenceAnalysis } from '../../utils/grammarSentence';
 import GrammarReadingNotes from './GrammarReadingNotes';
 
-export function GrammarAnalysis({ question: q, onQuickAdd }) {
+export function GrammarAnalysis({ question: q, onQuickAdd, analysisTopic }) {
   const detail = q.detailedExplanation;
-  const structureCategory = 'Sentence Structure & Word Order';
-  const structurePoints = isSentenceAnalysis(q) ? q.grammarPoints.filter(point => point.category === structureCategory) : [];
+  const points = isSentenceAnalysis(q) ? getQuickGrammarPoints(q, analysisTopic) : [];
   return <div className="space-y-4 text-sm text-slate-300 leading-relaxed break-words">
     <p className="text-slate-400 italic">{q.vietnameseSentence}</p>
-    {structurePoints.length > 0 && <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-xl p-3 space-y-1">
-      <p className="text-indigo-300 font-semibold">{getTopicLabel(structureCategory)}</p>
-      {structurePoints.map((point, i) => <div key={i} className="space-y-1">
-        <p className="text-white font-medium">“{point.phrase}”</p>
-        <p>{point.explanation}</p>
-      </div>)}
-    </div>}
-    {isSentenceAnalysis(q) && q.structures?.length > 0 && <div>
-      <p className="text-purple-300 font-semibold mb-1">Cấu trúc quan trọng</p>
-      <ul className="list-disc pl-5 space-y-1">{q.structures.map((s, i) => <li key={i}>{s}</li>)}</ul>
-    </div>}
-    <p className="text-purple-300">Chủ đề chính: {getTopicLabel(q.topic)}</p>
     {isSentenceAnalysis(q) ? <>
-      {q.grammarPoints.filter(point => point.category !== structureCategory).map((point, i) => <div key={i} className="bg-indigo-500/5 border border-indigo-500/20 rounded-xl p-3 space-y-1">
-        <p className="text-indigo-300 font-semibold">{getTopicLabel(point.category)}</p>
-        <p className="text-white font-medium">“{point.phrase}”</p>
-        <p>{point.explanation}</p>
-      </div>)}
+      <section className="space-y-2">
+        <h4 className="text-purple-300 font-semibold">Giải thích nhanh</h4>
+        {points.length ? <ul className="list-disc pl-5 space-y-2">
+          {points.map((point, i) => <li key={i}><span className="text-white font-medium">“{point.phrase}”</span>: {point.explanation}</li>)}
+        </ul> : <p className="text-slate-400">Bản ghi này chưa có giải thích phù hợp với chủ đề đang chọn.</p>}
+      </section>
       <GrammarReadingNotes question={q} onQuickAdd={onQuickAdd} />
     </> : <>
+      <p className="text-purple-300">Chủ đề chính: {getTopicLabel(q.topic)}</p>
       <p className="text-amber-300 text-xs">Bản ghi TOEIC cũ · giữ nguyên dữ liệu gốc</p>
       <p>{q.shortExplanation}</p>
       {detail?.whyCorrect && <p>{detail.whyCorrect}</p>}
@@ -43,7 +32,7 @@ export function GrammarAnalysis({ question: q, onQuickAdd }) {
 }
 
 // Mount with a key per sentence/navigation to reset the reveal state.
-export default function GrammarSentenceCard({ question, onReveal, onAssess, assessed, onQuickAdd, onNext, nextLabel = 'Câu tiếp' }) {
+export default function GrammarSentenceCard({ question, onReveal, onAssess, assessed, onQuickAdd, onNext, nextLabel = 'Câu tiếp', analysisTopic }) {
   const [shown, setShown] = useState(false);
   return <div className="bg-slate-900/80 border border-slate-700/50 rounded-2xl p-4 sm:p-6 space-y-4">
     <p className="text-lg text-white leading-relaxed break-words">{getGrammarSentence(question)}</p>
@@ -62,7 +51,7 @@ export default function GrammarSentenceCard({ question, onReveal, onAssess, asse
       {shown ? 'Ẩn phân tích' : 'Hiện phân tích'}
     </button>
     {shown && <>
-      <GrammarAnalysis question={question} onQuickAdd={onQuickAdd} />
+      <GrammarAnalysis question={question} onQuickAdd={onQuickAdd} analysisTopic={analysisTopic} />
       {question.userNotes && <p className="text-amber-200 text-sm whitespace-pre-wrap break-words">Ghi chú: {question.userNotes}</p>}
     </>}
   </div>;

@@ -4,6 +4,12 @@ Luyện tập dùng câu hoàn chỉnh và phân tích tiếng Việt. Chủ đ�
 
 Không migrate hoặc xóa dữ liệu. Câu TOEIC cũ giữ nguyên savedId, options, answer, ghi chú, dấu sao và tiến độ. Giao diện chỉ điền đáp án cũ khi hiển thị câu; không ghi ngược thành bản ghi mới. Bạn tự xóa các câu cũ trong thư viện khi muốn.
 
+## Giải thích nhanh
+
+Phân tích v2 hiển thị bản dịch, tối đa 6 gạch đầu dòng trích nguyên văn và giải thích ngắn, sau đó đến lưu ý đọc hiểu/thêm nhanh. Prompt dùng lại `grammarPoints`, yêu cầu thường 3–6 ý tự nhiên, chỉ liên quan chủ đề đã chọn; Tổng hợp chọn vài điểm hữu ích thay vì liệt kê hết. Không còn khối cấu trúc dài hoặc các thẻ phân loại ngữ pháp. `structures` cũ vẫn được giữ trong dữ liệu nhưng không hiển thị thành phần riêng.
+
+Khi lưu câu mới, frontend bổ sung metadata tùy chọn `analysisTopic` để nhớ chủ đề luyện tập (đặc biệt Tổng hợp); trường `topic` vẫn là chủ đề chính của câu. Backend v2 giữ nguyên metadata trong JSON, không cần đổi backend hay migrate dữ liệu. Bản ghi cũ thiếu metadata dùng `topic`; bộ lọc chủ đề cụ thể ở thư viện/ôn tập được ưu tiên khi hiển thị. Nội dung cũ chỉ được lọc và trích ngắn trên giao diện, không được viết lại thành văn phong mới; cần tạo bộ câu mới để có lời giải tự nhiên hơn.
+
 ## Lưu ý đọc hiểu và thêm nhanh
 
 Prompt mới phân bố khoảng 40% B1, 30% B1+/B2 vừa, 20% B2 khó và 10% tiếp xúc C1, đi từ dễ đến khó; phần khó vẫn được giải thích cho người học hướng tới B1.

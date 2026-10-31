@@ -27,3 +27,26 @@ export function validateSentenceAnalysis(q) {
 export function getGrammarSentence(q) {
   return isSentenceAnalysis(q) ? q.sentence : q.sentence?.replace(/_____/g, q.options?.[q.answer] ?? '_____');
 }
+
+// Presentation only: never rewrite saved analyses or alter their array order.
+export function getQuickGrammarPoints(question, selectedTopic) {
+  const topic = selectedTopic || question.analysisTopic || question.topic || 'Mixed';
+  const points = question.grammarPoints || [];
+  const nonStructural = points.filter(point => point.category !== 'Sentence Structure & Word Order');
+  const useful = topic === 'Mixed'
+    ? (nonStructural.length ? nonStructural : points)
+    : points.filter(point => point.category === topic);
+  const seen = new Set();
+  return useful.filter(point => {
+    const key = point.phrase.trim().toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, 6).map(point => {
+    const text = point.explanation.trim();
+    const firstSentence = text.match(/^.*?[.!?](?=\s|$)/u)?.[0] || text;
+    const explanation = firstSentence.length > 220
+      ? `${firstSentence.slice(0, 217).replace(/\s+\S*$/, '').trimEnd()}…` : firstSentence;
+    return { ...point, explanation };
+  });
+}
