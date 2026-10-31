@@ -18,6 +18,7 @@ export default function GrammarSaved({
   onUnsave,
   onToggleHard,
   onUpdateNotes,
+  onQuickAdd,
 }) {
   const [search,      setSearch]      = useState('');
   const [topicFilter, setTopicFilter] = useState('All');
@@ -41,6 +42,7 @@ export default function GrammarSaved({
           q.userNotes?.toLowerCase().includes(s) ||
           getTopicLabel(q.topic).toLowerCase().includes(s) ||
           JSON.stringify(q.grammarPoints || []).toLowerCase().includes(s) ||
+          JSON.stringify(q.readingItems || []).toLowerCase().includes(s) ||
           JSON.stringify([q.structures, q.readingNotes]).toLowerCase().includes(s) ||
           Object.values(q.options || {}).some(v => v.toLowerCase().includes(s));
         if (!matches) return false;
@@ -255,7 +257,7 @@ export default function GrammarSaved({
               {/* Expanded details */}
               {open && (
                 <div className="border-t border-slate-700/50 p-4 space-y-3 animate-fade-in">
-                  <GrammarAnalysis question={q} />
+                  <GrammarAnalysis question={q} onQuickAdd={onQuickAdd} />
 
                   {/* User notes */}
                   <div className="border-t border-slate-700/30 pt-3">

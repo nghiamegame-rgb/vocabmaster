@@ -91,6 +91,7 @@ export default function App() {
         {activeTab === 'grammar' && (
           <Grammar
             addWord={addWord}
+            words={words}
             structureStore={structureStore}
           />
         )}

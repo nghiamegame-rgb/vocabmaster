@@ -8,6 +8,7 @@ import GrammarReview       from './grammar/GrammarReview';
 import GrammarStats        from './grammar/GrammarStats';
 import GrammarCloudSettings from './grammar/GrammarCloudSettings';
 import GrammarStructures from './grammar/GrammarStructures';
+import { saveReadingDraft } from '../utils/grammarReadingItems';
 
 const SUB_TABS = [
   { id: 'practice',  label: 'Luyện tập',         Icon: Zap       },
@@ -22,7 +23,7 @@ const SUB_TABS = [
  * Manages sub-tab routing and bridges the grammar store with child components.
  * @param {{ addWord: Function }} props — addWord from the Vocabulary store for word integration.
  */
-export default function Grammar({ addWord, structureStore }) {
+export default function Grammar({ addWord, words = [], structureStore }) {
   const [subTab,      setSubTab]      = useState('practice');
   const [session,     setSession]     = useState(null); // { questions, config } when quiz is active
   const [showCloud,   setShowCloud]   = useState(false);
@@ -61,10 +62,11 @@ export default function Grammar({ addWord, structureStore }) {
     // Only go back to practice if user explicitly clicks "Create new set"
   }
 
-  // ── Add word to Vocabulary ────────────────────────────────────────────────
-  function handleAddToVocab(wordObj) {
-    if (!addWord) return false;
-    return addWord(wordObj);
+  function handleQuickAdd(destination, draft) {
+    return saveReadingDraft(destination, draft, {
+      words, structures: structureStore?.structures || [],
+      addWord, addStructure: structureStore?.addStructure,
+    });
   }
 
   return (
@@ -174,7 +176,7 @@ export default function Grammar({ addWord, structureStore }) {
                   handleFinishSession(result);
                   if (result.goBack) setSession(null);
                 }}
-                onAddToVocab={handleAddToVocab}
+                onQuickAdd={handleQuickAdd}
               />
             : <GrammarPractice onStartSession={handleStartSession} />
         )}
@@ -188,6 +190,7 @@ export default function Grammar({ addWord, structureStore }) {
             onUnsave={unsaveQuestion}
             onToggleHard={toggleHardMark}
             onUpdateNotes={updateNotes}
+            onQuickAdd={handleQuickAdd}
           />
         )}
 
@@ -197,7 +200,7 @@ export default function Grammar({ addWord, structureStore }) {
             savedQuestions={savedQuestions}
             reviewProgress={reviewProgress}
             onRecordReview={recordReview}
-            onAddToVocab={handleAddToVocab}
+            onQuickAdd={handleQuickAdd}
             onToggleHard={toggleHardMark}
           />
         )}

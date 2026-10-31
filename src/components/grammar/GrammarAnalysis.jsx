@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { getTopicLabel } from '../../utils/grammarPrompt';
 import { getGrammarSentence, isSentenceAnalysis } from '../../utils/grammarSentence';
+import GrammarReadingNotes from './GrammarReadingNotes';
 
-export function GrammarAnalysis({ question: q }) {
+export function GrammarAnalysis({ question: q, onQuickAdd }) {
   const detail = q.detailedExplanation;
   return <div className="space-y-4 text-sm text-slate-300 leading-relaxed break-words">
     <p className="text-slate-400 italic">{q.vietnameseSentence}</p>
@@ -13,10 +14,11 @@ export function GrammarAnalysis({ question: q }) {
         <p className="text-white font-medium">“{point.phrase}”</p>
         <p>{point.explanation}</p>
       </div>)}
-      {[['structures', 'Cấu trúc quan trọng'], ['readingNotes', 'Lưu ý đọc hiểu']].map(([key, title]) => q[key]?.length > 0 && <div key={key}>
-        <p className="text-purple-300 font-semibold mb-1">{title}</p>
-        <ul className="list-disc pl-5 space-y-1">{q[key].map((s, i) => <li key={i}>{s}</li>)}</ul>
-      </div>)}
+      {q.structures?.length > 0 && <div>
+        <p className="text-purple-300 font-semibold mb-1">Cấu trúc quan trọng</p>
+        <ul className="list-disc pl-5 space-y-1">{q.structures.map((s, i) => <li key={i}>{s}</li>)}</ul>
+      </div>}
+      <GrammarReadingNotes question={q} onQuickAdd={onQuickAdd} />
     </> : <>
       <p className="text-amber-300 text-xs">Bản ghi TOEIC cũ · giữ nguyên dữ liệu gốc</p>
       <p>{q.shortExplanation}</p>
@@ -32,7 +34,7 @@ export function GrammarAnalysis({ question: q }) {
 }
 
 // Mount with a key per sentence/navigation to reset the reveal state.
-export default function GrammarSentenceCard({ question, onReveal, onAssess, assessed }) {
+export default function GrammarSentenceCard({ question, onReveal, onAssess, assessed, onQuickAdd }) {
   const [shown, setShown] = useState(false);
   return <div className="bg-slate-900/80 border border-slate-700/50 rounded-2xl p-4 sm:p-6 space-y-4">
     <p className="text-lg text-white leading-relaxed break-words">{getGrammarSentence(question)}</p>
@@ -43,7 +45,7 @@ export default function GrammarSentenceCard({ question, onReveal, onAssess, asse
       {shown ? 'Ẩn phân tích' : 'Hiện phân tích'}
     </button>
     {shown && <>
-      <GrammarAnalysis question={question} />
+      <GrammarAnalysis question={question} onQuickAdd={onQuickAdd} />
       {question.userNotes && <p className="text-amber-200 text-sm whitespace-pre-wrap break-words">Ghi chú: {question.userNotes}</p>}
       {onAssess && <div className="flex flex-wrap gap-2">
         {[true, false].map(understood => <button key={String(understood)} type="button" disabled={assessed !== undefined}

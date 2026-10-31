@@ -63,6 +63,25 @@ try {
   const { default: Saved } = await server.ssrLoadModule('/src/components/grammar/GrammarSaved.jsx');
   const { default: Quiz } = await server.ssrLoadModule('/src/components/grammar/GrammarQuiz.jsx');
   const { default: Stats } = await server.ssrLoadModule('/src/components/grammar/GrammarStats.jsx');
+  test('reading learning actions are hidden initially and render with the revealed analysis', () => {
+    const enriched = { ...sentence, readingItems: [
+      { category: 'vocabulary', text: 'borrowed', explanation: 'Dạng quá khứ của borrow.', meaning: 'đã mượn' },
+      { category: 'structure', text: 'that I borrowed yesterday', pattern: 'noun + that + subject + verb', explanation: 'Mệnh đề quan hệ bổ nghĩa cho danh từ.' },
+    ] };
+    const onQuickAdd = () => ({ ok: true });
+    const hidden = renderToStaticMarkup(createElement(Card, { question: enriched, onQuickAdd }));
+    assert.ok(!hidden.includes('+ Vocab'));
+    assert.ok(!hidden.includes('+ Structure'));
+    assert.ok(!hidden.includes('Dạng quá khứ'));
+    const visible = renderToStaticMarkup(createElement(GrammarAnalysis, { question: enriched, onQuickAdd }));
+    assert.ok(visible.includes('Lưu ý đọc hiểu'));
+    assert.ok(visible.includes('+ Vocab'));
+    assert.ok(visible.includes('+ Structure'));
+    for (const item of enriched.readingItems) assert.ok(visible.includes(item.explanation));
+    assert.ok(visible.includes(enriched.readingNotes[0]));
+    const saved = renderToStaticMarkup(createElement(Saved, { savedQuestions: [enriched], reviewProgress: {}, onQuickAdd }));
+    assert.ok(!saved.includes('+ Vocab'));
+  });
   test('practice/review sentence card initially hides translation, analysis, notes and assessments', () => {
     for (const q of [sentence, legacy]) {
       const html = renderToStaticMarkup(createElement(Card, { question: q, onAssess() {} }));
