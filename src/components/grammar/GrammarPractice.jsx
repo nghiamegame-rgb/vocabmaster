@@ -5,23 +5,28 @@ import {
   GRAMMAR_COUNTS,
   getTopicLabel,
   buildGrammarPrompt,
-  validateGrammarJSON,
-  normalizeQuestions,
 } from '../../utils/grammarPrompt';
+import { prepareGrammarImport, completeGrammarImport, formatGrammarIssue } from '../../utils/grammarImport';
+import { getRecentGrammarSentences } from '../../utils/grammarBatch';
 
 /**
  * GrammarPractice — Step 1: Configure → Copy prompt → Paste JSON → Start quiz.
  */
-export default function GrammarPractice({ onStartSession }) {
-  const [count,      setCount]      = useState(10);
-  const [topic,      setTopic]      = useState('Mixed');
+export default function GrammarPractice({ onStartSession, batch, onNewBatch, settings = { count: 10, topic: 'Mixed' }, onSettingsChange }) {
+  const { count, topic } = settings;
   const [copied,     setCopied]     = useState(false);
   const [promptOpen, setPromptOpen] = useState(false);
   const [jsonInput,  setJsonInput]  = useState('');
   const [error,      setError]      = useState(null);
-  const [validating, setValidating] = useState(false);
+  const [importReview, setImportReview] = useState(null);
+  const [excludedItems, setExcludedItems] = useState([]);
+  const [allowDuplicates, setAllowDuplicates] = useState(false);
 
-  const prompt = buildGrammarPrompt({ count, topic });
+  const prompt = buildGrammarPrompt({ count, topic, batchId: batch?.id, recentSentences: batch?.recentSentences });
+
+  function resetImportReview() {
+    setError(null); setImportReview(null); setExcludedItems([]); setAllowDuplicates(false);
+  }
 
   async function handleCopy() {
     try {
@@ -34,31 +39,17 @@ export default function GrammarPractice({ onStartSession }) {
   }
 
   function handleImport() {
-    setError(null);
-    setValidating(true);
-    setTimeout(() => {
-      try {
-        const raw = jsonInput.trim();
-        if (!raw) { setError(['Vui lòng dán JSON từ AI vào ô bên trên.']); setValidating(false); return; }
+    resetImportReview();
+    const result = prepareGrammarImport(jsonInput, { count, topic, recentSentences: getRecentGrammarSentences(batch?.recentSentences || []) });
+    if (result.errors.length) { setError(result.errors.map(formatGrammarIssue)); return; }
+    if (result.optionalIssues.length || result.duplicates.length) { setImportReview(result); return; }
+    startImport(result);
+  }
 
-        // Strip markdown code fences if user accidentally included them
-        const cleaned = raw
-          .replace(/^```(?:json)?\s*/i, '')
-          .replace(/\s*```$/, '')
-          .trim();
-
-        const parsed = JSON.parse(cleaned);
-        const { valid, errors } = validateGrammarJSON(parsed, { count, topic });
-
-        if (!valid) { setError(errors); setValidating(false); return; }
-
-        const questions = normalizeQuestions(parsed);
-        onStartSession({ questions, config: { count, topic } });
-      } catch (e) {
-        setError([`JSON không hợp lệ: ${e.message}`, 'Hãy đảm bảo bạn copy toàn bộ JSON từ AI, không thiếu "[" hoặc "]".']);
-      }
-      setValidating(false);
-    }, 300);
+  function startImport(result, choices = {}) {
+    const check = completeGrammarImport(result, choices);
+    if (!check.valid) { setError(check.errors); return; }
+    onStartSession({ questions: check.questions, config: { count, topic } });
   }
 
   return (
@@ -89,7 +80,7 @@ export default function GrammarPractice({ onStartSession }) {
               {GRAMMAR_COUNTS.map(n => (
                 <button
                   key={n}
-                  onClick={() => setCount(n)}
+                  onClick={() => { onSettingsChange?.({ count: n, topic }); resetImportReview(); }}
                   className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
                     count === n
                       ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
@@ -107,7 +98,7 @@ export default function GrammarPractice({ onStartSession }) {
             <label className="block text-slate-400 text-xs font-medium mb-2">Chủ đề ngữ pháp</label>
             <select
               value={topic}
-              onChange={e => setTopic(e.target.value)}
+              onChange={e => { onSettingsChange?.({ count, topic: e.target.value }); resetImportReview(); }}
               className="w-full bg-slate-800 border border-slate-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-500 transition-colors"
             >
               {GRAMMAR_TOPICS.map(t => (
@@ -122,14 +113,15 @@ export default function GrammarPractice({ onStartSession }) {
       <div className="bg-slate-900/80 border border-slate-700/50 rounded-2xl p-5 space-y-3">
         <div className="flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-purple-600 text-white text-xs font-bold flex items-center justify-center">2</span>
-          <h3 className="text-white font-semibold">Copy prompt → Dán vào ChatGPT / Gemini</h3>
+          <h3 className="text-white font-semibold">Copy prompt → Dán vào AI bạn dùng</h3>
         </div>
 
         <p className="text-slate-400 text-sm">
-          Copy prompt bên dưới, dán vào <span className="text-purple-400 font-medium">ChatGPT</span> hoặc <span className="text-blue-400 font-medium">Gemini</span>, sau đó copy toàn bộ JSON kết quả trả về.
+          Dán prompt vào ChatGPT, Gemini, Claude hoặc AI khác, sau đó copy toàn bộ JSON kết quả trả về.
         </p>
+        <p className="text-slate-500 text-xs break-all">Bộ gợi ý: {batch?.id || 'preview'} · Giữ nguyên cho đến khi tạo bộ mới.</p>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={handleCopy}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
@@ -140,6 +132,10 @@ export default function GrammarPractice({ onStartSession }) {
           >
             {copied ? <Check size={16} /> : <Copy size={16} />}
             {copied ? 'Đã copy!' : 'Copy Prompt'}
+          </button>
+          <button onClick={() => { onNewBatch?.(); setCopied(false); resetImportReview(); }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">
+            <RefreshCw size={16} /> Tạo prompt mới
           </button>
           <button
             onClick={() => setPromptOpen(v => !v)}
@@ -166,8 +162,8 @@ export default function GrammarPractice({ onStartSession }) {
 
         <textarea
           value={jsonInput}
-          onChange={e => { setJsonInput(e.target.value); setError(null); }}
-          placeholder={`Dán toàn bộ JSON từ ChatGPT/Gemini vào đây...\n\nVí dụ:\n[\n  {\n    "id": "q1",\n    "sentence": "The library is open to everyone.",\n    ...\n  }\n]`}
+          onChange={e => { setJsonInput(e.target.value); resetImportReview(); }}
+          placeholder="Dán JSON từ AI vào đây. Có thể dán cả khối code JSON; ứng dụng sẽ kiểm tra trước khi bắt đầu."
           rows={10}
           className="w-full bg-slate-950 border border-slate-600 text-slate-200 rounded-xl px-4 py-3 text-sm font-mono placeholder-slate-600 focus:outline-none focus:border-purple-500 transition-colors resize-y"
         />
@@ -176,7 +172,7 @@ export default function GrammarPractice({ onStartSession }) {
           <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <AlertCircle size={16} className="text-rose-400" />
-              <span className="text-rose-400 text-sm font-semibold">Lỗi validation JSON</span>
+              <span className="text-rose-400 text-sm font-semibold">Cần sửa nội dung sau</span>
             </div>
             <ul className="space-y-1">
               {error.map((e, i) => (
@@ -186,13 +182,37 @@ export default function GrammarPractice({ onStartSession }) {
           </div>
         )}
 
-        <div className="flex items-center justify-between">
+        {importReview && <div className="bg-amber-500/5 border border-amber-500/30 rounded-xl p-4 space-y-3 text-sm">
+          <p className="text-amber-200 font-semibold">Kiểm tra trước khi bắt đầu</p>
+          {importReview.normalizations.length > 0 && <p className="text-slate-300">Đã tự khớp {importReview.normalizations.length} trích dẫn về đúng chữ trong câu; câu tiếng Anh và lời giải được giữ nguyên.</p>}
+          {importReview.optionalIssues.length > 0 && <>
+            <p className="text-slate-300">Các mục đọc hiểu dưới đây chưa hợp lệ. Bạn có thể sửa JSON, hoặc đánh dấu từng mục để chỉ loại mục đó khỏi bộ câu sắp luyện.</p>
+            {importReview.optionalIssues.map(issue => <label key={issue.key} className="flex items-start gap-2 text-amber-100 break-words">
+              <input type="checkbox" checked={excludedItems.includes(issue.key)} onChange={e => setExcludedItems(prev => e.target.checked ? [...prev, issue.key] : prev.filter(key => key !== issue.key))} className="mt-1 shrink-0" />
+              <span>Bỏ mục này — {formatGrammarIssue(issue)}</span>
+            </label>)}
+          </>}
+          {importReview.duplicates.length > 0 && <>
+            <p className="text-slate-300">Đã gặp gần đây:</p>
+            <ul className="list-disc pl-5 text-amber-100">{importReview.duplicates.map(item => <li key={item.sentence}>Câu {item.sentence}: {item.text}</li>)}</ul>
+            <label className="flex items-start gap-2 text-slate-300"><input type="checkbox" checked={allowDuplicates} onChange={e => setAllowDuplicates(e.target.checked)} className="mt-1" />Tôi vẫn muốn luyện các câu trùng được liệt kê.</label>
+            <p className="text-slate-400 text-xs">Bạn cũng có thể tạo prompt mới để yêu cầu AI sinh bộ khác.</p>
+          </>}
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => startImport(importReview, { excludedItems, allowDuplicates })}
+              disabled={importReview.optionalIssues.some(issue => !excludedItems.includes(issue.key)) || (importReview.duplicates.length > 0 && !allowDuplicates)}
+              className="px-4 py-2 rounded-xl bg-purple-600 text-white font-semibold disabled:opacity-40">Xác nhận và bắt đầu</button>
+            <button onClick={resetImportReview} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300">Quay lại sửa JSON</button>
+          </div>
+        </div>}
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-slate-500 text-xs">
             JSON sẽ được validate tự động trước khi bắt đầu.
           </p>
           <div className="flex gap-2">
             <button
-              onClick={() => { setJsonInput(''); setError(null); }}
+              onClick={() => { setJsonInput(''); resetImportReview(); }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-all duration-200"
             >
               <RefreshCw size={14} />
@@ -200,11 +220,11 @@ export default function GrammarPractice({ onStartSession }) {
             </button>
             <button
               onClick={handleImport}
-              disabled={validating || !jsonInput.trim()}
+              disabled={!jsonInput.trim()}
               className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-purple-500/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Upload size={16} />
-              {validating ? 'Đang kiểm tra…' : 'Bắt đầu luyện tập'}
+              Kiểm tra & bắt đầu
             </button>
           </div>
         </div>

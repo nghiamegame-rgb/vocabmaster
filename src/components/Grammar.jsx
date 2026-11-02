@@ -9,6 +9,8 @@ import GrammarStats        from './grammar/GrammarStats';
 import GrammarCloudSettings from './grammar/GrammarCloudSettings';
 import GrammarStructures from './grammar/GrammarStructures';
 import { saveReadingDraft } from '../utils/grammarReadingItems';
+import { createGrammarBatch, getRecentGrammarSentences, rememberGrammarSentences } from '../utils/grammarBatch';
+import { isSentenceAnalysis } from '../utils/grammarSentence';
 
 const SUB_TABS = [
   { id: 'practice',  label: 'Luyện tập',         Icon: Zap       },
@@ -47,15 +49,25 @@ export default function Grammar({ addWord, words = [], structureStore }) {
     recordGrammarSession,
     syncFromCloud,
   } = useGrammarStore();
+  const [promptBatch, setPromptBatch] = useState(() => createGrammarBatch(
+    getRecentGrammarSentences(savedQuestions.filter(isSentenceAnalysis).map(q => q.sentence))
+  ));
+  const [promptSettings, setPromptSettings] = useState({ count: 10, topic: 'Mixed' });
+
+  function newPromptBatch() {
+    setPromptBatch(createGrammarBatch(getRecentGrammarSentences(savedQuestions.filter(isSentenceAnalysis).map(q => q.sentence))));
+  }
 
   // ── Session lifecycle ─────────────────────────────────────────────────────
   function handleStartSession(sess) {
+    rememberGrammarSentences(sess.questions.map(q => q.sentence));
     setSession(sess);
   }
 
   function handleFinishSession(result) {
     if (!result.goBack) recordGrammarSession(result);
     if (result.goBack) {
+      newPromptBatch();
       setSession(null);
     }
     // Stay in quiz view showing the results screen (GrammarQuiz handles it internally)
@@ -178,7 +190,8 @@ export default function Grammar({ addWord, words = [], structureStore }) {
                 }}
                 onQuickAdd={handleQuickAdd}
               />
-            : <GrammarPractice onStartSession={handleStartSession} />
+            : <GrammarPractice onStartSession={handleStartSession} batch={promptBatch} onNewBatch={newPromptBatch}
+                settings={promptSettings} onSettingsChange={setPromptSettings} />
         )}
 
         {/* Saved tab */}

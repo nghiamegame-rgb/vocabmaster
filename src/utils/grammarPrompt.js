@@ -1,5 +1,6 @@
 import { validateSentenceAnalysis } from './grammarSentence.js';
 import { validateReadingItems } from './grammarReadingItems.js';
+import { buildBatchInstructions } from './grammarBatch.js';
 
 // Keep established keys for compatibility with saved records and history.
 export const TOPIC_LABELS = {
@@ -29,12 +30,14 @@ export const GRAMMAR_DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
 export const getTopicLabel = topic => TOPIC_LABELS[topic] || topic || 'Tổng hợp';
 export const getAvailableTopics = questions => [...new Set([...GRAMMAR_TOPICS, ...questions.map(q => q.topic).filter(Boolean)])];
 
-export function buildGrammarPrompt({ count = 10, topic = 'Mixed' } = {}) {
+export function buildGrammarPrompt({ count = 10, topic = 'Mixed', batchId = 'preview', recentSentences = [] } = {}) {
   return `You are an English reading instructor for Vietnamese learners preparing for VSTEP B1.
 Generate exactly ${count} complete, grammatically correct English sentences for grammar recognition and sentence analysis.
 Use a graduated difficulty range: mostly B1–B2, with occasional accessible C1-style exposure. Aim for about 40% B1, 30% B1+/B2 medium, 20% harder B2, and 10% C1-style exposure (round sensibly; at most one C1-style item for 5 sentences). Order from easier to medium to harder, ending with occasional C1-style exposure. Do not make all items hard or stay at minimum B1. For harder items, scaffold the clause relationships and unfamiliar language clearly in Vietnamese so a learner targeting VSTEP B1 can still understand.
 Use natural sentences similar to VSTEP reading passages about daily life, education, community, work, travel, health, technology and the environment. C1-style exposure should come from richer sentence structure or nuanced linking, not obscure words or artificially long sentences. Vary structures and contexts.
 These are study categories, NOT an official VSTEP syllabus.
+
+${buildBatchInstructions({ id: batchId, recentSentences }, topic)}
 
 VSTEP VOCABULARY AND GRAMMAR PRIORITIES:
 Select useful language targets FIRST, then naturally incorporate them into complete sentences that fit the selected grammar focus and the difficulty distribution above. Prioritize high-utility B1–B2 vocabulary across education, health, the environment, technology, society, work and daily life; frequent collocations and prepositional phrases; and reusable grammar patterns that help learners understand longer, complex reading sentences.
@@ -49,7 +52,7 @@ ${topic === 'Mixed'
   : `Explain ONLY parts relevant to ${topic}. Use "${topic}" as the category of these points. Do not add unrelated tense, agreement, article or sentence-structure explanations. At most one brief supporting note may be included within a relevant explanation if essential to understand it.`}
 Usually provide 3–6 short grammarPoints per sentence, fewer when that is all the selected topic needs. Never pad to reach a count. Each point quotes an EXACT contiguous English phrase from the sentence and gives ONE short, natural Vietnamese explanation of why that part is used here (roughly 15–35 Vietnamese words). Sound like a practical teacher, not a grammar textbook. Explain meaning or a useful contextual clue; avoid repetitive definitions and academic narration.
 Do NOT use mechanical sentence formulas such as S + V + O, Prep Phrase 1 + Prep Phrase 2, or noun phrase + clause. Do NOT generate a long formal sentence-structure paragraph. Omit optional structures unless genuinely needed; keep any such note brief.
-Examples of tone: "depend on": "Mang nghĩa phụ thuộc vào; depend đi với on để chỉ điều mình dựa vào."; "sensitive": "Đứng trước documents để nói tài liệu thuộc loại nhạy cảm, nên dùng tính từ."; "for sharing": "Ở đây for nói mục đích sử dụng; động từ share theo sau được viết thành sharing." Choose only examples relevant to the selected topic, never all of them by default.
+Use natural Vietnamese: explain the quoted expression's meaning, why this form or preposition fits here, or how it connects ideas. Give a practical reason in context, not a dry category definition. Do not reuse a fixed stock of example expressions across batches.
 Provide a natural Vietnamese translation. All explanations and optional structures/reading notes must be in Vietnamese.
 NO blanks, NO A/B/C/D options, NO answer field, NO correct-answer selection.
 
@@ -57,35 +60,32 @@ READING LEARNING ITEMS (readingItems, shown as "Lưu ý đọc hiểu"):
 Extract only meaningful, reusable learning items actually occurring in each sentence: important vocabulary, structures, parts of speech / word forms, prepositions, collocations, useful phrases or recurring patterns. Keep this optional learning section short (usually 0–3 worthwhile items); avoid restating the quick explanation. Do NOT invent or force items to reach a quantity; an empty array is acceptable when nothing is useful.
 Each item must have category (vocabulary, structure, word-form, preposition, phrase, collocation, or pattern), text (EXACT contiguous English text from the sentence, preserving case and punctuation), and explanation (short Vietnamese explanation).
 Optional: meaning (concise Vietnamese meaning suggestion), usefulness (why it helps VSTEP reading), pattern (a reusable English grammar pattern, grounded in the exact text; only when genuinely useful for saving to Grammar Structures).
-For structure/pattern items and any item with a pattern, include meaning as a clear Vietnamese meaning of the ENTIRE reusable expression or pattern, not just the grammatical role of one word or preposition. Keep technical grammar commentary in explanation and the topic in topic, never substitute either for meaning. For example, text "throw plastic bottles into", pattern "throw something into somewhere", meaning "Vứt/bỏ cái gì vào trong một nơi nào đó.", explanation "Giới từ into chỉ sự chuyển động vào bên trong một địa điểm hoặc vật chứa." Use this only when the exact text occurs in the sentence; do not invent extracts.
+For structure/pattern items and any item with a pattern, include meaning as a clear Vietnamese meaning of the ENTIRE reusable expression or pattern, not just the grammatical role of one word or preposition. Keep technical grammar commentary in explanation and the topic in topic, never substitute either for meaning. Use exact text that occurs in the sentence; do not invent extracts.
 In readingItems, clearly identify the highest-value vocabulary, collocations, prepositions, phrases and reusable grammar patterns from each sentence. Provide Vietnamese meanings in meaning when applicable and explain their use in context in explanation. For word-form items, explain the observed form, its part of speech and a useful word-family relationship in Vietnamese; keep text as an exact extract, not a list of related words absent from the sentence. For reusable structures, include pattern when useful. Give priority to items worth saving and revisiting for VSTEP reading, without adding low-value or forced items merely to increase quantity.
 Use vocabulary/phrase/collocation/preposition/word-form for Vocabulary items; structure/pattern for Grammar Structures. A vocabulary item may also include a pattern when both destinations genuinely make sense. Never put Vietnamese notes inside the English text or pattern.
 Keep optional readingNotes as an array of plain Vietnamese strings for general comprehension notes; put structured learning items in readingItems, not in readingNotes. Do not duplicate a point unless its reading value is distinct.
 
-Return ONLY a JSON array, without markdown or surrounding text. Each item uses this versioned schema:
-{
-  "schemaVersion": 2,
-  "type": "sentence-analysis",
-  "id": "s1",
-  "sentence": "Employees depend on secure cloud platforms for sharing documents with remote colleagues.",
-  "vietnameseSentence": "Nhân viên dựa vào các nền tảng đám mây an toàn để chia sẻ tài liệu với đồng nghiệp làm việc từ xa.",
-  "topic": "Prepositions",
-  "grammarPoints": [
-    { "category": "Prepositions", "phrase": "depend on", "explanation": "Mang nghĩa phụ thuộc vào; depend đi với on để chỉ điều mình dựa vào." },
-    { "category": "Prepositions", "phrase": "for sharing", "explanation": "For nói mục đích sử dụng nền tảng; động từ share theo sau được viết thành sharing." },
-    { "category": "Prepositions", "phrase": "with remote colleagues", "explanation": "With cho biết tài liệu được chia sẻ với ai; ở đây là các đồng nghiệp làm việc từ xa." }
-  ],
-  "readingNotes": [],
-  "readingItems": [
-    { "category": "collocation", "text": "cloud platforms", "meaning": "các nền tảng đám mây", "explanation": "Cụm thường dùng khi nói về công cụ làm việc và lưu trữ trực tuyến." },
-    { "category": "structure", "text": "sharing documents with remote colleagues", "pattern": "share something with somebody", "meaning": "Chia sẻ thứ gì với ai.", "explanation": "Sau share, nêu thứ được chia sẻ rồi dùng with để giới thiệu người nhận." }
-  ]
-}
-The example illustrates the schema only; adapt topic and analysis to the requested focus.
-Required for newly generated items: schemaVersion, type, sentence, vietnameseSentence, topic, non-empty grammarPoints, readingItems (array, possibly empty).
-Optional: id, structures (array of strings), readingNotes (array of strings).
+JSON CONTRACT (types only, not content to copy):
+Return exactly ONE valid JSON array. No Markdown code fences, introduction, commentary or trailing text. Use double-quoted keys and string values, valid escaping, no comments, and no trailing commas. Avoid extra unsupported properties.
+Each array element is an object with these required properties:
+- "schemaVersion": number, exactly 2.
+- "type": string, exactly "sentence-analysis".
+- "sentence": string, one complete English sentence.
+- "vietnameseSentence": string, natural Vietnamese translation.
+- "topic": string, an exact topic key from the list below.
+- "grammarPoints": non-empty array of objects containing "category" (topic-key string), "phrase" (string), and "explanation" (Vietnamese string).
+- "readingItems": array, possibly empty, of objects containing "category" (one of vocabulary, structure, word-form, preposition, phrase, collocation, pattern), "text" (string), "explanation" (Vietnamese string). Optional non-empty strings: "meaning", "usefulness", "pattern".
+Optional properties on each sentence object: "id" (string s1 through s${count}), "structures" (array of Vietnamese strings), "readingNotes" (array of Vietnamese strings).
+grammarPoints[].phrase and readingItems[].text MUST be exact, CONTIGUOUS substrings of sentence, preserving capitalization, spacing and punctuation. Never use ellipses (... or …), shortened quotations, stitched-together fragments, or generalized expressions in these substring fields. Generalized expressions belong ONLY in readingItems[].pattern. Do not reproduce or paraphrase any schema illustration.
 Topic and grammar point category keys must be from: ${GRAMMAR_TOPICS.join(', ')}.
-Generate exactly ${count} items with unique ids s1 through s${count}. One complete sentence per item; never use placeholders or exercises. Output JSON only.`;
+Generate exactly ${count} items with unique ids s1 through s${count}. One complete sentence per item; never use placeholders or exercises.
+FINAL SELF-CHECK BEFORE RESPONDING:
+1. Parse your output mentally as one JSON array: correct quotes/escaping, no comments/trailing commas or extra text, exactly ${count} items.
+2. Check every required name, type, version and category against the contract; no unsupported fields.
+3. Locate each phrase/text as one uninterrupted exact substring of its sentence; keep generalizations in pattern, never in text.
+4. Check natural Vietnamese, selected-topic focus, concise explanations, useful reading items and the 40/30/20/10 difficulty distribution.
+5. Check this batch varies subpatterns, openings and contexts and does not repeat or lightly paraphrase recent sentences.
+OUTPUT: JSON array only.`;
 }
 
 export function validateGrammarJSON(parsed, { count, topic } = {}) {

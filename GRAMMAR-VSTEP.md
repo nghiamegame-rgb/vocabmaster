@@ -1,8 +1,10 @@
-# Grammar VSTEP B1
+#ên trong một khối lỗi, không sửa dấu phẩy/comment hoặc dấu nháy phân cách JSON sai cú pháp. Với phrase/text, chỉ tự sửa hoa/thường, khoảng trắng và các biến thể dấu nháy/gạch nối Unicode an toàn khi xác định được đoạn duy nhất trong câu gốc. Không sửa sentence, bản dịch hay lời giải. Trích dẫn có dấu ba chấm, ghép nhiều đoạn hoặc có nhiều vị trí khớp cần người dùng sửa.
 
-Luyện tập dùng câu hoàn chỉnh và phân tích tiếng Việt. Chủ đề là nhóm tự học, không phải đề cương VSTEP chính thức. JSON mới bắt buộc `schemaVersion: 2`, `type: "sentence-analysis"`, `sentence`, `vietnameseSentence`, `topic`, `grammarPoints` (category, phrase nguyên văn trong câu, explanation). `structures` và `readingNotes` là các mảng chuỗi tùy chọn. Khóa chủ đề cũ được giữ để tương thích lịch sử; giao diện hiển thị nhãn tiếng Việt.
+Lỗi chỉ rõ số câu, đường dẫn trường, giá trị và cách sửa. Trường bắt buộc vẫn kiểm tra nghiêm ngặt. Mỗi readingItems lỗi được liệt kê riêng; chỉ loại khỏi bộ nhập sau khi người dùng đánh dấu mục đó và bấm xác nhận. Mảng câu và phân tích bắt buộc được giữ. Câu trùng trong cùng bộ bị chặn; trùng lịch sử gần đây chỉ được tiếp tục sau xác nhận.
 
-Không migrate hoặc xóa dữ liệu. Câu TOEIC cũ giữ nguyên savedId, options, answer, ghi chú, dấu sao và tiến độ. Giao diện chỉ điền đáp án cũ khi hiển thị câu; không ghi ngược thành bản ghi mới. Bạn tự xóa các câu cũ trong thư viện khi muốn.
+Nút “Tạo prompt mới” tạo ID mới và xoay bối cảnh, chủ thể, mục đích, cách mở câu và tiểu chủ điểm. Copy/xem prompt, nhập JSON và render lại không đổi ID; chuyển tab con Grammar giữ ID và cấu hình. Chọn “Tạo bộ câu mới” từ màn kết quả tạo ID mới. Đóng/rời hẳn module hoặc tải lại trang sẽ khởi tạo một phiên prompt mới.
+
+Lịch sử phụ trợ giữ tối đa 50 câu đã chấp nhận nhập trên thiết bị, bằng khóa mới `vocabmaster_grammar_recent_sentences`, tách khỏi mọi dữ liệu/tiến độ hiện có và không sync cloud. Khi tạo prompt, lấy thêm câu VSTEP đã lưu nếu cần; phần loại trừ giới hạn khoảng 6.000 ký tự. Nếu LocalStorage lỗi, vẫn luyện được và lịch sử tạm giữ trong bộ nhớ phiên. Đây không phải kiểm tra paraphrase/ngữ nghĩa: AI vẫn có thể tạo tình huống gần giống; ID chỉ là gợi ý biến thể, không bảo đảm tuyệt đối. Schema lưu câu, backend/proxy/Apps Script và đồng bộ không đổi. Kiểm tra tập trung: `node test/grammar-import.test.js`.
 
 ## Giải thích nhanh
 
@@ -38,3 +40,14 @@ Thống kê phân tích/tự đánh giá nằm riêng trong `sentenceActivity`, 
 Validation kiểm tra cấu trúc JSON, phiên bản, chủ đề, số câu và cụm trích nguyên văn; không thể bảo đảm câu do AI tạo đúng ngữ pháp, bản dịch chính xác hay phân tích đã đầy đủ. Cơ chế merge Grammar cũ giữ nguyên, gồm giới hạn chưa có tombstone: dữ liệu cũ từ thiết bị khác có thể khôi phục câu đã xóa hoặc cấp cao hơn. Không đổi Vocabulary, Structures hoặc chế độ Structures của Smart Quiz.
 
 Kiểm tra không dùng trình duyệt hay endpoint thật: `node test/grammar-sentence.test.js`, `node test/grammar-auto-sync.test.js`, `node test/grammar-sync.test.js`, `node test/structures-backend.test.js`.
+ Grammar VSTEP B1
+
+Luyện tập dùng câu hoàn chỉnh và phân tích tiếng Việt. Chủ đề là nhóm tự học, không phải đề cương VSTEP chính thức. JSON mới bắt buộc `schemaVersion: 2`, `type: "sentence-analysis"`, `sentence`, `vietnameseSentence`, `topic`, `grammarPoints` (category, phrase nguyên văn trong câu, explanation). `structures` và `readingNotes` là các mảng chuỗi tùy chọn. Khóa chủ đề cũ được giữ để tương thích lịch sử; giao diện hiển thị nhãn tiếng Việt.
+
+Không migrate hoặc xóa dữ liệu. Câu TOEIC cũ giữ nguyên savedId, options, answer, ghi chú, dấu sao và tiến độ. Giao diện chỉ điền đáp án cũ khi hiển thị câu; không ghi ngược thành bản ghi mới. Bạn tự xóa các câu cũ trong thư viện khi muốn.
+
+## Nhập JSON từ nhiều AI và thay đổi bộ gợi ý
+
+Prompt có hợp đồng kiểu dữ liệu v2 và checklist cuối, không dùng câu mẫu hoàn chỉnh để hạn chế AI bắt chước. Không đổi phân bố 40/30/20/10, lời giải tự nhiên hoặc bộ lọc chủ đề.
+
+Phần nhập nhận mảng JSON, một code fence, hoặc một mảng duy nhất kèm lời dẫn/kết. Không đoán khi có nhiều khối JSON, không cứu mảnh JSON b
