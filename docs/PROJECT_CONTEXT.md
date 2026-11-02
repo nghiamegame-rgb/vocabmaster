@@ -56,7 +56,7 @@ src/
       GrammarCloudSettings.jsx   # URL dùng chung cho câu Grammar/Structures
   hooks/
     useVocabStore.js              # từ, stats, streak và sync Vocabulary
-    useGrammarStore.js            # câu, review, stats, pending/revision
+    useGrammarStore.js            # câu, review, stats, underlines local, pending/revision
     useStructuresStore.js         # mẫu, sự kiện ôn, tombstone và sync riêng scope
   utils/
     storage.js, cloud.js, annotation.js, audio.js, wordSelection.js
@@ -123,7 +123,7 @@ Các subtab: **Luyện tập, Câu đã lưu, Ôn tập, Thống kê, Structures
 | Lịch sử prompt | `vocabmaster_grammar_recent_sentences` | tối đa 50 câu gần đây; fallback bộ nhớ phiên; không sync |
 | Structures | `vocabmaster_grammar_structures` | `id`, `english`, `vietnamese`, `example`, `notes`, `topic`, timestamps, `level/currentStreak`, `wrongCount/totalReviews`, `reviewBase`, `reviewEvents`, tùy chọn `deletedAt` |
 
-| Dấu gạch chân Grammar | `vocabmaster_grammar_underlines` | `{ [key]: [{start,end,color}] }`; key = savedId hoặc `text:` + sentence; local only, chưa sync cloud; xem `sentenceUnderline.js` |
+| Dấu gạch chân Grammar | `vocabmaster_grammar_underlines` | `{ [key]: [{start,end,color}] }`; key = savedId hoặc `text:` + sentence; local only. `useGrammarStore` giữ snapshot state và truyền props để cập nhật ngay cả khi phân tích đóng; xem `sentenceUnderline.js` |
 
 Nguồn: `storage.js`, `grammarStorage.js`, `structureStorage.js`, `sentenceUnderline.js`, ba hook, `grammarBatch.js`. LocalStorage theo origin/trình duyệt; không thấy đăng nhập hoặc tài khoản người dùng trong app. Stats hai module, lịch sử prompt và dấu gạch chân chỉ local, không nằm trong payload cloud.
 
@@ -204,6 +204,8 @@ Scripts thực tế (`package.json`): `npm run dev`, `npm run build`, `npm run l
 | `node test/grammar-import.test.js` | parser nhiều định dạng, quote normalization, xác nhận bỏ mục/trùng, batch/history |
 | `node test/structures.test.js` | store/merge/event/tombstone, prompt/validator/client/proxy bằng mô phỏng |
 | `node test/structures-backend.test.js` | mã Apps Script thật trong VM với Sheets/Lock giả, CAS/rollback/backup |
+| `node test/sentence-underline.test.js` | logic năm màu, persistence giả lập, render HTML tĩnh |
+| `node test/underline-rendering.test.js` | App/React DOM thật trong Edge headless: chọn đoạn, click màu/xóa, cập nhật ngay, giữ assessment/analysis và reload; cần Playwright, cloud bị chặn; thiết lập trong HANDOFF |
 
 Lần khảo sát: **cả 11 file exit 0**. `npm.cmd run lint` exit 0 nhưng còn cảnh báo unused, hook deps, set-state-in-effect, purity/refs…; không sửa vì chỉ bàn giao. Build exit 0 bằng `npm.cmd run build -- --outDir <thư-mục-tạm-mới>` để giữ `dist` hiện có; Vite báo outDir ngoài project không tự dọn và thông tin thời gian plugin. Không chạy dev server/browser.
 

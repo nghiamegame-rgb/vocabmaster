@@ -3,7 +3,7 @@ import { isGrammarDueForReview } from '../../utils/grammarStorage';
 import { getAvailableTopics, getTopicLabel } from '../../utils/grammarPrompt';
 import GrammarSentenceCard from './GrammarAnalysis';
 
-export default function GrammarReview({ savedQuestions, reviewProgress, onRecordReview, onToggleHard, onQuickAdd, onUnderlineChange }) {
+export default function GrammarReview({ savedQuestions, reviewProgress, onRecordReview, onToggleHard, onQuickAdd, onUnderlineChange, underlines = {} }) {
   const [mode, setMode] = useState('select');
   const [reviewMode, setReviewMode] = useState('due');
   const [topic, setTopic] = useState('All');
@@ -67,6 +67,7 @@ export default function GrammarReview({ savedQuestions, reviewProgress, onRecord
       nextLabel={current + 1 < queue.length ? 'Câu tiếp' : 'Hoàn tất'}
       underlineKey={q.savedId}
       onUnderlineChange={onUnderlineChange}
+      underlines={underlines}
     />
     <div className="flex justify-between gap-3">
       <button onClick={finish} className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl">Kết thúc phiên</button>

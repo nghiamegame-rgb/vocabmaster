@@ -7,7 +7,6 @@ import { getAvailableTopics, getTopicLabel } from '../../utils/grammarPrompt';
 
 import { GrammarAnalysis } from './GrammarAnalysis';
 import { getGrammarSentence } from '../../utils/grammarSentence';
-import { getUnderlinesForKey } from '../../utils/grammarStorage';
 import UnderlinedSentence from './UnderlinedSentence';
 
 /**
@@ -22,6 +21,7 @@ export default function GrammarSaved({
   onUpdateNotes,
   onQuickAdd,
   onUnderlineChange,
+  underlines = {},
 }) {
   const [search,      setSearch]      = useState('');
   const [topicFilter, setTopicFilter] = useState('All');
@@ -177,7 +177,7 @@ export default function GrammarSaved({
           const open   = expanded[q.savedId];
           const level  = getReviewLevel(q.savedId);
           const wrongs = getWrongCount(q.savedId);
-          const segments = getUnderlinesForKey(q.savedId);
+          const segments = underlines[q.savedId] || [];
 
           return (
             <div

@@ -95,3 +95,22 @@ Hiện tại: **local only**. Underlines không được đưa vào payload Gram
 - `node test/sentence-underline.test.js`: **49/49 đạt**, có kiểm tra white validation/overlap/xóa, lưu rồi đọc lại, chuyển text-key sang savedId, giữ dấu bốn màu cũ và dữ liệu review, thứ tự/nhãn nút và CSS render thực tế.
 - `node test/grammar-sentence.test.js`: **7/7 đạt**. `npm.cmd run lint`: exit 0, còn cảnh báo ở các file không sửa trong lần này. Build bằng `npm.cmd run build -- --outDir <thư-mục-tạm-mới>`: exit 0; không ghi đè `dist` có sẵn.
 - Chưa kiểm tra tương tác trình duyệt/mobile hoặc sync thật. Các hạn chế cũ về cập nhật giao diện ngay sau đổi dấu, tọa độ toolbar khi cuộn và merge dấu lúc chuyển key chưa sửa trong phạm vi thêm màu. Không commit, push hoặc deploy.
+
+## 7. Sửa render dấu gạch chân chậm — 2026-11-02
+
+- HEAD trước sửa: `96e77d0` (đã có màu trắng), working tree sạch khi bắt đầu. Nguyên nhân xác minh: `updateUnderlines` chỉ lưu LocalStorage; `GrammarSentenceCard`/`GrammarSaved` đọc dấu lúc render, nhưng không nhận state mới. Đóng toolbar chỉ render component con với props cũ; mở phân tích vô tình khiến cha đọc lại dấu. Hàng đợi câu Review không phải nơi giữ dữ liệu dấu.
+- Sửa: `useGrammarStore` hydrate state `underlines` từ storage, công bố snapshot mới sau mỗi lần ghi và sau chuyển text-key → savedId. `Grammar` truyền map xuống Practice/Saved/Review và component câu; renderer đọc props thay vì tự đọc storage. Giữ nguyên selection/toolbar, năm màu, schema local, overlap, lưu ngay, assessment/analysis state; không thêm polling/timer/remount hoặc cloud sync. Các vấn đề cũ khác về vị trí toolbar khi cuộn và merge dấu không thuộc lần sửa này.
+- Regression mới `test/underline-rendering.test.js` chạy **App thật trong Edge headless**, DOM Range/Selection thật và click toolbar. Trước sửa: test thất bại ngay ở lần thêm màu đầu (DOM không có dấu). Sau sửa: đạt thêm/đổi màu một phần/xóa một phần khi phân tích vẫn đóng ở cả ba màn; đi tab khác rồi quay lại, reload/mở lại; giữ assessment đã có, giữ phân tích đang mở, chuyển text-key → savedId và giữ dấu câu khác. Assertion DOM ngay sau click không retry/polling; cloud được giả lập offline để render từ network không che lỗi.
+- Kiểm tra đạt: underline utility/storage/SSR **49/49**, Grammar sentence **7/7**, Grammar auto-sync **18/18**, Grammar sync **19/19**, browser regression; build vào thư mục tạm thành công, lint exit 0 còn cảnh báo có sẵn. Harness auto-sync bổ sung dependency storage thật và xử lý BOM khi nạp hook vào VM. Không sửa dependency/config dự án, không ghi endpoint production, không commit/push/deploy.
+- Giới hạn: chưa thử mobile/touch hoặc thao tác kéo chọn thủ công trên nhiều thiết bị; test browser tạo selection bằng DOM rồi click nút thật. Không kiểm tra đồng bộ production.
+
+Chạy browser regression trên máy có Edge, dùng Playwright cài riêng ở thư mục tạm:
+
+```powershell
+$underlineTestTools = Join-Path $env:TEMP 'vocabmaster-underline-test-tools'
+npm.cmd install --prefix $underlineTestTools --no-package-lock --ignore-scripts --no-audit --no-fund playwright
+$env:PLAYWRIGHT_MODULE = ([System.Uri](Join-Path $underlineTestTools 'node_modules/playwright/index.mjs')).AbsoluteUri
+node test/underline-rendering.test.js
+```
+
+Có thể dùng Playwright đã cài sẵn thay cho `PLAYWRIGHT_MODULE`; `PLAYWRIGHT_EXECUTABLE_PATH` cho phép chọn browser Chromium khác. Test mở context mới với fixture, chặn request ra ngoài localhost; không dùng/xóa dữ liệu trình duyệt thật.

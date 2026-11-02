@@ -34,6 +34,7 @@ export default function Grammar({ addWord, words = [], structureStore }) {
     savedQuestions,
     reviewProgress,
     grammarStats,
+    underlines,
     syncStatus,
     hasPending,
     cloudConfigured,
@@ -191,6 +192,7 @@ export default function Grammar({ addWord, words = [], structureStore }) {
                 }}
                 onQuickAdd={handleQuickAdd}
                 onUnderlineChange={updateUnderlines}
+                underlines={underlines}
               />
             : <GrammarPractice onStartSession={handleStartSession} batch={promptBatch} onNewBatch={newPromptBatch}
                 settings={promptSettings} onSettingsChange={setPromptSettings} />
@@ -207,6 +209,7 @@ export default function Grammar({ addWord, words = [], structureStore }) {
             onUpdateNotes={updateNotes}
             onQuickAdd={handleQuickAdd}
             onUnderlineChange={updateUnderlines}
+            underlines={underlines}
           />
         )}
 
@@ -219,6 +222,7 @@ export default function Grammar({ addWord, words = [], structureStore }) {
             onQuickAdd={handleQuickAdd}
             onToggleHard={toggleHardMark}
             onUnderlineChange={updateUnderlines}
+            underlines={underlines}
           />
         )}
 

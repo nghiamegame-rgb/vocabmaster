@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { test } from 'node:test';
 import * as merge from '../src/utils/grammarSyncMerge.js';
+import { applyUnderline } from '../src/utils/sentenceUnderline.js';
 import proxy from '../api/grammar-sync.js';
 
 const question = (id = 'q1', extra = {}) => ({
@@ -19,7 +20,7 @@ const deferred = () => {
 };
 const read = file => readFileSync(new URL(file, import.meta.url), 'utf8');
 const load = (context, file, names) => vm.runInContext(
-  read(file).replace(/^import\s[\s\S]*?;\r?\n/gm, '').replace(/\bexport /g, '')
+  read(file).replace(/^\uFEFF/, '').replace(/^import\s[\s\S]*?;\r?\n/gm, '').replace(/\bexport /g, '')
     + `\n;({${names.join(',')}})`, context, { filename: file },
 );
 
@@ -38,7 +39,7 @@ function harness({ questions = [], review = {}, pending = false, revision = 0, e
   let cursor = 0, dirty = false, result, timerId = 0;
   const changed = (a, b) => !a || a.length !== b.length || a.some((v, i) => !Object.is(v, b[i]));
   const context = vm.createContext({
-    ...merge, console,
+    ...merge, applyUnderline, console,
     localStorage: {
       getItem: key => storage.get(key) ?? null,
       setItem: (key, value) => storage.set(key, String(value)),
@@ -85,6 +86,7 @@ function harness({ questions = [], review = {}, pending = false, revision = 0, e
     'getReviewProgress', 'saveReviewProgress', 'getGrammarRevision', 'saveGrammarRevision',
     'getGrammarCloudUrl', 'saveGrammarCloudUrl', 'hasGrammarPending', 'setGrammarPending',
     'isGrammarDueForReview', 'calcNextReviewAt', 'GRAMMAR_REVIEW_INTERVALS',
+    'getAllUnderlines', 'getUnderlinesForKey', 'saveUnderlinesForKey', 'migrateUnderlineKey',
   ]);
   Object.assign(context, storageApi);
   // This harness invokes the hook through its simulated lifecycle, outside React.

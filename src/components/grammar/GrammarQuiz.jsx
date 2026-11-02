@@ -2,7 +2,7 @@ import { useState } from 'react';
 import GrammarSentenceCard from './GrammarAnalysis';
 import { textKey } from '../../utils/sentenceUnderline';
 
-export default function GrammarQuiz({ questions, config, isQuestionSaved, onSave, onUnsave, savedQuestions, onFinish, onQuickAdd, onUnderlineChange }) {
+export default function GrammarQuiz({ questions, config, isQuestionSaved, onSave, onUnsave, savedQuestions, onFinish, onQuickAdd, onUnderlineChange, underlines = {} }) {
   const [current, setCurrent] = useState(0);
   const [visit, setVisit] = useState(0);
   const [seen, setSeen] = useState({});
@@ -44,6 +44,7 @@ export default function GrammarQuiz({ questions, config, isQuestionSaved, onSave
     <GrammarSentenceCard key={visit} question={q} onReveal={() => setSeen(prev => ({ ...prev, [current]: true }))} onQuickAdd={onQuickAdd} analysisTopic={config.topic}
       underlineKey={ulKey}
       onUnderlineChange={onUnderlineChange}
+      underlines={underlines}
     />
     <div className="flex justify-between gap-3">
       <button disabled={current === 0} onClick={() => navigate(current - 1)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 disabled:opacity-30">Câu trước</button>

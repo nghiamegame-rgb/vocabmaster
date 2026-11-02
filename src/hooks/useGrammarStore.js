@@ -9,8 +9,8 @@ import {
 } from '../utils/grammarStorage';
 import { pushGrammarToCloud, fetchGrammarFromCloud } from '../utils/grammarCloud';
 import { mergeSavedQuestions, mergeReviewProgress } from '../utils/grammarSyncMerge';
-import { getUnderlinesForKey, saveUnderlinesForKey, migrateUnderlineKey } from '../utils/grammarStorage';
-import { applyUnderline, normalize, textKey } from '../utils/sentenceUnderline';
+import { getAllUnderlines, getUnderlinesForKey, saveUnderlinesForKey, migrateUnderlineKey } from '../utils/grammarStorage';
+import { applyUnderline } from '../utils/sentenceUnderline';
 
 const PUSH_DEBOUNCE_MS = 2500;
 
@@ -18,6 +18,7 @@ export function useGrammarStore() {
   const [savedQuestions, setSavedQuestions] = useState(() => getSavedQuestions());
   const [reviewProgress, setReviewProgress] = useState(() => getReviewProgress());
   const [grammarStats, setGrammarStats] = useState(() => getGrammarStats());
+  const [underlines, setUnderlines] = useState(() => getAllUnderlines());
   const [syncStatus, setSyncStatus] = useState('syncing');
   const [hasPending, setHasPending] = useState(() => hasGrammarPending());
   const [endpoint, setEndpoint] = useState(() => getGrammarCloudUrl());
@@ -218,6 +219,7 @@ export function useGrammarStore() {
     };
     commitEdit(data => ({ ...data, questions: [newQ, ...data.questions.filter(q => q.savedId !== newQ.savedId)] }));
     migrateUnderlineKey(question.sentence, newQ.savedId);
+    setUnderlines(getAllUnderlines());
     return 'saved';
   }
 
@@ -251,6 +253,9 @@ export function useGrammarStore() {
     const existing = getUnderlinesForKey(key);
     const updated  = applyUnderline(existing, start, end, color, Infinity);
     saveUnderlinesForKey(key, updated);
+    // Same-page storage writes do not notify React. Publish the persisted snapshot
+    // so every mounted sentence receives fresh marks without changing session state.
+    setUnderlines(getAllUnderlines());
     return updated;
   }
 
@@ -350,6 +355,7 @@ export function useGrammarStore() {
     savedQuestions,
     reviewProgress,
     grammarStats,
+    underlines,
     syncStatus,
     hasPending,
     cloudConfigured,

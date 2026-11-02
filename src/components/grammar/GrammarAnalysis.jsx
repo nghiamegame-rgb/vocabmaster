@@ -1,8 +1,6 @@
 import { useState, useCallback } from 'react';
 import { getTopicLabel } from '../../utils/grammarPrompt';
 import { getGrammarSentence, getQuickGrammarPoints, isSentenceAnalysis } from '../../utils/grammarSentence';
-import { getUnderlinesForKey, saveUnderlinesForKey } from '../../utils/grammarStorage';
-import { applyUnderline, textKey } from '../../utils/sentenceUnderline';
 import GrammarReadingNotes from './GrammarReadingNotes';
 import UnderlinedSentence from './UnderlinedSentence';
 
@@ -45,13 +43,12 @@ export function GrammarAnalysis({ question: q, onQuickAdd, analysisTopic }) {
 // Mount with a key per sentence/navigation to reset the reveal state.
 export default function GrammarSentenceCard({
   question, onReveal, onAssess, assessed, onQuickAdd, onNext, nextLabel = 'Câu tiếp', analysisTopic,
-  underlineKey, onUnderlineChange,
+  underlineKey, onUnderlineChange, underlines = {},
 }) {
   const [shown, setShown] = useState(false);
 
-  // Load underline segments for this key (re-reads on each render, which is fine
-  // since saves are synchronous localStorage ops and component re-renders after change).
-  const segments = underlineKey ? getUnderlinesForKey(underlineKey) : [];
+  // Reactive store data is independent of the cached question/review queue.
+  const segments = underlines[underlineKey] || [];
 
   const handleUnderlineChange = useCallback((start, end, color) => {
     if (!underlineKey || !onUnderlineChange) return;

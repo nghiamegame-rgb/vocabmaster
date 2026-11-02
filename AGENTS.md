@@ -13,6 +13,7 @@
 - Smart Quiz (`Quiz.jsx`) và Grammar (`grammarPrompt.js`, `GrammarPractice.jsx`) tạo prompt, nhận JSON người dùng dán và kiểm tra dữ liệu; không gọi API AI trực tiếp.
 - Grammar nhận schema v2 `sentence-analysis`; dữ liệu TOEIC cũ vẫn được đọc. `grammarImport.js` kiểm tra nhập, `grammarBatch.js` giữ ID bộ prompt và lịch sử tối đa 50 câu local; các file này hiện có thay đổi chưa commit tại lần bàn giao 2026-11-02.
 - `src/utils/audio.js`: Web Speech API, dự phòng Google TTS. `wordSelection.js`: chọn từ cho Flashcard/Listening.
+- Dấu gạch chân Grammar chỉ lưu local; `useGrammarStore` giữ state `underlines`, cập nhật sau lưu/đổi key và truyền props xuống ba màn hình. Không dùng ghi LocalStorage đơn thuần để làm mới React.
 
 ## Dữ liệu và đồng bộ
 - Vocabulary: `storage.js`, khóa `vocabmaster_words` và `vocabmaster_stats`.
@@ -43,6 +44,6 @@
 - Ưu tiên mã thực tế hơn README mẫu và comment có thể cũ; kiểm tra `git status`/diff trước khi sửa, giữ thay đổi có sẵn của người dùng.
 - Sửa đúng phạm vi, tránh refactor không cần thiết; không đọc `node_modules`, `dist` hay file sinh không liên quan.
 - Lệnh: `npm run dev`, `npm run build`, `npm run lint`. Vite config hiện chưa proxy `/api`; chạy Vite riêng không phục vụ function Vercel.
-- Test chạy riêng bằng `node test/<tên>.test.js`; hiện có 11 file, danh sách/phạm vi ở [PROJECT_CONTEXT](docs/PROJECT_CONTEXT.md#8-chạy-và-kiểm-tra). Chưa có `npm test`. Trên PowerShell dùng `npm.cmd` nếu chính sách chặn `npm.ps1`.
+- Test chạy riêng bằng `node test/<tên>.test.js`; danh sách/phạm vi ở [PROJECT_CONTEXT](docs/PROJECT_CONTEXT.md#8-chạy-và-kiểm-tra). Test `underline-rendering` cần Playwright và Edge (thiết lập trong HANDOFF). Chưa có `npm test`. Trên PowerShell dùng `npm.cmd` nếu chính sách chặn `npm.ps1`.
 - Test annotation/vocab sao chép logic, Grammar mô phỏng backend; pass chưa chứng minh sync thật. Đối chiếu mã ứng dụng, chạy test liên quan và build/lint khi phù hợp.
 - Không commit, push, merge hoặc deploy nếu chưa được người dùng cho phép. Giải thích kết quả ngắn gọn bằng tiếng Việt.
