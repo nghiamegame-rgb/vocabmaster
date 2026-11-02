@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { getTopicLabel } from '../../utils/grammarPrompt';
 import { getGrammarSentence, getQuickGrammarPoints, isSentenceAnalysis } from '../../utils/grammarSentence';
+import { getUnderlinesForKey, saveUnderlinesForKey } from '../../utils/grammarStorage';
+import { applyUnderline, textKey } from '../../utils/sentenceUnderline';
 import GrammarReadingNotes from './GrammarReadingNotes';
+import UnderlinedSentence from './UnderlinedSentence';
 
 export function GrammarAnalysis({ question: q, onQuickAdd, analysisTopic }) {
   const detail = q.detailedExplanation;
@@ -12,7 +15,7 @@ export function GrammarAnalysis({ question: q, onQuickAdd, analysisTopic }) {
       <section className="space-y-2">
         <h4 className="text-purple-300 font-semibold">Giải thích nhanh</h4>
         {points.length ? <ul className="list-disc pl-5 space-y-2">
-          {points.map((point, i) => <li key={i}><span className="text-white font-medium">“{point.phrase}”</span>: {point.explanation}</li>)}
+          {points.map((point, i) => <li key={i}><span className="text-white font-medium">"{point.phrase}"</span>: {point.explanation}</li>)}
         </ul> : <p className="text-slate-400">Bản ghi này chưa có giải thích phù hợp với chủ đề đang chọn.</p>}
       </section>
       <GrammarReadingNotes question={q} onQuickAdd={onQuickAdd} />
@@ -31,11 +34,40 @@ export function GrammarAnalysis({ question: q, onQuickAdd, analysisTopic }) {
   </div>;
 }
 
+/**
+ * GrammarSentenceCard — sentence display with underline support.
+ *
+ * underlineKey: stable key for this sentence's underlines.
+ *   - savedId when the sentence is in the saved library
+ *   - textKey(sentence) for unsaved practice sentences
+ * onUnderlineChange: (key, start, end, color) => void — from useGrammarStore
+ */
 // Mount with a key per sentence/navigation to reset the reveal state.
-export default function GrammarSentenceCard({ question, onReveal, onAssess, assessed, onQuickAdd, onNext, nextLabel = 'Câu tiếp', analysisTopic }) {
+export default function GrammarSentenceCard({
+  question, onReveal, onAssess, assessed, onQuickAdd, onNext, nextLabel = 'Câu tiếp', analysisTopic,
+  underlineKey, onUnderlineChange,
+}) {
   const [shown, setShown] = useState(false);
+
+  // Load underline segments for this key (re-reads on each render, which is fine
+  // since saves are synchronous localStorage ops and component re-renders after change).
+  const segments = underlineKey ? getUnderlinesForKey(underlineKey) : [];
+
+  const handleUnderlineChange = useCallback((start, end, color) => {
+    if (!underlineKey || !onUnderlineChange) return;
+    onUnderlineChange(underlineKey, start, end, color);
+  }, [underlineKey, onUnderlineChange]);
+
+  const sentence = getGrammarSentence(question);
+
   return <div className="bg-slate-900/80 border border-slate-700/50 rounded-2xl p-4 sm:p-6 space-y-4">
-    <p className="text-lg text-white leading-relaxed break-words">{getGrammarSentence(question)}</p>
+    <UnderlinedSentence
+      sentence={sentence}
+      segments={segments}
+      onUnderlineChange={handleUnderlineChange}
+      className="text-lg text-white leading-relaxed break-words"
+      readOnly={!underlineKey || !onUnderlineChange}
+    />
     {(onAssess || onNext) && <div className="flex flex-wrap gap-2">
       {onAssess && [true, false].map(understood => <button key={String(understood)} type="button" disabled={assessed !== undefined}
         onClick={() => onAssess(understood)}

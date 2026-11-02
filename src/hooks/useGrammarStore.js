@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+﻿import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   getSavedQuestions, saveSavedQuestions,
   getGrammarStats, saveGrammarStats,
@@ -9,6 +9,8 @@ import {
 } from '../utils/grammarStorage';
 import { pushGrammarToCloud, fetchGrammarFromCloud } from '../utils/grammarCloud';
 import { mergeSavedQuestions, mergeReviewProgress } from '../utils/grammarSyncMerge';
+import { getUnderlinesForKey, saveUnderlinesForKey, migrateUnderlineKey } from '../utils/grammarStorage';
+import { applyUnderline, normalize, textKey } from '../utils/sentenceUnderline';
 
 const PUSH_DEBOUNCE_MS = 2500;
 
@@ -215,6 +217,7 @@ export function useGrammarStore() {
       savedAt: Date.now(), hardMarked: false, userNotes: '',
     };
     commitEdit(data => ({ ...data, questions: [newQ, ...data.questions.filter(q => q.savedId !== newQ.savedId)] }));
+    migrateUnderlineKey(question.sentence, newQ.savedId);
     return 'saved';
   }
 
@@ -240,6 +243,15 @@ export function useGrammarStore() {
 
   function updateNotes(savedId, userNotes) {
     commitEdit(data => ({ ...data, questions: data.questions.map(q => q.savedId === savedId ? { ...q, userNotes } : q) }));
+  }
+
+  // -- Underline actions (local-only, not synced to cloud) ---
+  function updateUnderlines(key, start, end, color) {
+    if (!key) return [];
+    const existing = getUnderlinesForKey(key);
+    const updated  = applyUnderline(existing, start, end, color, Infinity);
+    saveUnderlinesForKey(key, updated);
+    return updated;
   }
 
   function recordReview(savedId, isCorrect) {
@@ -353,6 +365,7 @@ export function useGrammarStore() {
     updateNotes,
     recordReview,
     recordGrammarSession,
+    updateUnderlines,
     syncFromCloud,
     GRAMMAR_REVIEW_INTERVALS,
   };

@@ -118,3 +118,53 @@ export function calcNextReviewAt(level) {
   const days = GRAMMAR_REVIEW_INTERVALS[level] ?? 1;
   return Date.now() + days * 24 * 60 * 60 * 1000;
 }
+
+// ── Underline markup (local only, not synced to cloud) ─────────────────────
+
+export const LS_GRAMMAR_UNDERLINES = 'vocabmaster_grammar_underlines';
+
+/** @returns {{ [key: string]: import('./sentenceUnderline').Segment[] }} */
+export function getAllUnderlines() {
+  try {
+    return JSON.parse(localStorage.getItem(LS_GRAMMAR_UNDERLINES) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+/** Get underline segments for one sentence key. */
+export function getUnderlinesForKey(key) {
+  if (!key) return [];
+  return getAllUnderlines()[key] || [];
+}
+
+/** Save underline segments for one sentence key (others untouched). */
+export function saveUnderlinesForKey(key, segments) {
+  if (!key) return;
+  const all = getAllUnderlines();
+  if (!segments || segments.length === 0) {
+    delete all[key];
+  } else {
+    all[key] = segments;
+  }
+  try {
+    localStorage.setItem(LS_GRAMMAR_UNDERLINES, JSON.stringify(all));
+  } catch { /* quota */ }
+}
+
+/** Move underlines from a text-key to a savedId-key after saving a sentence. */
+export function migrateUnderlineKey(sentence, savedId) {
+  if (!sentence || !savedId) return;
+  const tKey = 'text:' + sentence.trim();
+  const all  = getAllUnderlines();
+  if (!all[tKey]) return;
+  // Keep any existing savedId marks, then add text-key marks on top
+  const existing = all[savedId] || [];
+  // Simple union: savedId marks take precedence (already there), add text-key ones for gaps
+  // We import applyUnderline lazily to avoid circular deps — just concat and let the store normalize
+  all[savedId] = [...existing, ...all[tKey]];
+  delete all[tKey];
+  try {
+    localStorage.setItem(LS_GRAMMAR_UNDERLINES, JSON.stringify(all));
+  } catch { /* quota */ }
+}

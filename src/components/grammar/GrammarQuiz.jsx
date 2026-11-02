@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import GrammarSentenceCard from './GrammarAnalysis';
+import { textKey } from '../../utils/sentenceUnderline';
 
-export default function GrammarQuiz({ questions, config, isQuestionSaved, onSave, onUnsave, savedQuestions, onFinish, onQuickAdd }) {
+export default function GrammarQuiz({ questions, config, isQuestionSaved, onSave, onUnsave, savedQuestions, onFinish, onQuickAdd, onUnderlineChange }) {
   const [current, setCurrent] = useState(0);
   const [visit, setVisit] = useState(0);
   const [seen, setSeen] = useState({});
@@ -23,7 +24,13 @@ export default function GrammarQuiz({ questions, config, isQuestionSaved, onSave
     <p className="text-slate-400">Đã xem phân tích {total}/{questions.length} câu.</p>
     <button onClick={() => onFinish({ goBack: true })} className="px-5 py-3 bg-purple-600 text-white rounded-xl">Tạo bộ câu mới</button>
   </div>;
+
   const saved = isQuestionSaved(q.sentence);
+
+  // Key: if already saved, use savedId; otherwise use text-key so marks survive across navigation
+  const savedRecord = savedQuestions.find(s => s.sentence?.trim().toLowerCase() === q.sentence?.trim().toLowerCase());
+  const ulKey = savedRecord ? savedRecord.savedId : textKey(q.sentence);
+
   return <div className="space-y-4">
     <div className="flex items-center justify-between gap-3 text-slate-400 text-sm">
       <span>Câu {current + 1}/{questions.length} · Đã phân tích {total}</span>
@@ -34,7 +41,10 @@ export default function GrammarQuiz({ questions, config, isQuestionSaved, onSave
         } else onSave({ ...q, analysisTopic: config.topic });
       }}>{saved ? 'Bỏ lưu' : 'Lưu câu'}</button>
     </div>
-    <GrammarSentenceCard key={visit} question={q} onReveal={() => setSeen(prev => ({ ...prev, [current]: true }))} onQuickAdd={onQuickAdd} analysisTopic={config.topic} />
+    <GrammarSentenceCard key={visit} question={q} onReveal={() => setSeen(prev => ({ ...prev, [current]: true }))} onQuickAdd={onQuickAdd} analysisTopic={config.topic}
+      underlineKey={ulKey}
+      onUnderlineChange={onUnderlineChange}
+    />
     <div className="flex justify-between gap-3">
       <button disabled={current === 0} onClick={() => navigate(current - 1)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 disabled:opacity-30">Câu trước</button>
       <button onClick={() => current < questions.length - 1 ? navigate(current + 1) : finish()} className="px-4 py-2 rounded-xl bg-purple-600 text-white">{current < questions.length - 1 ? 'Câu tiếp' : 'Kết thúc'}</button>

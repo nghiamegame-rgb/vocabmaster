@@ -7,6 +7,8 @@ import { getAvailableTopics, getTopicLabel } from '../../utils/grammarPrompt';
 
 import { GrammarAnalysis } from './GrammarAnalysis';
 import { getGrammarSentence } from '../../utils/grammarSentence';
+import { getUnderlinesForKey } from '../../utils/grammarStorage';
+import UnderlinedSentence from './UnderlinedSentence';
 
 /**
  * GrammarSaved — Saved Questions library with search, filter, review progress.
@@ -19,6 +21,7 @@ export default function GrammarSaved({
   onToggleHard,
   onUpdateNotes,
   onQuickAdd,
+  onUnderlineChange,
 }) {
   const [search,      setSearch]      = useState('');
   const [topicFilter, setTopicFilter] = useState('All');
@@ -174,6 +177,7 @@ export default function GrammarSaved({
           const open   = expanded[q.savedId];
           const level  = getReviewLevel(q.savedId);
           const wrongs = getWrongCount(q.savedId);
+          const segments = getUnderlinesForKey(q.savedId);
 
           return (
             <div
@@ -216,10 +220,16 @@ export default function GrammarSaved({
                       </span>
                     </div>
 
-                    {/* Sentence */}
-                    <p className="text-white text-sm leading-relaxed break-words">
-                      {getGrammarSentence(q)}
-                    </p>
+                    {/* Sentence with underlines */}
+                    <UnderlinedSentence
+                      sentence={getGrammarSentence(q)}
+                      segments={segments}
+                      onUnderlineChange={onUnderlineChange
+                        ? (start, end, color) => onUnderlineChange(q.savedId, start, end, color)
+                        : undefined}
+                      className="text-white text-sm leading-relaxed break-words"
+                      readOnly={!onUnderlineChange}
+                    />
 
                     <button type="button" aria-expanded={Boolean(open)} onClick={() => setExpanded(p => ({ ...p, [q.savedId]: !p[q.savedId] }))}
                       className="text-purple-300 text-sm mt-2 hover:text-purple-200">

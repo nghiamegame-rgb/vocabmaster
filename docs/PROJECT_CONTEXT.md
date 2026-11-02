@@ -123,7 +123,9 @@ Các subtab: **Luyện tập, Câu đã lưu, Ôn tập, Thống kê, Structures
 | Lịch sử prompt | `vocabmaster_grammar_recent_sentences` | tối đa 50 câu gần đây; fallback bộ nhớ phiên; không sync |
 | Structures | `vocabmaster_grammar_structures` | `id`, `english`, `vietnamese`, `example`, `notes`, `topic`, timestamps, `level/currentStreak`, `wrongCount/totalReviews`, `reviewBase`, `reviewEvents`, tùy chọn `deletedAt` |
 
-Nguồn: `storage.js`, `grammarStorage.js`, `structureStorage.js`, ba hook, `grammarBatch.js`. LocalStorage theo origin/trình duyệt; không thấy đăng nhập hoặc tài khoản người dùng trong app. Stats hai module và lịch sử prompt chỉ local, không nằm trong payload cloud.
+| Dấu gạch chân Grammar | `vocabmaster_grammar_underlines` | `{ [key]: [{start,end,color}] }`; key = savedId hoặc `text:` + sentence; local only, chưa sync cloud; xem `sentenceUnderline.js` |
+
+Nguồn: `storage.js`, `grammarStorage.js`, `structureStorage.js`, `sentenceUnderline.js`, ba hook, `grammarBatch.js`. LocalStorage theo origin/trình duyệt; không thấy đăng nhập hoặc tài khoản người dùng trong app. Stats hai module, lịch sử prompt và dấu gạch chân chỉ local, không nằm trong payload cloud.
 
 - **Vocabulary:** đúng đủ streak 2/4/8/15 để lên cấp L1→L5; sai giảm một cấp và reset streak. Mỗi lần chấm ghi `lastReviewedDate`. Đến hạn khi đã qua 1/3/7/14/30 ngày ứng với cấp hiện tại, hoặc chưa ôn (`updateWordLevel`, `isDueForReview`).
 - **Câu Grammar:** mỗi tự đánh giá hiểu tăng ngay một cấp, cần ôn giảm một cấp, giới hạn 1–5; đặt `nextReviewAt` theo 1/3/7/14/30 ngày của cấp mới. Đánh giá cũng ghi hoạt động ôn, tách khỏi accuracy TOEIC (`recordReview`, `calcNextReviewAt`).

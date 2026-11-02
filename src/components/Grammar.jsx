@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Zap, Bookmark, Brain, BarChart2, Cloud, Layers } from 'lucide-react';
 import { useGrammarStore } from '../hooks/useGrammarStore';
 import GrammarPractice     from './grammar/GrammarPractice';
@@ -47,6 +47,7 @@ export default function Grammar({ addWord, words = [], structureStore }) {
     updateNotes,
     recordReview,
     recordGrammarSession,
+    updateUnderlines,
     syncFromCloud,
   } = useGrammarStore();
   const [promptBatch, setPromptBatch] = useState(() => createGrammarBatch(
@@ -189,6 +190,7 @@ export default function Grammar({ addWord, words = [], structureStore }) {
                   if (result.goBack) setSession(null);
                 }}
                 onQuickAdd={handleQuickAdd}
+                onUnderlineChange={updateUnderlines}
               />
             : <GrammarPractice onStartSession={handleStartSession} batch={promptBatch} onNewBatch={newPromptBatch}
                 settings={promptSettings} onSettingsChange={setPromptSettings} />
@@ -204,6 +206,7 @@ export default function Grammar({ addWord, words = [], structureStore }) {
             onToggleHard={toggleHardMark}
             onUpdateNotes={updateNotes}
             onQuickAdd={handleQuickAdd}
+            onUnderlineChange={updateUnderlines}
           />
         )}
 
@@ -215,6 +218,7 @@ export default function Grammar({ addWord, words = [], structureStore }) {
             onRecordReview={recordReview}
             onQuickAdd={handleQuickAdd}
             onToggleHard={toggleHardMark}
+            onUnderlineChange={updateUnderlines}
           />
         )}
 
