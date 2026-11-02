@@ -11,6 +11,8 @@ import { pushGrammarToCloud, fetchGrammarFromCloud } from '../utils/grammarCloud
 import { mergeSavedQuestions, mergeReviewProgress } from '../utils/grammarSyncMerge';
 import { getAllUnderlines, getUnderlinesForKey, saveUnderlinesForKey, migrateUnderlineKey } from '../utils/grammarStorage';
 import { applyUnderline } from '../utils/sentenceUnderline';
+import { editSentenceNote, moveSentenceNotes, readSentenceNotes, writeSentenceNotes } from '../utils/sentenceNotes';
+import { getGrammarSentence } from '../utils/grammarSentence';
 
 const PUSH_DEBOUNCE_MS = 2500;
 
@@ -19,6 +21,7 @@ export function useGrammarStore() {
   const [reviewProgress, setReviewProgress] = useState(() => getReviewProgress());
   const [grammarStats, setGrammarStats] = useState(() => getGrammarStats());
   const [underlines, setUnderlines] = useState(() => getAllUnderlines());
+  const [sentenceNotes, setSentenceNotes] = useState(() => readSentenceNotes());
   const [syncStatus, setSyncStatus] = useState('syncing');
   const [hasPending, setHasPending] = useState(() => hasGrammarPending());
   const [endpoint, setEndpoint] = useState(() => getGrammarCloudUrl());
@@ -220,6 +223,9 @@ export function useGrammarStore() {
     commitEdit(data => ({ ...data, questions: [newQ, ...data.questions.filter(q => q.savedId !== newQ.savedId)] }));
     migrateUnderlineKey(question.sentence, newQ.savedId);
     setUnderlines(getAllUnderlines());
+    const notes = readSentenceNotes();
+    const moved = moveSentenceNotes(notes, getGrammarSentence(question), newQ.savedId);
+    if (moved !== notes && writeSentenceNotes(moved)) setSentenceNotes(moved);
     return 'saved';
   }
 
@@ -257,6 +263,15 @@ export function useGrammarStore() {
     // so every mounted sentence receives fresh marks without changing session state.
     setUnderlines(getAllUnderlines());
     return updated;
+  }
+
+  function updateSentenceNote(key, sentence, draft) {
+    // Fresh read per edit avoids stale closures dropping a newer note edit.
+    const current = readSentenceNotes();
+    const next = editSentenceNote(current, { ...draft, key, sentence });
+    if (next === current || !writeSentenceNotes(next)) return { ok: false };
+    setSentenceNotes(next);
+    return { ok: true };
   }
 
   function recordReview(savedId, isCorrect) {
@@ -356,6 +371,7 @@ export function useGrammarStore() {
     reviewProgress,
     grammarStats,
     underlines,
+    sentenceNotes,
     syncStatus,
     hasPending,
     cloudConfigured,
@@ -372,6 +388,7 @@ export function useGrammarStore() {
     recordReview,
     recordGrammarSession,
     updateUnderlines,
+    updateSentenceNote,
     syncFromCloud,
     GRAMMAR_REVIEW_INTERVALS,
   };

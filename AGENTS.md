@@ -14,6 +14,7 @@
 - Grammar nhận schema v2 `sentence-analysis`; dữ liệu TOEIC cũ vẫn được đọc. `grammarImport.js` kiểm tra nhập, `grammarBatch.js` giữ ID bộ prompt và lịch sử tối đa 50 câu local; các file này hiện có thay đổi chưa commit tại lần bàn giao 2026-11-02.
 - `src/utils/audio.js`: Web Speech API, dự phòng Google TTS. `wordSelection.js`: chọn từ cho Flashcard/Listening.
 - Dấu gạch chân Grammar chỉ lưu local; `useGrammarStore` giữ state `underlines`, cập nhật sau lưu/đổi key và truyền props xuống ba màn hình. Không dùng ghi LocalStorage đơn thuần để làm mới React.
+- Ghi chú theo đoạn chọn dùng `sentenceNotes.js`, khóa riêng `vocabmaster_grammar_sentence_notes`, state `sentenceNotes` trong store; không nhầm với `userNotes` của cả câu. Vị trí theo codepoint và snapshot câu/đoạn trích. Review ẩn ghi chú mỗi câu mới; layout đo DOM thật, nhãn/editor nằm ngoài vùng tính selection.
 
 ## Dữ liệu và đồng bộ
 - Vocabulary: `storage.js`, khóa `vocabmaster_words` và `vocabmaster_stats`.

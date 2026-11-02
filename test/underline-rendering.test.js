@@ -77,12 +77,18 @@ try {
   async function visibleMarks(paragraph) {
     return paragraph.evaluate(element => {
       let offset = 0;
-      return [...element.children].flatMap(span => {
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+      const result = [];
+      while (walker.nextNode()) {
+        const node = walker.currentNode, span = node.parentElement;
         const start = offset;
-        offset += Array.from(span.textContent).length;
-        return span.style.textDecorationLine === 'underline'
-          ? [{ start, end: offset, color: span.style.textDecorationColor }] : [];
-      });
+        offset += Array.from(node.textContent).length;
+        if (span.style.textDecorationLine !== 'underline') continue;
+        const previous = result.at(-1);
+        if (previous?.end === start && previous.color === span.style.textDecorationColor) previous.end = offset;
+        else result.push({ start, end: offset, color: span.style.textDecorationColor });
+      }
+      return result;
     });
   }
   async function expectVisible(paragraph, expected) {

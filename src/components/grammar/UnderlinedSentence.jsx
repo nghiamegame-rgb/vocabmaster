@@ -1,104 +1,127 @@
-/**
- * UnderlinedSentence.jsx — Renders a Grammar sentence with colored underlines.
- *
- * Features:
- * - Renders multi-span sentence with underline decoration.
- * - Detects mouse-up inside the sentence container and shows the color toolbar.
- * - Calls onUnderlineChange(start, end, color) when user picks a color.
- * - Toolbar floats near selection, does not steal focus, closes on Escape/outside-click.
- * - Only selection inside THIS element is processed (not cross-sentence).
- *
- * Props:
- *   sentence          {string}    — the English sentence text
- *   segments          {Segment[]} — [{start, end, color}] underline data
- *   onUnderlineChange {fn}        — (start, end, color) => void; color=null to erase
- *   className         {string?}   — extra classes for the <p> wrapper
- *   readOnly          {boolean?}  — if true, disable toolbar (display only)
- */
-import { useState, useRef, useCallback } from 'react';
-import { buildSpans, selectionToRange } from '../../utils/sentenceUnderline';
+import { useState, useRef, useCallback, useLayoutEffect, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { buildSpans, selectionToRange, toCodepoints } from '../../utils/sentenceUnderline';
+import { measureSentenceLines, packSentenceNotes, sentenceRangeRect } from '../../utils/sentenceGeometry';
 import UnderlineToolbar from './UnderlineToolbar';
+import SentenceNoteEditor from './SentenceNoteEditor';
 
-export default function UnderlinedSentence({ sentence, segments, onUnderlineChange, className = '', readOnly = false }) {
-  const containerRef = useRef(null);
-  const [toolbar, setToolbar] = useState(null); // { top, left, start, end } | null
-  // Store selection range so we can apply it after toolbar renders
-  const pendingRange = useRef(null);
+const EMPTY = [];
+const noteClass = 'rounded-lg border-l-2 border-indigo-400/60 bg-slate-800/70 px-2 py-1 text-left text-xs leading-relaxed text-slate-300 whitespace-pre-wrap break-words';
 
-  const handleMouseUp = useCallback(() => {
-    if (readOnly) return;
-    const sel = window.getSelection();
-    const range = selectionToRange(sel, containerRef.current, sentence);
-    if (!range) {
-      setToolbar(null);
-      return;
+/** English text alone lives in containerRef; note labels/editor are siblings. */
+export default function UnderlinedSentence({ sentence, segments, onUnderlineChange, className = '', readOnly = false,
+  notes = EMPTY, onNoteChange, hideNotesInitially = false, sentenceKey }) {
+  const containerRef = useRef(null), hostRef = useRef(null), measureRef = useRef(null);
+  const labelsRef = useRef(new Map()), pendingRange = useRef(null);
+  const [toolbar, setToolbar] = useState(null);
+  const toolbarOpen = toolbar !== null;
+  const [editor, setEditor] = useState(null);
+  const [notesShown, setNotesShown] = useState(!hideNotesInitially);
+  const [lines, setLines] = useState([{ start: 0, end: toCodepoints(sentence).length, height: 28 }]);
+  const [layout, setLayout] = useState({ items: [], padding: [] });
+  const identity = `${sentenceKey || ''}\u0000${sentence}`;
+  const previousIdentity = useRef(identity);
+  useLayoutEffect(() => {
+    if (previousIdentity.current !== identity) {
+      previousIdentity.current = identity;
+      setEditor(null); setToolbar(null); setNotesShown(!hideNotesInitially);
     }
+  }, [identity, hideNotesInitially]);
 
-    // Compute toolbar position near selection
-    const domRange = sel.getRangeAt(0);
-    const rect = domRange.getBoundingClientRect();
-    // Place toolbar just above the selection, centered
-    const toolbarWidth = 200;
-    const top  = rect.top + window.scrollY - 44; // ~44px above
-    const left = rect.left + window.scrollX + rect.width / 2 - toolbarWidth / 2;
+  useLayoutEffect(() => {
+    const update = () => {
+      const host = hostRef.current, measure = measureRef.current;
+      if (!host || !measure) return;
+      const measured = measureSentenceLines(measure, sentence);
+      setLines(previous => JSON.stringify(previous) === JSON.stringify(measured) ? previous : measured);
+      const bounds = host.getBoundingClientRect();
+      const items = notesShown ? notes.flatMap(note => {
+        const rect = sentenceRangeRect(containerRef.current, note.start, note.end);
+        return rect ? [{ ...note, left: rect.left - bounds.left,
+          width: Math.min(bounds.width, Math.max(180, Math.min(320, rect.width))),
+          height: labelsRef.current.get(note.id)?.getBoundingClientRect().height || 48 }] : [];
+      }) : [];
+      const next = packSentenceNotes(measured, items, bounds.width);
+      setLayout(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(hostRef.current);
+    for (const label of labelsRef.current.values()) observer.observe(label);
+    window.addEventListener('resize', update);
+    document.fonts?.addEventListener('loadingdone', update);
+    return () => {
+      observer.disconnect(); window.removeEventListener('resize', update);
+      document.fonts?.removeEventListener('loadingdone', update);
+    };
+  }, [sentence, className, notes, notesShown, lines]);
 
+  const closeEditor = useCallback(() => setEditor(null), []);
+  const editorAnchor = () => editor ? sentenceRangeRect(containerRef.current, editor.start, editor.end) : null;
+  const closeToolbar = useCallback(() => { setToolbar(null); pendingRange.current = null; }, []);
+  const handleSelection = useCallback(() => {
+    if (readOnly && !onNoteChange) return;
+    const range = selectionToRange(window.getSelection(), containerRef.current, sentence);
+    const rect = range && sentenceRangeRect(containerRef.current, range.start, range.end);
+    if (!rect) { closeToolbar(); return; }
     pendingRange.current = range;
-    setToolbar({ top: Math.max(4, top), left, start: range.start, end: range.end });
-  }, [readOnly, sentence]);
+    setToolbar({ top: rect.top - 44, left: rect.left });
+  }, [readOnly, onNoteChange, sentence, closeToolbar]);
+  useEffect(() => {
+    if (!toolbarOpen) return;
+    const update = () => {
+      const range = pendingRange.current;
+      const rect = range && sentenceRangeRect(containerRef.current, range.start, range.end);
+      if (!rect) closeToolbar();
+      else setToolbar({ top: rect.top - 44, left: rect.left });
+    };
+    window.addEventListener('scroll', update, true); window.addEventListener('resize', update);
+    return () => { window.removeEventListener('scroll', update, true); window.removeEventListener('resize', update); };
+  }, [toolbarOpen, closeToolbar]);
 
-  const handleColor = useCallback((color) => {
-    const range = pendingRange.current;
-    if (!range) { setToolbar(null); return; }
-    setToolbar(null);
-    pendingRange.current = null;
-    // Clear browser selection so underline result is visible
-    try { window.getSelection()?.removeAllRanges(); } catch { /* ignore */ }
-    onUnderlineChange(range.start, range.end, color);
-  }, [onUnderlineChange]);
-
-  const handleClose = useCallback(() => {
-    setToolbar(null);
-    pendingRange.current = null;
-  }, []);
-
-  const spans = buildSpans(sentence, segments);
-
-  return (
-    <>
-      <p
-        ref={containerRef}
-        className={className}
-        onMouseUp={handleMouseUp}
-        // Touch support: fire on touchend
-        onTouchEnd={handleMouseUp}
-        style={{ userSelect: readOnly ? undefined : 'text', cursor: readOnly ? undefined : 'text' }}
-      >
-        {spans.map((span, i) =>
-          span.color ? (
-            <span
-              key={i}
-              style={{
-                textDecorationLine: 'underline',
-                textDecorationColor: span.color,
-                textDecorationThickness: '2.5px',
-                textUnderlineOffset: '4px',
-              }}
-            >
-              {span.text}
-            </span>
-          ) : (
-            <span key={i}>{span.text}</span>
-          )
-        )}
-      </p>
-      {toolbar && !readOnly && (
-        <UnderlineToolbar
-          position={{ top: toolbar.top, left: toolbar.left }}
-          onColor={handleColor}
-          onClose={handleClose}
-        />
-      )}
-    </>
-  );
+  function openNote(range) {
+    if (!onNoteChange || !range) return;
+    const existing = notes.find(note => note.start === range.start && note.end === range.end);
+    setNotesShown(true);
+    setEditor({ ...range, id: existing?.id || crypto.randomUUID(), text: existing?.text || '', error: '' });
+    closeToolbar(); window.getSelection()?.removeAllRanges();
+  }
+  function changeNote(text) {
+    const result = onNoteChange({ id: editor.id, start: editor.start, end: editor.end, text });
+    setEditor(previous => previous && ({ ...previous, text, error: result?.ok === false ? 'Chưa lưu được trên máy. Hãy kiểm tra dung lượng lưu trữ.' : '' }));
+  }
+  const chars = toCodepoints(sentence);
+  return <div ref={hostRef} className="relative min-w-0" data-sentence-area="">
+    <div ref={measureRef} aria-hidden="true" className={className}
+      style={{ position: 'absolute', width: '100%', visibility: 'hidden', pointerEvents: 'none', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{sentence}</div>
+    <p ref={containerRef} data-sentence-text="" className={className} onMouseUp={handleSelection} onTouchEnd={handleSelection}
+      style={{ userSelect: 'text', cursor: readOnly ? undefined : 'text' }}>
+      {lines.map((line, index) => <span key={line.start} style={{ display: 'block', whiteSpace: 'pre', lineHeight: `${line.height}px`, paddingBottom: layout.padding[index] || 0 }}>
+        {buildSpans(chars.slice(line.start, line.end).join(''), (segments || []).map(segment => ({ ...segment,
+          start: segment.start - line.start, end: segment.end - line.start }))).map((span, i) => <span key={i}
+          style={span.color ? { textDecorationLine: 'underline', textDecorationColor: span.color, textDecorationThickness: '2.5px', textUnderlineOffset: '4px' } : undefined}>{span.text}</span>)}
+      </span>)}
+    </p>
+    {notesShown && notes.map(note => {
+      const placed = layout.items.find(item => item.id === note.id);
+      return <button type="button" key={note.id} ref={element => { if (element) labelsRef.current.set(note.id, element); else labelsRef.current.delete(note.id); }}
+        data-sentence-note={note.id} title={`Ghi chú cho “${note.quote}”`} aria-label={`Sửa ghi chú: ${note.quote}`}
+        onClick={() => openNote(note)} className={noteClass}
+        style={{ position: 'absolute', top: placed?.top || 0, left: placed?.left || 0, width: placed?.width || 240, visibility: placed ? 'visible' : 'hidden' }}>
+        <span className="block truncate text-[10px] text-indigo-300">↳ {note.quote}</span><span>{note.text}</span>
+      </button>;
+    })}
+    {notes.length > 0 && <button type="button" aria-expanded={notesShown} onClick={() => setNotesShown(value => !value)}
+      className="mt-1 text-xs text-indigo-300 hover:text-indigo-200">{notesShown ? 'Ẩn ghi chú' : 'Hiện ghi chú'} ({notes.length})</button>}
+    {toolbar && createPortal(<UnderlineToolbar position={toolbar} onClose={closeToolbar}
+      onNote={onNoteChange ? () => openNote(pendingRange.current) : undefined}
+      onColor={color => {
+        const range = pendingRange.current;
+        closeToolbar(); window.getSelection()?.removeAllRanges();
+        if (range) onUnderlineChange?.(range.start, range.end, color);
+      }} />, document.body)}
+    {editor && createPortal(<SentenceNoteEditor anchor={editorAnchor} text={editor.text} error={editor.error}
+      existing={notes.some(note => note.id === editor.id)} onChange={changeNote} onClose={closeEditor}
+      onDelete={() => { const result = onNoteChange({ ...editor, text: '' }); if (result?.ok !== false) closeEditor(); }} />, document.body)}
+  </div>;
 }
-

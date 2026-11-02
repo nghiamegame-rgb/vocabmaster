@@ -8,6 +8,7 @@ import { getAvailableTopics, getTopicLabel } from '../../utils/grammarPrompt';
 import { GrammarAnalysis } from './GrammarAnalysis';
 import { getGrammarSentence } from '../../utils/grammarSentence';
 import UnderlinedSentence from './UnderlinedSentence';
+import { notesForSentence } from '../../utils/sentenceNotes';
 
 /**
  * GrammarSaved — Saved Questions library with search, filter, review progress.
@@ -22,6 +23,7 @@ export default function GrammarSaved({
   onQuickAdd,
   onUnderlineChange,
   underlines = {},
+  sentenceNotes, onNoteChange,
 }) {
   const [search,      setSearch]      = useState('');
   const [topicFilter, setTopicFilter] = useState('All');
@@ -229,6 +231,8 @@ export default function GrammarSaved({
                         : undefined}
                       className="text-white text-sm leading-relaxed break-words"
                       readOnly={!onUnderlineChange}
+                      sentenceKey={q.savedId} notes={notesForSentence(sentenceNotes, q.savedId, getGrammarSentence(q))}
+                      onNoteChange={onNoteChange ? draft => onNoteChange(q.savedId, getGrammarSentence(q), draft) : undefined}
                     />
 
                     <button type="button" aria-expanded={Boolean(open)} onClick={() => setExpanded(p => ({ ...p, [q.savedId]: !p[q.savedId] }))}

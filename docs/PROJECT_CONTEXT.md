@@ -124,8 +124,11 @@ Các subtab: **Luyện tập, Câu đã lưu, Ôn tập, Thống kê, Structures
 | Structures | `vocabmaster_grammar_structures` | `id`, `english`, `vietnamese`, `example`, `notes`, `topic`, timestamps, `level/currentStreak`, `wrongCount/totalReviews`, `reviewBase`, `reviewEvents`, tùy chọn `deletedAt` |
 
 | Dấu gạch chân Grammar | `vocabmaster_grammar_underlines` | `{ [key]: [{start,end,color}] }`; key = savedId hoặc `text:` + sentence; local only. `useGrammarStore` giữ snapshot state và truyền props để cập nhật ngay cả khi phân tích đóng; xem `sentenceUnderline.js` |
+| Ghi chú theo đoạn Grammar | `vocabmaster_grammar_sentence_notes` | map theo savedId hoặc text-key; mỗi note có UUID, sentenceKey, sentence snapshot, start/end codepoint, quote, text, timestamps. State `sentenceNotes` cập nhật ngay; không sync, không đổi `userNotes` |
 
 Nguồn: `storage.js`, `grammarStorage.js`, `structureStorage.js`, `sentenceUnderline.js`, ba hook, `grammarBatch.js`. LocalStorage theo origin/trình duyệt; không thấy đăng nhập hoặc tài khoản người dùng trong app. Stats hai module, lịch sử prompt và dấu gạch chân chỉ local, không nằm trong payload cloud.
+
+Ghi chú nhanh: chọn đoạn tiếng Anh → **Ghi chú** → gõ (lưu ngay); Xong/Escape/click ngoài đóng editor, xóa hết nội dung hoặc Xóa ghi chú để bỏ. Practice/Saved hiện nhãn mặc định; Review ẩn mỗi câu mới, có nút hiện/ẩn riêng với phân tích, tạo/sửa ghi chú sẽ hiện ghi chú câu hiện tại. Không tự lưu câu vào thư viện. `sentenceNotes.js::notesForSentence` kiểm tra snapshot và trích đoạn để không gắn nhầm khi câu đổi; `moveSentenceNotes` chuyển text-key khi lưu câu. `sentenceGeometry.js` đo Range và dòng thực tế, xếp nhãn thành hàng dưới dòng cuối của đoạn, chừa padding tương ứng; `SentenceNoteEditor` float trong viewport. Nội dung nhãn/editor không nằm trong container tiếng Anh tính offsets.
 
 - **Vocabulary:** đúng đủ streak 2/4/8/15 để lên cấp L1→L5; sai giảm một cấp và reset streak. Mỗi lần chấm ghi `lastReviewedDate`. Đến hạn khi đã qua 1/3/7/14/30 ngày ứng với cấp hiện tại, hoặc chưa ôn (`updateWordLevel`, `isDueForReview`).
 - **Câu Grammar:** mỗi tự đánh giá hiểu tăng ngay một cấp, cần ôn giảm một cấp, giới hạn 1–5; đặt `nextReviewAt` theo 1/3/7/14/30 ngày của cấp mới. Đánh giá cũng ghi hoạt động ôn, tách khỏi accuracy TOEIC (`recordReview`, `calcNextReviewAt`).
@@ -206,6 +209,8 @@ Scripts thực tế (`package.json`): `npm run dev`, `npm run build`, `npm run l
 | `node test/structures-backend.test.js` | mã Apps Script thật trong VM với Sheets/Lock giả, CAS/rollback/backup |
 | `node test/sentence-underline.test.js` | logic năm màu, persistence giả lập, render HTML tĩnh |
 | `node test/underline-rendering.test.js` | App/React DOM thật trong Edge headless: chọn đoạn, click màu/xóa, cập nhật ngay, giữ assessment/analysis và reload; cần Playwright, cloud bị chặn; thiết lập trong HANDOFF |
+| `node test/sentence-notes.test.js` | dữ liệu note, Unicode/vùng trùng/chồng, sửa/xóa, chuyển key, dữ liệu lỗi và xếp hàng nhãn |
+| `node test/sentence-notes-browser.test.js` | App/Edge thật, typing/autosave/ẩn-hiện, geometry viewport 1100/375/320px, giữ underline/progress, chuyển key và reopen/reload; thiết lập Playwright như underline-rendering |
 
 Lần khảo sát: **cả 11 file exit 0**. `npm.cmd run lint` exit 0 nhưng còn cảnh báo unused, hook deps, set-state-in-effect, purity/refs…; không sửa vì chỉ bàn giao. Build exit 0 bằng `npm.cmd run build -- --outDir <thư-mục-tạm-mới>` để giữ `dist` hiện có; Vite báo outDir ngoài project không tự dọn và thông tin thời gian plugin. Không chạy dev server/browser.
 

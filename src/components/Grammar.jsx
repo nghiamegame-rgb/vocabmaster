@@ -35,6 +35,8 @@ export default function Grammar({ addWord, words = [], structureStore }) {
     reviewProgress,
     grammarStats,
     underlines,
+    sentenceNotes,
+    updateSentenceNote,
     syncStatus,
     hasPending,
     cloudConfigured,
@@ -193,6 +195,7 @@ export default function Grammar({ addWord, words = [], structureStore }) {
                 onQuickAdd={handleQuickAdd}
                 onUnderlineChange={updateUnderlines}
                 underlines={underlines}
+                sentenceNotes={sentenceNotes} onNoteChange={updateSentenceNote}
               />
             : <GrammarPractice onStartSession={handleStartSession} batch={promptBatch} onNewBatch={newPromptBatch}
                 settings={promptSettings} onSettingsChange={setPromptSettings} />
@@ -210,6 +213,7 @@ export default function Grammar({ addWord, words = [], structureStore }) {
             onQuickAdd={handleQuickAdd}
             onUnderlineChange={updateUnderlines}
             underlines={underlines}
+            sentenceNotes={sentenceNotes} onNoteChange={updateSentenceNote}
           />
         )}
 
@@ -223,6 +227,7 @@ export default function Grammar({ addWord, words = [], structureStore }) {
             onToggleHard={toggleHardMark}
             onUnderlineChange={updateUnderlines}
             underlines={underlines}
+            sentenceNotes={sentenceNotes} onNoteChange={updateSentenceNote}
           />
         )}
 

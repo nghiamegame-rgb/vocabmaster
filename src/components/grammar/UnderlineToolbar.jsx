@@ -3,7 +3,7 @@
  *
  * Renders near the user's text selection; does not steal focus.
  * Props:
- *   position   { top, left } — absolute pixel position in the document
+ *   position   { top, left } — viewport coordinates (rendered through a portal)
  *   onColor(color)           — user picked a color key or null (erase)
  *   onClose()                — close without action
  */
@@ -12,7 +12,7 @@ import { UNDERLINE_COLORS } from '../../utils/sentenceUnderline';
 
 const COLOR_KEYS = Object.keys(UNDERLINE_COLORS);
 
-export default function UnderlineToolbar({ position, onColor, onClose }) {
+export default function UnderlineToolbar({ position, onColor, onClose, onNote }) {
   const ref = useRef(null);
 
   // Close on Escape
@@ -39,7 +39,8 @@ export default function UnderlineToolbar({ position, onColor, onClose }) {
     position: 'fixed',
     zIndex: 9999,
     top: Math.max(8, Math.min(position.top, window.innerHeight - 64)),
-    left: Math.max(8, Math.min(position.left, window.innerWidth - 220)),
+    left: Math.max(8, Math.min(position.left, window.innerWidth - (onNote ? 300 : 220))),
+    maxWidth: window.innerWidth - 16,
   };
 
   return (
@@ -48,7 +49,7 @@ export default function UnderlineToolbar({ position, onColor, onClose }) {
       style={style}
       role="toolbar"
       aria-label="Gạch chân màu"
-      className="flex items-center gap-1 px-2 py-1.5 rounded-xl bg-slate-800 border border-slate-600/80 shadow-2xl shadow-black/60"
+      className="flex flex-wrap items-center gap-1 px-2 py-1.5 rounded-xl bg-slate-800 border border-slate-600/80 shadow-2xl shadow-black/60"
       // Prevent mousedown from clearing selection
       onMouseDown={e => e.preventDefault()}
     >
@@ -64,6 +65,7 @@ export default function UnderlineToolbar({ position, onColor, onClose }) {
         />
       ))}
       <div className="w-px h-4 bg-slate-600 mx-0.5" aria-hidden="true" />
+      {onNote && <button type="button" onClick={onNote} className="px-2 py-0.5 rounded-lg text-xs font-semibold text-indigo-200 hover:bg-slate-700">Ghi chú</button>}
       <button
         type="button"
         title="Bỏ gạch chân"
