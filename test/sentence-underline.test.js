@@ -1,6 +1,7 @@
 /**
  * test/sentence-underline.test.js
- * Tests for sentenceUnderline.js — no browser APIs needed.
+ * Tests for underline logic, in-memory storage, and static component rendering.
+ * No browser session, real LocalStorage, or production endpoint is used.
  *
  * Run: node test/sentence-underline.test.js
  */
@@ -20,6 +21,12 @@ import {
   mergeSegments,
   buildSpans,
 } from '../src/utils/sentenceUnderline.js';
+import {
+  LS_GRAMMAR_UNDERLINES, getUnderlinesForKey, saveUnderlinesForKey, migrateUnderlineKey,
+} from '../src/utils/grammarStorage.js';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { createServer } from 'vite';
 
 let pass = 0;
 let fail = 0;
@@ -177,6 +184,80 @@ const rtSpans = buildSpans(rt, rtSegs);
 assert(rtSpans[0].color === UNDERLINE_COLORS.green.hex, 'round-trip: first part keeps original color');
 assert(rtSpans[1].color === UNDERLINE_COLORS.pink.hex,  'round-trip: overridden part is new color');
 assert(rtSpans[2].color === null,                        'round-trip: remainder is plain');
+
+// ── 9. White uses the existing validation and overlap rules ───────────────────
+console.log('9. white underlines');
+assertDeepEqual(Object.keys(UNDERLINE_COLORS), ['yellow', 'blue', 'green', 'pink', 'white'], 'white follows the original four colors');
+assertDeepEqual(UNDERLINE_COLORS.white, { hex: '#FFFFFF', label: 'Trắng — Đánh dấu chung' }, 'white color and label');
+const white = { start: 6, end: 11, color: 'white' };
+assertDeepEqual(validateSegment(white, cpLength(sent)), white, 'white passes segment validation');
+const whiteOverlap = applyUnderline([{ start: 0, end: 11, color: 'blue' }], 6, 11, 'white', cpLength(sent));
+assertDeepEqual(whiteOverlap, [{ start: 0, end: 6, color: 'blue' }, white], 'white replaces only the selected range');
+assertDeepEqual(buildSpans(sent, whiteOverlap), [
+  { text: 'Hello ', color: UNDERLINE_COLORS.blue.hex },
+  { text: 'world', color: '#FFFFFF' },
+], 'white renders without changing the sentence text');
+assertDeepEqual(applyUnderline(whiteOverlap, 6, 11, null, cpLength(sent)), [{ start: 0, end: 6, color: 'blue' }], 'removing white preserves the neighboring color');
+assertDeepEqual(applyUnderline([white], 6, 8, 'pink', cpLength(sent)), [
+  { start: 6, end: 8, color: 'pink' }, { start: 8, end: 11, color: 'white' },
+], 'an existing color can replace part of a white underline');
+
+// ── 10. Persistence across fresh reads and practice → saved-key transition ────
+console.log('10. white persistence');
+const storageDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+const oldMarks = ['yellow', 'blue', 'green', 'pink'].map((color, i) => ({ start: i, end: i + 1, color }));
+let persisted = new Map([
+  [LS_GRAMMAR_UNDERLINES, JSON.stringify({ gq_old: oldMarks })],
+  ['vocabmaster_grammar_review', '{"gq_old":{"level":4}}'],
+]);
+const memoryStorage = () => ({
+  getItem: key => persisted.get(key) ?? null,
+  setItem: (key, value) => persisted.set(key, String(value)),
+});
+try {
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: memoryStorage() });
+  saveUnderlinesForKey(textKey(sent), [white]);
+  // Recreate the storage adapter from serialized data, as after a reload.
+  persisted = new Map(JSON.parse(JSON.stringify([...persisted])));
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: memoryStorage() });
+  assertDeepEqual(getUnderlinesForKey(textKey(sent)), [white], 'white survives a fresh storage read');
+  migrateUnderlineKey(sent, 'gq_white');
+  assertDeepEqual(getUnderlinesForKey('gq_white'), [white], 'white follows the savedId shared by Practice, Saved and Review');
+  assertDeepEqual(getUnderlinesForKey(textKey(sent)), [], 'practice text key is moved by the existing save flow');
+  assertDeepEqual(getUnderlinesForKey('gq_old'), oldMarks, 'saving white preserves all four existing colors');
+  const removed = applyUnderline(getUnderlinesForKey('gq_white'), 6, 11, null, cpLength(sent));
+  saveUnderlinesForKey('gq_white', removed);
+  assertDeepEqual(getUnderlinesForKey('gq_white'), [], 'removing white persists');
+  assertDeepEqual(getUnderlinesForKey('gq_old'), oldMarks, 'removing white preserves other sentences');
+  assert(persisted.get('vocabmaster_grammar_review') === '{"gq_old":{"level":4}}', 'underline changes leave review data untouched');
+} finally {
+  if (storageDescriptor) Object.defineProperty(globalThis, 'localStorage', storageDescriptor);
+  else delete globalThis.localStorage;
+}
+
+// ── 11. Render actual shared components without running a browser ─────────────
+console.log('11. white toolbar and sentence rendering');
+const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
+const server = await createServer({ optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+try {
+  Object.defineProperty(globalThis, 'window', { configurable: true, value: { innerHeight: 800, innerWidth: 1024 } });
+  const { default: Toolbar } = await server.ssrLoadModule('/src/components/grammar/UnderlineToolbar.jsx');
+  const { default: Sentence } = await server.ssrLoadModule('/src/components/grammar/UnderlinedSentence.jsx');
+  const toolbar = renderToStaticMarkup(createElement(Toolbar, { position: { top: 40, left: 40 }, onColor() {}, onClose() {} }));
+  const labels = [...toolbar.matchAll(/<button\b[^>]*aria-label="([^"]+)"/g)].map(match => match[1]);
+  assertDeepEqual(labels, ['Vàng', 'Xanh da trời', 'Xanh lá', 'Hồng', 'Trắng — Đánh dấu chung', 'Bỏ gạch chân'], 'white button appears before the unchanged remove action');
+  assert(toolbar.includes('title="Trắng — Đánh dấu chung"'), 'white tooltip uses the requested Vietnamese label');
+  const html = renderToStaticMarkup(createElement(Sentence, { sentence: sent, segments: [white], className: 'text-slate-300' }));
+  assert(html.includes('text-decoration-color:#FFFFFF'), 'the shared sentence component renders a white underline');
+  assert(html.includes('text-decoration-thickness:2.5px') && html.includes('text-underline-offset:4px'), 'white keeps existing underline thickness and offset');
+  assert(html.includes('class="text-slate-300"') && !/style="(?:[^"]*;)?color:/.test(html), 'white does not override sentence text color');
+  const erasedHtml = renderToStaticMarkup(createElement(Sentence, { sentence: sent, segments: [], className: 'text-slate-300' }));
+  assert(!erasedHtml.includes('text-decoration-line'), 'removing the underline renders plain text again');
+} finally {
+  await server.close();
+  if (previousWindow) Object.defineProperty(globalThis, 'window', previousWindow);
+  else delete globalThis.window;
+}
 
 // ── Summary ──────────────────────────────────────────────────────────────────
 console.log(`\nResults: ${pass} passed, ${fail} failed.`);

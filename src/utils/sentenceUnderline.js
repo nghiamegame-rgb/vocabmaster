@@ -3,7 +3,7 @@
  *
  * Data model: each underline is { start, end, color }
  *   - start/end: Unicode codepoint offsets into the sentence string (≥0, start < end)
- *   - color: one of UNDERLINE_COLORS keys ('yellow'|'blue'|'green'|'pink'), or null to erase
+ *   - color: one of UNDERLINE_COLORS keys ('yellow'|'blue'|'green'|'pink'|'white'), or null to erase
  *
  * Storage: via grammarStorage.js (LS_GRAMMAR_UNDERLINES = 'vocabmaster_grammar_underlines')
  *   Stored as { [sentenceKey: string]: Segment[] }
@@ -31,6 +31,7 @@ export const UNDERLINE_COLORS = {
   blue:   { hex: '#38BDF8', label: 'Xanh da trời' },
   green:  { hex: '#4ADE80', label: 'Xanh lá' },
   pink:   { hex: '#F472B6', label: 'Hồng' },
+  white:  { hex: '#FFFFFF', label: 'Trắng — Đánh dấu chung' },
 };
 
 // ── Key helpers ───────────────────────────────────────────────────────────────

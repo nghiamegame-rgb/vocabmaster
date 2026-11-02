@@ -1,10 +1,10 @@
 # Bàn giao workspace VocabMaster
 
-Cập nhật lần cuối: **2026-11-02**, Asia/Saigon. HEAD tham chiếu: `4a4aff095591629029e9a2deb75ef7fd7cc8ccc6`.
+Cập nhật lần cuối: **2026-11-02**, Asia/Saigon. HEAD trước lần bổ sung màu trắng: `2cda47c75a09d21d9b6ee85b3a048e045fc4d233`.
 Bàn giao ban đầu (khảo sát): tham chiếu dưới đây.
 Bàn giao này: bổ sung tính năng **gạch chân nhiều màu** cho câu tiếng Anh trong module Grammar.
 
-## 1. Phạm vi lần bàn giao
+## 1. Phạm vi khảo sát ban đầu
 
 Chỉ khảo sát và viết Markdown để tiếp tục giữa Codex/Gemini/agent khác. Không phát triển/sửa lỗi, thay cấu hình/dependency/dữ liệu, commit, push, merge, deploy hoặc ghi dịch vụ ngoài. Tài liệu tổng quan nằm trong [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md); hướng dẫn áp dụng nằm trong [AGENTS.md](../AGENTS.md).
 
@@ -23,9 +23,9 @@ Các file untracked/modified từ bàn giao trước vẫn được giữ nguyê
 | File | Mục đích |
 | --- | --- |
 | `src/utils/sentenceUnderline.js` | Logic lõi: segment model, applyUnderline, normalize, buildSpans, selectionToRange |
-| `src/components/grammar/UnderlineToolbar.jsx` | Thanh màu floating (4 màu + nút Bỏ), không lấy focus |
+| `src/components/grammar/UnderlineToolbar.jsx` | Thanh màu floating (5 màu + nút Bỏ), không lấy focus |
 | `src/components/grammar/UnderlinedSentence.jsx` | Component render câu có gạch chân + xử lý mouse/touch selection |
-| `test/sentence-underline.test.js` | 29 unit test logic lõi (node, không cần browser) |
+| `test/sentence-underline.test.js` | 49 kiểm tra logic, storage giả lập và render HTML tĩnh (node, không cần browser) |
 
 ### File đã sửa
 
@@ -53,7 +53,7 @@ Các file untracked/modified từ bàn giao trước vẫn được giữ nguyê
 - Key localStorage: `vocabmaster_grammar_underlines`
 - Format: `{ [key: string]: [{start, end, color}] }`
 - `start`/`end` là codepoint offset (không phải UTF-16) — đúng với emoji và ký tự bổ sung.
-- `color` là một trong `'yellow'|'blue'|'green'|'pink'`.
+- `color` là một trong `'yellow'|'blue'|'green'|'pink'|'white'`.
 - Lưu **synchronous** ngay khi thao tác, không cần chờ cloud hay unmount.
 - **Không đồng bộ cloud** — local only. Lý do: schema cloud hiện tại không có trường underlines; thêm vào sẽ cần sửa Apps Script và proxy. Xem mục "Apps Script" bên dưới.
 - Không ảnh hưởng `savedQuestions`, `reviewProgress`, `grammarStats` hay bất kỳ sync flow nào hiện có.
@@ -68,7 +68,7 @@ Hiện tại: **local only**. Underlines không được đưa vào payload Gram
 3. `grammarSyncMerge.js`: thêm `mergeUnderlines(local, cloud)` — local thắng (vì đã apply xong khi push), không cần tombstone vì null-color đã xóa sạch entry.
 4. Triển khai Apps Script mới trước khi bật sync. Local autosave vẫn hoạt động trong thời gian này.
 
-## 4. Kiểm tra trong lần này
+## 4. Kiểm tra lần triển khai gạch chân ban đầu (theo bàn giao trước)
 
 | Kiểm tra | Kết quả | Giới hạn bằng chứng |
 | --- | --- | --- |
@@ -87,3 +87,11 @@ Hiện tại: **local only**. Underlines không được đưa vào payload Gram
 2. Nếu bổ sung sync underlines: đọc `grammarCloud.js`, `grammarSyncMerge.js`, `grammar-apps-script.js`, sau đó thiết kế merge strategy (tombstone không cần thiết nếu replace-by-key).
 3. Nếu sửa UI toolbar: đọc `UnderlineToolbar.jsx` và `UnderlinedSentence.jsx`; lưu ý `onMouseDown e.preventDefault()` là cần thiết để giữ selection.
 4. Nếu muốn thêm màu: chỉ cần thêm entry vào `UNDERLINE_COLORS` trong `sentenceUnderline.js`.
+
+## 6. Bổ sung màu trắng — 2026-11-02
+
+- Thêm `white: #FFFFFF`, nhãn tooltip/accessibility **“Trắng — Đánh dấu chung”**, sau bốn màu cũ và trước nút Bỏ; nút có viền nhẹ. Đây là dấu chung cho cấu trúc/cụm từ/giới từ hoặc nội dung người dùng chọn, không gán lại ý nghĩa bốn màu cũ.
+- Dùng bộ màu chung nên validation, render và lưu local theo câu ở Luyện tập/Câu đã lưu/Ôn tập nhận màu trắng qua luồng hiện có. Giữ độ dày 2,5px, offset 4px, hành vi selection/chồng lấn/xóa và màu chữ câu. Không đổi schema, migrate dữ liệu, sửa cloud hoặc Apps Script.
+- `node test/sentence-underline.test.js`: **49/49 đạt**, có kiểm tra white validation/overlap/xóa, lưu rồi đọc lại, chuyển text-key sang savedId, giữ dấu bốn màu cũ và dữ liệu review, thứ tự/nhãn nút và CSS render thực tế.
+- `node test/grammar-sentence.test.js`: **7/7 đạt**. `npm.cmd run lint`: exit 0, còn cảnh báo ở các file không sửa trong lần này. Build bằng `npm.cmd run build -- --outDir <thư-mục-tạm-mới>`: exit 0; không ghi đè `dist` có sẵn.
+- Chưa kiểm tra tương tác trình duyệt/mobile hoặc sync thật. Các hạn chế cũ về cập nhật giao diện ngay sau đổi dấu, tọa độ toolbar khi cuộn và merge dấu lúc chuyển key chưa sửa trong phạm vi thêm màu. Không commit, push hoặc deploy.

@@ -59,7 +59,7 @@ export default function UnderlineToolbar({ position, onColor, onClose }) {
           title={UNDERLINE_COLORS[key].label}
           aria-label={UNDERLINE_COLORS[key].label}
           onClick={() => onColor(key)}
-          className="w-6 h-6 rounded-full border-2 border-transparent hover:border-white/60 transition-all duration-150 focus:outline-none focus:border-white"
+          className={`w-6 h-6 rounded-full border-2 ${key === 'white' ? 'border-slate-300/60' : 'border-transparent'} hover:border-white/60 transition-all duration-150 focus:outline-none focus:border-white`}
           style={{ backgroundColor: UNDERLINE_COLORS[key].hex }}
         />
       ))}
