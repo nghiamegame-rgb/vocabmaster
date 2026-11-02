@@ -263,8 +263,96 @@ try {
   });
   await page.reload(); await openGrammar(); await page.locator('#grammar-tab-saved').click();
   assert.equal(await area(first.replace('support', 'assistance')).locator('[data-sentence-note]').count(), 0, 'changed sentence content cannot inherit old anchors');
-  assert.deepEqual(errors, [], 'no uncaught browser errors');
   console.log('PASS Practice: stable identity before/after save, same AI IDs isolated, notes survive tabs/completion/reload without restoring session');
+
+  // Visual acceptance: adjacent short annotations should be one compact row.
+  const compactSentence = 'The school provides educational materials for children in the village.';
+  const compactNotes = [
+    { ...seedNote(compactSentence, 'gq_compact', 'educational', 'n_educational'), text: 'giáo dục' },
+    { ...seedNote(compactSentence, 'gq_compact', 'materials', 'n_materials'), text: 'vật chất' },
+  ];
+  await page.evaluate(({ q, notes, noteKey }) => {
+    const key = 'vocabmaster_grammar_saved';
+    localStorage.setItem(key, JSON.stringify([...JSON.parse(localStorage.getItem(key)), q]));
+    const map = JSON.parse(localStorage.getItem(noteKey)); map[q.savedId] = notes;
+    localStorage.setItem(noteKey, JSON.stringify(map));
+  }, { q: question(compactSentence, 'gq_compact'), notes: compactNotes, noteKey: LS_SENTENCE_NOTES });
+  await page.reload(); await openGrammar(); await page.locator('#grammar-tab-saved').click();
+  const compactArea = area(compactSentence);
+  const educational = compactArea.locator('[data-sentence-note="n_educational"]');
+  const materials = compactArea.locator('[data-sentence-note="n_materials"]');
+  const persistedBeforeLayout = await read(LS_SENTENCE_NOTES);
+  await compactArea.scrollIntoViewIfNeeded(); await page.mouse.move(0, 0); await layoutSafe(compactSentence);
+  const compactGeometry = await compactArea.evaluate(async (element, notes) => {
+    const { sentenceRangeRect } = await import('/src/utils/sentenceGeometry.js');
+    return notes.map(note => {
+      const label = element.querySelector(`[data-sentence-note="${note.id}"]`), box = label.getBoundingClientRect();
+      const phrase = sentenceRangeRect(element.querySelector('[data-sentence-text]'), note.start, note.end);
+      const style = getComputedStyle(label);
+      return { width: box.width, top: box.top, center: (box.left + box.right) / 2,
+        phraseCenter: (phrase.left + phrase.right) / 2, gap: box.top - phrase.bottom,
+        text: label.textContent, font: style.fontSize, background: style.backgroundColor, border: style.borderLeftWidth };
+    });
+  }, compactNotes);
+  assert.ok(Math.abs(compactGeometry[0].top - compactGeometry[1].top) < 1, 'adjacent short notes share one row');
+  for (const [index, label] of compactGeometry.entries()) {
+    assert.equal(label.text, compactNotes[index].text, 'no repeated English, arrow or card header');
+    assert.ok(label.width < 100, 'short display notes size to measured content, not the editor minimum');
+    assert.ok(Math.abs(label.center - label.phraseCenter) < 1, 'center beneath the associated phrase');
+    assert.ok(label.gap >= 5 && label.gap <= 7, 'compact gap below actual text bounds');
+    assert.equal(label.font, '12px'); assert.equal(label.background, 'rgba(0, 0, 0, 0)'); assert.equal(label.border, '0px');
+  }
+  const controls = await compactArea.locator('[data-sentence-controls]').boundingBox();
+  assert.ok(controls.y + controls.height <= (await paragraph(compactSentence).boundingBox()).y, 'top-right controls reserve their own row');
+  await compactArea.screenshot({ path: join(artifacts, 'educational-materials-desktop.png') });
+  const visibleHeight = (await paragraph(compactSentence).boundingBox()).height;
+  await compactArea.getByRole('button', { name: /^Ẩn ghi chú/ }).click(); await layoutSafe(compactSentence);
+  const hiddenHeight = (await paragraph(compactSentence).boundingBox()).height;
+  assert.ok(visibleHeight - hiddenHeight >= 16, 'hiding notes removes annotation padding');
+  assert.ok(Math.abs(hiddenHeight - await paragraph(compactSentence).evaluate(el => parseFloat(getComputedStyle(el).lineHeight))) < 1, 'ordinary hidden sentence spacing is one line');
+  await compactArea.getByRole('button', { name: /^Hiện ghi chú/ }).click(); await layoutSafe(compactSentence);
+  assert.deepEqual(await read(LS_SENTENCE_NOTES), persistedBeforeLayout, 'layout/visibility never rewrite stored notes');
+  await educational.hover();
+  assert.notEqual(await educational.evaluate(el => getComputedStyle(el).backgroundColor), 'rgba(0, 0, 0, 0)', 'hover indicates editability');
+  await educational.press('Tab'); await page.keyboard.press('Shift+Tab');
+  assert.equal(await educational.evaluate(el => el === document.activeElement), true);
+  assert.notEqual(await educational.evaluate(el => getComputedStyle(el).outlineStyle), 'none', 'keyboard focus remains visible');
+  assert.equal(await educational.getAttribute('aria-label'), 'Sửa ghi chú: educational');
+
+  await educational.click(); await editorInViewport();
+  const longText = 'Giải thích dài cần được giữ nguyên và xuống dòng, không cắt bớt nội dung. '.repeat(10);
+  await editor.fill(longText); await layoutSafe(compactSentence);
+  const expanded = await educational.boundingBox();
+  assert.ok(expanded.width <= 321 && expanded.height > 32, 'long display note wraps at a sensible maximum');
+  assert.equal(await educational.textContent(), longText);
+  assert.equal(await educational.evaluate(el => el.scrollHeight <= el.clientHeight + 1), true, 'complete note is visible without clipping');
+  await editor.fill('giáo dục'); await layoutSafe(compactSentence);
+  assert.ok((await educational.boundingBox()).width < 100 && (await educational.boundingBox()).height <= 17, 'display dimensions shrink immediately while the editor stays comfortable');
+  await editorInViewport(); await close();
+  const overlappingCompact = await note(compactSentence, 'gq_compact', {
+    start: compactNotes[0].start + 2, end: compactNotes[1].end - 2,
+  }, 'cụm danh từ'); await close(); await layoutSafe(compactSentence);
+  const rows = await compactArea.locator('[data-sentence-note]').evaluateAll(labels => [...new Set(labels.map(label => Math.round(label.getBoundingClientRect().top)))]);
+  assert.equal(rows.length, 2, 'one real collision needs only one additional annotation row');
+  await compactArea.locator(`[data-sentence-note="${overlappingCompact.id}"]`).click();
+  await page.getByRole('button', { name: 'Xóa ghi chú', exact: true }).click();
+  for (const width of [375, 320]) {
+    await page.setViewportSize({ width, height: 740 }); await layoutSafe(compactSentence);
+    await compactArea.getByRole('button', { name: /^Ẩn ghi chú/ }).click();
+    const hiddenScrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    await compactArea.getByRole('button', { name: /^Hiện ghi chú/ }).click(); await layoutSafe(compactSentence);
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth) <= Math.max(hiddenScrollWidth, width), 'showing annotations does not introduce horizontal page scrolling');
+    assert.equal(await educational.count(), 1); assert.equal(await materials.count(), 1);
+    if (width === 375) await compactArea.screenshot({ path: join(artifacts, 'educational-materials-mobile.png') });
+  }
+  const samples = await compactArea.evaluate(async element => {
+    const result = [];
+    for (let i = 0; i < 6; i++) { await new Promise(resolve => requestAnimationFrame(resolve)); result.push(element.getBoundingClientRect().height); }
+    return result;
+  });
+  assert.equal(new Set(samples).size, 1, 'measured annotation layout settles without oscillation');
+  console.log('PASS Compact annotations: educational/materials share a row; measured centering, widths/gaps, focus/hover, long/wrapped notes, hidden spacing and responsive controls');
+  assert.deepEqual(errors, [], 'no uncaught browser errors');
   console.log(`Visual artifacts: ${artifacts}`);
 } finally {
   await browser?.close(); await server.close();

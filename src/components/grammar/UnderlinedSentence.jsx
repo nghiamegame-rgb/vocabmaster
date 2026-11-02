@@ -6,7 +6,7 @@ import UnderlineToolbar from './UnderlineToolbar';
 import SentenceNoteEditor from './SentenceNoteEditor';
 
 const EMPTY = [];
-const noteClass = 'rounded-lg border-l-2 border-indigo-400/60 bg-slate-800/70 px-2 py-1 text-left text-xs leading-relaxed text-slate-300 whitespace-pre-wrap break-words';
+const noteClass = 'rounded px-0.5 text-center text-[12px] leading-4 text-slate-300 whitespace-pre-wrap hover:bg-slate-800/70 focus-visible:bg-slate-800/70 focus-visible:outline focus-visible:outline-1 focus-visible:outline-indigo-400';
 
 /** English text alone lives in containerRef; note labels/editor are siblings. */
 export default function UnderlinedSentence({ sentence, segments, onUnderlineChange, className = '', readOnly = false,
@@ -35,13 +35,20 @@ export default function UnderlinedSentence({ sentence, segments, onUnderlineChan
       const measured = measureSentenceLines(measure, sentence);
       setLines(previous => JSON.stringify(previous) === JSON.stringify(measured) ? previous : measured);
       const bounds = host.getBoundingClientRect();
+      const textTop = containerRef.current.getBoundingClientRect().top - bounds.top;
+      const layoutLines = measured.map((line, index) => {
+        const rect = sentenceRangeRect(containerRef.current, line.start, line.end);
+        const lineBox = containerRef.current.children[index]?.getBoundingClientRect();
+        return { ...line, contentBottom: rect && lineBox ? Math.min(line.height, Math.max(0, rect.bottom - lineBox.top)) : line.height };
+      });
       const items = notesShown ? notes.flatMap(note => {
         const rect = sentenceRangeRect(containerRef.current, note.start, note.end);
-        return rect ? [{ ...note, left: rect.left - bounds.left,
-          width: Math.min(bounds.width, Math.max(180, Math.min(320, rect.width))),
-          height: labelsRef.current.get(note.id)?.getBoundingClientRect().height || 48 }] : [];
+        const label = labelsRef.current.get(note.id)?.getBoundingClientRect();
+        return rect && label ? [{ ...note, left: rect.left + rect.width / 2 - bounds.left - label.width / 2,
+          width: label.width, height: label.height }] : [];
       }) : [];
-      const next = packSentenceNotes(measured, items, bounds.width);
+      const next = packSentenceNotes(layoutLines, items, bounds.width);
+      next.items = next.items.map(item => ({ ...item, top: item.top + textTop }));
       setLayout(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
     };
     update();
@@ -92,6 +99,12 @@ export default function UnderlinedSentence({ sentence, segments, onUnderlineChan
   }
   const chars = toCodepoints(sentence);
   return <div ref={hostRef} className="relative min-w-0" data-sentence-area="">
+    {notes.length > 0 && <div data-sentence-controls="" className="mb-1 flex flex-wrap items-center justify-end gap-1">
+      <button type="button" aria-expanded={notesShown} onClick={() => setNotesShown(value => !value)}
+        className="max-w-full rounded px-1 text-xs text-indigo-300 hover:bg-slate-800/70 hover:text-indigo-200 focus-visible:outline focus-visible:outline-1 focus-visible:outline-indigo-400">
+        {notesShown ? 'Ẩn ghi chú' : 'Hiện ghi chú'} ({notes.length})
+      </button>
+    </div>}
     <div ref={measureRef} aria-hidden="true" className={className}
       style={{ position: 'absolute', width: '100%', visibility: 'hidden', pointerEvents: 'none', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{sentence}</div>
     <p ref={containerRef} data-sentence-text="" className={className} onMouseUp={handleSelection} onTouchEnd={handleSelection}
@@ -107,12 +120,10 @@ export default function UnderlinedSentence({ sentence, segments, onUnderlineChan
       return <button type="button" key={note.id} ref={element => { if (element) labelsRef.current.set(note.id, element); else labelsRef.current.delete(note.id); }}
         data-sentence-note={note.id} title={`Ghi chú cho “${note.quote}”`} aria-label={`Sửa ghi chú: ${note.quote}`}
         onClick={() => openNote(note)} className={noteClass}
-        style={{ position: 'absolute', top: placed?.top || 0, left: placed?.left || 0, width: placed?.width || 240, visibility: placed ? 'visible' : 'hidden' }}>
-        <span className="block truncate text-[10px] text-indigo-300">↳ {note.quote}</span><span>{note.text}</span>
+        style={{ position: 'absolute', top: placed?.top || 0, left: placed?.left || 0, width: 'max-content', maxWidth: 'min(320px, 100%)', overflowWrap: 'anywhere', visibility: placed ? 'visible' : 'hidden' }}>
+        {note.text}
       </button>;
     })}
-    {notes.length > 0 && <button type="button" aria-expanded={notesShown} onClick={() => setNotesShown(value => !value)}
-      className="mt-1 text-xs text-indigo-300 hover:text-indigo-200">{notesShown ? 'Ẩn ghi chú' : 'Hiện ghi chú'} ({notes.length})</button>}
     {toolbar && createPortal(<UnderlineToolbar position={toolbar} onClose={closeToolbar}
       onNote={onNoteChange ? () => openNote(pendingRange.current) : undefined}
       onColor={color => {

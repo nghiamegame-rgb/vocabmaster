@@ -55,18 +55,19 @@ export function packSentenceNotes(lines, items, width) {
     for (const item of anchored) {
       const noteWidth = Math.max(1, Math.min(width, item.width));
       const left = Math.max(0, Math.min(item.left, width - noteWidth));
-      let lane = lanes.findIndex(row => row.items.every(other => left + noteWidth + 8 <= other.left || left >= other.left + other.width + 8));
+      let lane = lanes.findIndex(row => row.items.every(other => left + noteWidth + 6 <= other.left || left >= other.left + other.width + 6));
       if (lane < 0) { lane = lanes.length; lanes.push({ height: 0, items: [] }); }
       const placed = { ...item, left, width: noteWidth, lane };
       lanes[lane].items.push(placed);
       lanes[lane].height = Math.max(lanes[lane].height, item.height);
     }
     let extra = 0;
+    const contentBottom = line.contentBottom ?? line.height;
     for (const lane of lanes) {
-      for (const item of lane.items) result.push({ ...item, top: top + line.height + 6 + extra });
+      for (const item of lane.items) result.push({ ...item, top: top + contentBottom + 6 + extra });
       extra += lane.height + 6;
     }
-    padding[index] = extra ? extra + 6 : 0;
+    padding[index] = extra ? Math.max(0, contentBottom - line.height + extra + 6) : 0;
     top += line.height + padding[index];
   });
   return { items: result, padding };

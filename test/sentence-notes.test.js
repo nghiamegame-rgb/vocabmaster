@@ -76,3 +76,19 @@ test('layout reserves separate rows for overlapping notes, anchored to final lin
   const a = layout.items.find(item => item.id === 'a'), b = layout.items.find(item => item.id === 'b');
   assert.ok(a.top + a.height <= b.top);
 });
+test('compact measured labels share a row; only real collisions reserve another row', () => {
+  const lines = [{ start: 0, end: 40, height: 28, contentBottom: 23 }];
+  const short = [
+    { id: 'educational', start: 0, end: 11, left: 20, width: 48, height: 16 },
+    { id: 'materials', start: 12, end: 21, left: 85, width: 44, height: 16 },
+  ];
+  const compact = packSentenceNotes(lines, short, 320);
+  assert.equal(compact.items[0].top, compact.items[1].top);
+  assert.equal(compact.items[0].top, 29, 'six px below measured text bottom');
+  assert.equal(compact.padding[0], 23, 'reserve only the annotation row plus gaps');
+  assert.deepEqual(packSentenceNotes(lines, [], 320).padding, [0]);
+  const collision = packSentenceNotes(lines, [...short,
+    { id: 'overlap', start: 2, end: 20, left: 40, width: 100, height: 16 }], 320);
+  assert.equal(new Set(collision.items.map(item => item.lane)).size, 2);
+  assert.equal(collision.padding[0] - compact.padding[0], 22);
+});
