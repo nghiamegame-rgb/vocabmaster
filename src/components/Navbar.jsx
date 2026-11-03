@@ -70,7 +70,7 @@ function PushIndicator({ pushStatus }) {
   return (
     <div
       className={`
-        flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold
+        flex items-center gap-1.5 px-1.5 sm:px-2.5 py-1 rounded-lg text-xs font-semibold
         border transition-all duration-300 shrink-0
         ${cls}
       `}
@@ -125,7 +125,7 @@ function SyncToast({ syncStatus, syncMode, pushStatus, show }) {
       className={`
         fixed top-[68px] left-1/2 -translate-x-1/2 z-50
         px-5 py-2.5 rounded-xl shadow-2xl text-sm font-semibold
-        animate-fade-in whitespace-nowrap
+        animate-fade-in max-w-[calc(100vw-2rem)] whitespace-normal sm:whitespace-nowrap
         ${msg.cls}
       `}
       role="status"
@@ -146,10 +146,10 @@ export default function Navbar({ activeTab, setActiveTab, syncStatus, syncMode =
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4">
           <div className="flex items-center h-16">
             {/* Logo */}
-            <div className="flex items-center gap-2 mr-8">
+            <div className="flex items-center gap-2 mr-2 sm:mr-8">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                 <span className="text-white font-black text-sm">V</span>
               </div>
@@ -159,14 +159,14 @@ export default function Navbar({ activeTab, setActiveTab, syncStatus, syncMode =
             </div>
 
             {/* Tabs */}
-            <div className="flex items-center gap-1 flex-1">
+            <div className="flex items-center gap-0 sm:gap-1 flex-1">
               {tabs.map(({ id, label, Icon }) => (
                 <button
                   key={id}
                   id={`nav-tab-${id}`}
                   onClick={() => setActiveTab(id)}
                   className={`
-                    flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200
+                    flex items-center gap-2 px-1.5 sm:px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200
                     ${activeTab === id
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800'}
@@ -186,10 +186,10 @@ export default function Navbar({ activeTab, setActiveTab, syncStatus, syncMode =
               id="nav-sync-btn"
               onClick={onSync}
               disabled={syncStatus === 'syncing'}
-              title="Clear local cache and pull fresh vocabulary from Google Sheets"
+              title="Đọc Vocabulary mới nhất và thử gửi thay đổi đang chờ; không xóa cache"
               className={`
-                flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
-                border border-transparent transition-all duration-200 ml-2 shrink-0
+                flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-xs font-semibold
+                border border-transparent transition-all duration-200 ml-1 sm:ml-2 shrink-0
                 disabled:cursor-wait
                 ${sync.cls}
               `}

@@ -1,328 +1,179 @@
-/**
- * vocab-sync.test.js
- *
- * Focused unit-tests for the vocabulary sync merge logic and push-verification
- * result handling.
- *
- * Scenarios covered:
- *  Original 8:
- *   1. Bug reproduction: mobile has 95 stale words, cloud has 100.
- *      After merge the result must have ≥ 100 words; no cloud word is lost.
- *   2. Local-only words are preserved.
- *   3. Cloud word wins over local when same english key exists.
- *   4. Merge is idempotent.
- *   5. Both inputs empty → empty result.
- *   6. Cloud empty + local has words → all local kept.
- *   7. Progress fields come from cloud.
- *   8. Duplicate english with different id → cloud wins, no duplicates.
- *
- *  New (Bug-fix validation):
- *   9.  308-local / 250-cloud scenario: merged result has 308 words, and
- *       all 250 cloud words are present (no cloud word overwritten).
- *       The 58 local-only words must survive.
- *  10.  After fetch that finds local-only words, merged.length > cloudWords.length
- *       so the caller should push the merged list (logic gate test).
- *  11.  verifyPush result interpretation: 'ok' when cloud count >= expected,
- *       'mismatch' when cloud count < expected.
- *  12.  lastReviewedDate is preserved from cloud through mergeVocabWords.
- *
- * Run with: node test/vocab-sync.test.js
- * (Self-contained — no test framework, no browser deps.)
- */
-
-import assert from 'node:assert/strict';
-
-// ─── Inline the pure merge function (copy of src/hooks/useVocabStore.js) ────
-// We inline it here so the test has zero browser/React dependencies and can
-// run with plain Node. Keep in sync with the production implementation.
-function mergeVocabWords(cloudWords, localWords) {
-  const cloudIds   = new Set(cloudWords.map(w => w.id));
-  const cloudEngLc = new Set(cloudWords.map(w => w.english.toLowerCase()));
-  const localOnly  = localWords.filter(
-    w => !cloudIds.has(w.id) && !cloudEngLc.has(w.english.toLowerCase())
-  );
-  return [...cloudWords, ...localOnly];
+﻿import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import vm from 'node:vm';
+import fs from 'node:fs';
+import crypto from 'node:crypto';
+import { VocabSync, reconcile, STATE_KEY, PAUSE_KEY, BACKUP_PREFIX, equal } from '../src/utils/vocabSync.js';
+import proxy from '../api/vocab-sync.js';
+const w = (id, extra = {}) => ({ id, english: id, vietnamese: 'meaning', annotation: 'note', level: 2, currentStreak: 1, createdAt: 1, ...extra });
+const snap = (words = [], extra = {}) => ({ protocol: 1, generation: 'g1', revision: 0, words, tombstones: [], ...extra });
+const copy = x => JSON.parse(JSON.stringify(x));
+class Storage {
+  constructor(data = {}) { this.data = new Map(Object.entries(data)); }
+  getItem(k) { return this.data.get(k) ?? null; }
+  setItem(k, v) { this.data.set(k, v); }
 }
-
-// ─── Inline verifyPush interpretation logic ───────────────────────────────────
-// This mirrors the logic in src/utils/cloud.js verifyPush().
-// We test the decision logic, not the actual network call.
-function interpretVerifyResult(cloudCount, expectedCount) {
-  if (cloudCount === null) return 'error';
-  return cloudCount >= expectedCount ? 'ok' : 'mismatch';
+function backend() {
+  const props = new Map(), files = new Map(); let index = 0, mirror = [], failMirror = false;
+  const properties = { getProperty: k => props.get(k) ?? null, setProperty: (k, v) => props.set(k, v), deleteProperty: k => props.delete(k) };
+  const file = (id, text) => ({ getId: () => id, getBlob: () => ({ getDataAsString: () => text }) });
+  const context = vm.createContext({ console, Set, JSON, Number, Object, Error,
+    PropertiesService: { getScriptProperties: () => properties },
+    LockService: { getScriptLock: () => ({ tryLock: () => true, releaseLock() {} }) },
+    DriveApp: { createFile: (name, text) => { const id = String(++index); const f = file(id, text); files.set(id, f); return f; }, getFileById: id => { if (!files.has(id)) throw Error('missing'); return files.get(id); } },
+    SpreadsheetApp: { flush() {}, getActiveSpreadsheet: () => ({ getSheets: () => [{ getLastRow: () => mirror.length, getRange: () => ({ setValues: rows => { if (failMirror) throw Error('mirror_failure'); mirror = rows; } }) }] }) },
+    Utilities: { getUuid: () => crypto.randomUUID(), DigestAlgorithm: { SHA_256: 1 }, Charset: { UTF_8: 1 }, computeDigest: (_, text) => [...crypto.createHash('sha256').update(text).digest()] },
+    ContentService: { MimeType: { JSON: 1 }, createTextOutput: text => ({ setMimeType: () => JSON.parse(text) }) },
+  });
+  vm.runInContext(fs.readFileSync('google-apps-script.js', 'utf8'), context);
+  props.set('VOCAB_SYNC_SECRET', 'test-secret');
+  const init = s => context.vocabCommit(copy(s));
+  const read = () => context.doGet({ parameter: { secret: 'test-secret' } });
+  const post = p => context.doPost({ postData: { contents: JSON.stringify(Array.isArray(p) ? p : { ...p, secret: 'test-secret' }) } });
+  const transport = { read: async () => { const r = read(); if (!r.ok) throw Error(r.error); return r; }, write: async p => { const r = post(p); if (!r.ok) throw Error(r.error); return r; } };
+  return { context, props, files, init, read, post, transport, fail: () => { failMirror = true; } };
 }
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-function makeWord(overrides = {}) {
-  const base = {
-    id:            overrides.id            ?? String(Math.random()),
-    english:       overrides.english       ?? 'word',
-    vietnamese:    overrides.vietnamese    ?? 'nghĩa',
-    imageUrl:      overrides.imageUrl      ?? '',
-    wordType:      overrides.wordType      ?? 'Word',
-    level:         overrides.level         ?? 1,
-    currentStreak: overrides.currentStreak ?? 0,
-    createdAt:     overrides.createdAt     ?? Date.now(),
-  };
-  return { ...base, ...overrides };
+function client(b, base, words = base?.words || [], extra = {}) {
+  const storage = new Storage({ [STATE_KEY]: JSON.stringify({ base, words }), [PAUSE_KEY]: 'false', vocabmaster_grammar_saved: 'KEEP', vocabmaster_stats: 'KEEP' });
+  const c = new VocabSync({ storage, transport: b.transport, ...extra }); c.active = true;
+  return c;
 }
+function payload(s, words, tombstones = []) { return { protocol: 1, generation: s.generation, expectedRevision: s.revision, requestId: crypto.randomUUID(), words, tombstones, confirmEmpty: !words.length }; }
+function enabled(words = []) { const b = backend(); b.init(snap(words)); b.context.resumeVocabularyWrites(); return b; }
 
-/** Generate N unique words with sequential ids and english names. */
-function makeWords(n, prefix = 'word', levelFn = () => 1) {
-  return Array.from({ length: n }, (_, i) =>
-    makeWord({ id: `id-${prefix}-${i}`, english: `${prefix}${i}`, level: levelFn(i) })
-  );
-}
-
-let passed = 0;
-let failed = 0;
-
-function test(name, fn) {
+test('legacy phone adopts clean snapshot, archives all 614 entries, never uploads', async () => {
+  const b = enabled([w('VSTEP')]); let writes = 0;
+  const c = client(b, null, Array.from({ length: 614 }, (_, n) => w('old' + n)), { transport: { read: b.transport.read, write: async () => { writes++; } } });
+  await c.sync(); assert.equal(writes, 0); assert.deepEqual(c.state.words, [w('VSTEP')]);
+  assert.ok([...c.storage.data.entries()].some(([k, v]) => k.startsWith(BACKUP_PREFIX) && v.includes('old613')));
+  assert.equal(c.storage.getItem('vocabmaster_grammar_saved'), 'KEEP'); assert.equal(c.storage.getItem('vocabmaster_stats'), 'KEEP'); c.stop();
+});
+test('old generation with pending additions is quarantined after replacement', async () => {
+  const b = enabled([w('clean')]); const c = client(b, snap([w('old')], { generation: 'old' }), [w('old'), w('useful-offline')]);
+  await c.sync(); assert.deepEqual(c.state.words, [w('clean')]); assert.equal(b.read().revision, 0); assert.match(c.notice, /Vocabulary/); c.stop();
+});
+test('backend rejects legacy, outdated generation/revision, tombstone loss and missing deletion', () => {
+  const b = enabled([w('a')]); const s = b.read();
+  assert.equal(b.post([w('legacy')]).error, 'protocol_required');
+  assert.equal(b.post({ words: [] }).error, 'protocol_required');
+  assert.equal(b.post({ ...payload(s, []), generation: 'old' }).error, 'generation');
+  assert.equal(b.post({ ...payload(s, []), expectedRevision: 99 }).error, 'conflict');
+  assert.equal(b.post(payload(s, [])).error, 'missing_deletion');
+  assert.equal(b.post(payload(s, [], ['a'])).ok, true);
+  assert.equal(b.post(payload(b.read(), [w('a')])).error, 'lost_tombstone');
+});
+test('deleting last word commits explicit empty snapshot; stale device cannot resurrect it', async () => {
+  const b = enabled([w('a')]); const old = copy(b.read());
+  const a = client(b, old, []); await a.sync(); assert.equal(b.read().words.length, 0);
+  const phone = client(b, old); await phone.sync(); assert.equal(phone.state.words.length, 0);
+  assert.deepEqual(b.read().tombstones, ['a']); a.stop(); phone.stop();
+});
+test('offline additions and distinct concurrent updates are preserved', async () => {
+  const b = enabled([w('a'), w('b')]), old = copy(b.read());
+  const a = client(b, old, [w('a', { annotation: 'A' }), w('b'), w('new-a')]); await a.sync();
+  const phone = client(b, old, [w('a'), w('b', { annotation: 'B' }), w('new-b')]); await phone.sync();
+  assert.deepEqual(b.read().words.map(x => x.id).sort(), ['a','b','new-a','new-b']);
+  assert.equal(b.read().words.find(x => x.id === 'a').annotation, 'A'); assert.equal(b.read().words.find(x => x.id === 'b').annotation, 'B'); a.stop(); phone.stop();
+});
+test('same-record conflict preserves local note in backup, deletion beats stale edits', () => {
+  const base = snap([w('a')]);
+  assert.equal(reconcile(base, [w('a', { annotation: 'local' })], snap([w('a', { annotation: 'remote' })])).conflicts[0].annotation, 'local');
+  const result = reconcile(base, [w('a', { annotation: 'local' })], snap([], { tombstones: ['a'] }));
+  assert.equal(result.words.length, 0); assert.equal(result.conflicts.length, 1);
+});
+test('failed GET and malformed empty response preserve pending data; no success', async () => {
+  for (const read of [async () => { throw Error('offline'); }, async () => ({ data: [] })]) {
+    const b = enabled(); const c = client(b, snap(), [w('new')], { transport: { read, write: async () => assert.fail('unexpected POST') } });
+    await c.sync(); assert.equal(c.status, 'error'); assert.equal(c.state.words[0].id, 'new'); c.stop();
+  }
+});
+test('false ACK with equal counts, opaque response, network failure cannot report success', async () => {
+  for (const write of [async () => snap([w('wrong')], { revision: 1 }), async () => undefined, async () => { throw Error('failed'); }]) {
+    const b = enabled(); const c = client(b, snap(), [w('new')], { transport: { read: b.transport.read, write } });
+    await c.sync(); assert.equal(c.status, 'error'); assert.equal(c.state.words[0].id, 'new'); c.stop();
+  }
+});
+test('edits during POST remain pending and are sent on next sync', async () => {
+  const b = enabled(); let release;
+  const c = client(b, snap(), [w('a')], { transport: { read: b.transport.read, write: p => new Promise(resolve => { release = () => resolve(b.post(p)); }) } });
+  const running = c.sync(); await new Promise(resolve => setImmediate(resolve));
+  c.edit(words => [...words, w('b')]); release(); await running;
+  assert.equal(c.state.words.length, 2); assert.equal(c.state.base.words.length, 1);
+  c.transport = b.transport; await c.sync(); assert.equal(b.read().words.length, 2); c.stop();
+});
+test('pause cancels queued writes; pause during GET prevents POST; default is paused', async () => {
+  const b = enabled(); let release;
+  const c = client(b, snap(), [w('a')], { delay: 5, transport: { read: () => new Promise(resolve => { release = () => resolve(b.read()); }), write: async () => assert.fail('POST after pause') } });
+  const running = c.sync(); c.pause(); release(); await running;
+  assert.equal(b.read().words.length, 0); c.edit(words => [...words, w('b')]); c.stop();
+  await new Promise(resolve => setTimeout(resolve, 15)); assert.equal(b.read().revision, 0);
+  const d = new VocabSync({ storage: new Storage(), transport: b.transport }); assert.equal(d.paused(), true);
+});
+test('recovery changes generation under lock; racing old POST rejected, old ACK ignored after pause', async () => {
+  const b = enabled([w('old')]); const before = b.read();
+  const c = client(b, before, [w('old'), w('pending')]); let release;
+  c.transport = { read: b.transport.read, write: p => new Promise(resolve => { release = () => resolve(b.post(p)); }) };
+  const run = c.sync(); await new Promise(resolve => setImmediate(resolve)); c.pause();
+  b.context.pauseVocabularyWrites(); b.init(snap([w('clean')], { generation: 'recovered' })); b.context.resumeVocabularyWrites();
+  release(); await run; assert.equal(b.read().words[0].id, 'clean');
+  assert.equal(b.post(payload(before, [w('old')])).error, 'generation');
+  c.transport = b.transport; await c.sync(); assert.deepEqual(c.state.words, [w('clean')]); c.stop();
+});
+test('commit failure retains prior authoritative snapshot and backups', () => {
+  const b = enabled([w('old')]), head = b.props.get('VOCAB_HEAD'); b.fail();
+  assert.equal(b.post(payload(b.read(), [w('old'), w('new')])).ok, false);
+  assert.equal(b.props.get('VOCAB_HEAD'), head); assert.equal(b.read().words.length, 1); assert.equal(b.files.size, 2);
+});
+test('admin restore requires paused mode and exact confirmed hash; initializes new generation revision zero', () => {
+  const b = enabled([w('old')]); const f = b.context.DriveApp.createFile('clean.json', JSON.stringify([w('clean')]), 'application/json');
+  b.props.set('VOCAB_RECOVERY_FILE_ID', f.getId()); assert.throws(() => b.context.restoreConfirmedVocabulary(), /pause_first/);
+  b.context.pauseVocabularyWrites(); assert.throws(() => b.context.restoreConfirmedVocabulary(), /confirmation_required/);
+  b.props.set('VOCAB_CONFIRMED_SHA256', b.context.previewVocabularyRecovery().sha256);
+  const restored = b.context.restoreConfirmedVocabulary(); assert.notEqual(restored.generation, 'g1'); assert.equal(restored.revision, 0); assert.equal(b.read().paused, true);
+});
+test('storage failure blocks upload/adoption rather than discarding pending data', async () => {
+  const b = enabled([w('clean')]); const c = client(b, null, [w('legacy')]); c.storage.setItem = () => { throw Error('quota'); };
+  await c.sync(); assert.equal(c.status, 'error'); assert.equal(c.state.words[0].id, 'legacy'); assert.equal(b.read().revision, 0); c.stop();
+});
+test('proxy defaults to containment and rejects legacy payloads without network', async () => {
+  const saved = { ...process.env }; const previous = global.fetch;
+  process.env.VOCAB_APPS_SCRIPT_URL = 'https://invalid.example/'; process.env.VOCAB_SYNC_SECRET = 'test'; delete process.env.VOCAB_WRITES_ENABLED;
+  global.fetch = () => assert.fail('network');
+  const response = () => ({ setHeader() {}, status(n) { this.code = n; return this; }, json(body) { this.body = body; return this; } });
   try {
-    fn();
-    console.log(`  ✅ ${name}`);
-    passed++;
-  } catch (err) {
-    console.error(`  ❌ ${name}`);
-    console.error(`     ${err.message}`);
-    failed++;
-  }
-}
-
-// ─── Test Suite ─────────────────────────────────────────────────────────────
-
-console.log('\nVocabulary Sync Merge — Unit Tests\n');
-
-// ── Test 1: Bug Scenario — 95 local vs 100 cloud ────────────────────────────
-test('BUG SCENARIO: cloud=100, local=95 stale → result ≥ 100, no cloud word lost', () => {
-  // Cloud has 100 words
-  const cloudWords = makeWords(100, 'cloud', i => (i % 5) + 1);
-
-  // Mobile has 95 of those same words (e.g., the first 95) with possibly
-  // different progress data (stale local state).
-  const staleLocal95 = cloudWords.slice(0, 95).map(w => ({
-    ...w,
-    level: 1,          // stale: all reset to L1
-    currentStreak: 0,  // stale
-  }));
-
-  const merged = mergeVocabWords(cloudWords, staleLocal95);
-
-  // Must have exactly 100 words (no duplicates, no losses)
-  assert.equal(merged.length, 100,
-    `Expected 100 words, got ${merged.length}`);
-
-  // Every cloud word must be in the result
-  const cloudIds = new Set(cloudWords.map(w => w.id));
-  for (const w of merged) {
-    cloudIds.delete(w.id);
-  }
-  assert.equal(cloudIds.size, 0,
-    `Missing cloud words: ${[...cloudIds].join(', ')}`);
-
-  // Cloud word should win: the last 5 cloud words (indices 95-99) must have
-  // their cloud-level, NOT level=1 from stale local
-  for (let i = 95; i < 100; i++) {
-    const cloudWord = cloudWords[i];
-    const inMerge   = merged.find(w => w.id === cloudWord.id);
-    assert.ok(inMerge, `Cloud word ${cloudWord.english} missing from merged`);
-    assert.equal(inMerge.level, cloudWord.level,
-      `Cloud word ${cloudWord.english} level should be ${cloudWord.level}, got ${inMerge.level}`);
-  }
+    let res = response(); await proxy({ method: 'POST', body: {} }, res); assert.equal(res.body.error, 'paused');
+    process.env.VOCAB_WRITES_ENABLED = 'true'; res = response(); await proxy({ method: 'POST', body: [] }, res); assert.equal(res.body.error, 'protocol_required');
+  } finally { global.fetch = previous; for (const key of ['VOCAB_APPS_SCRIPT_URL','VOCAB_SYNC_SECRET','VOCAB_WRITES_ENABLED']) { if (saved[key] === undefined) delete process.env[key]; else process.env[key] = saved[key]; } }
 });
+test('canonical content comparison is independent of field order, not of content', () => { assert.ok(equal({ a: 1, b: 2 }, { b: 2, a: 1 })); assert.ok(!equal([w('a')], [w('b')])); });
 
-// ── Test 2: Local-only words are preserved ───────────────────────────────────
-test('Local-only words (not in cloud) are preserved in merged result', () => {
-  const cloudWords = makeWords(5, 'cloud');
-  // 3 local words that do NOT exist in cloud at all
-  const localOnly  = makeWords(3, 'local');
-  const merged     = mergeVocabWords(cloudWords, [...cloudWords.slice(0, 2), ...localOnly]);
-
-  // Should have 5 cloud + 3 local-only = 8
-  assert.equal(merged.length, 8,
-    `Expected 8 words, got ${merged.length}`);
-
-  // All local-only words present
-  for (const lw of localOnly) {
-    assert.ok(merged.some(w => w.id === lw.id),
-      `Local-only word "${lw.english}" was dropped from merge`);
-  }
+test('simultaneous CAS conflict keeps pending; next GET merges both additions', async () => {
+  const b = enabled(); const old = copy(b.read());
+  let dispatch;
+  const a = client(b, old, [w('a')], { transport: { read: b.transport.read, write: p => new Promise(resolve => { dispatch = () => { const ack = b.post(p); if (!ack.ok) resolve(Promise.reject(Error(ack.error))); else resolve(ack); }; }) } });
+  const run = a.sync(); await new Promise(resolve => setImmediate(resolve));
+  const phone = client(b, old, [w('b')]); await phone.sync(); dispatch(); await run;
+  assert.equal(a.status, 'error'); assert.equal(a.state.words[0].id, 'a');
+  a.transport = b.transport; await a.sync(); assert.deepEqual(b.read().words.map(x => x.id).sort(), ['a', 'b']); a.stop(); phone.stop();
 });
-
-// ── Test 3: Cloud word wins on same english key ──────────────────────────────
-test('Cloud version wins when english matches (cloud is source of truth)', () => {
-  const cloudVer = makeWord({ id: 'shared-id', english: 'apple', level: 4, currentStreak: 8 });
-  const localVer = makeWord({ id: 'shared-id', english: 'apple', level: 1, currentStreak: 0 });
-
-  const merged = mergeVocabWords([cloudVer], [localVer]);
-
-  assert.equal(merged.length, 1, 'Should not duplicate the word');
-  assert.equal(merged[0].level, 4,
-    `Cloud level 4 should win over local level 1, got ${merged[0].level}`);
-  assert.equal(merged[0].currentStreak, 8,
-    `Cloud streak 8 should win over local 0, got ${merged[0].currentStreak}`);
+test('accepted POST with lost response recovers by GET without duplicate revision', async () => {
+  const b = enabled(); const c = client(b, snap(), [w('a')], { transport: { read: b.transport.read, write: async p => { b.post(p); throw Error('response_lost'); } } });
+  await c.sync(); assert.equal(c.status, 'error'); assert.equal(b.read().revision, 1);
+  c.transport = b.transport; await c.sync(); assert.equal(c.status, 'ok'); assert.equal(b.read().revision, 1); c.stop();
 });
-
-// ── Test 4: Duplicate by english (different id) — cloud wins ─────────────────
-test('If same english exists with different id, cloud version wins (no duplicates)', () => {
-  const cloudWord = makeWord({ id: 'cloud-id', english: 'banana', level: 3 });
-  const localWord = makeWord({ id: 'local-id', english: 'banana', level: 1 });
-
-  const merged = mergeVocabWords([cloudWord], [localWord]);
-
-  assert.equal(merged.length, 1, 'Duplicate english word should not appear twice');
-  assert.equal(merged[0].id, 'cloud-id',
-    `Cloud id should be used, got ${merged[0].id}`);
+test('corrupt local cache is not overwritten or treated as empty', () => {
+  const storage = new Storage({ vocabmaster_words: '{broken', vocabmaster_grammar_underlines: 'KEEP' });
+  assert.throws(() => new VocabSync({ storage, transport: {} }));
+  assert.equal(storage.getItem('vocabmaster_words'), '{broken'); assert.equal(storage.getItem('vocabmaster_grammar_underlines'), 'KEEP');
 });
-
-// ── Test 5: Idempotency ───────────────────────────────────────────────────────
-test('Merge is idempotent: merging result with itself gives same length', () => {
-  const cloud  = makeWords(10, 'c');
-  const local  = makeWords(3,  'l');  // 3 local-only
-  const merged = mergeVocabWords(cloud, [...cloud.slice(0, 5), ...local]);
-
-  // Merging again with same merged list should not grow it
-  const merged2 = mergeVocabWords(cloud, merged);
-  assert.equal(merged2.length, merged.length,
-    `Second merge produced ${merged2.length}, expected ${merged.length}`);
+test('actual cloud adapter rejects failed HTTP/opaque responses and sends readable same-origin protocol', async () => {
+  const { fetchFromCloud, pushToCloud } = await import('../src/utils/cloud.js'); const previous = global.fetch;
+  try {
+    global.fetch = async (url, opts) => { assert.equal(url, '/api/vocab-sync'); assert.notEqual(opts.mode, 'no-cors'); return { ok: false, json: async () => ({ ok: true }) }; };
+    await assert.rejects(fetchFromCloud(), /request_failed/);
+    global.fetch = async () => ({ ok: true, json: async () => { throw Error('opaque'); } });
+    await assert.rejects(pushToCloud({}), /opaque/);
+    global.fetch = async (_url, opts) => ({ ok: true, json: async () => ({ ...snap(), ok: true, sent: JSON.parse(opts.body) }) });
+    const response = await pushToCloud({ protocol: 1 }); assert.equal(response.sent.protocol, 1);
+  } finally { global.fetch = previous; }
 });
-
-// ── Test 6: Both empty ────────────────────────────────────────────────────────
-test('Both cloud and local empty → empty result', () => {
-  const merged = mergeVocabWords([], []);
-  assert.equal(merged.length, 0);
-});
-
-// ── Test 7: Cloud empty, local has words ─────────────────────────────────────
-test('Cloud empty + local has words → all local kept (caller guards against null)', () => {
-  // mergeVocabWords([], local) should return only local words
-  // (in practice fetchFromCloud returns null for empty, but the merge fn itself
-  //  should not silently discard locals even if called with [])
-  const localWords = makeWords(5, 'local');
-  const merged     = mergeVocabWords([], localWords);
-  assert.equal(merged.length, 5,
-    `Expected 5 local words, got ${merged.length}`);
-});
-
-// ── Test 8: Progress fields from cloud are preserved ─────────────────────────
-test('Progress fields (level, currentStreak, lastReviewedDate) come from cloud', () => {
-  const now = Date.now();
-  const cloudWord = makeWord({
-    id: 'prog-id', english: 'cherry',
-    level: 5, currentStreak: 15,
-    lastReviewedDate: now - 1000,
-  });
-  const localWord = makeWord({
-    id: 'prog-id', english: 'cherry',
-    level: 2, currentStreak: 3,
-    lastReviewedDate: now - 9999999,
-  });
-
-  const merged = mergeVocabWords([cloudWord], [localWord]);
-  const result = merged[0];
-
-  assert.equal(result.level, 5);
-  assert.equal(result.currentStreak, 15);
-  assert.equal(result.lastReviewedDate, now - 1000);
-});
-
-// ── NEW Test 9: 308 local / 250 cloud scenario ────────────────────────────────
-test('308-local / 250-cloud: all 308 words in result, 250 cloud words intact, 58 local-only preserved', () => {
-  // Cloud has 250 words
-  const cloudWords = makeWords(250, 'cloud', i => (i % 5) + 1);
-
-  // Laptop has 308 words: 250 matching cloud + 58 new local-only ones
-  const localMatching = cloudWords.map(w => ({ ...w, level: 1, currentStreak: 0 })); // stale copies
-  const localOnly58   = makeWords(58, 'laptop_new');
-  const localWords    = [...localMatching, ...localOnly58];
-
-  assert.equal(localWords.length, 308, `Setup: local should have 308, got ${localWords.length}`);
-
-  const merged = mergeVocabWords(cloudWords, localWords);
-
-  // Result must have exactly 308 words
-  assert.equal(merged.length, 308,
-    `Expected 308 words after merge, got ${merged.length}`);
-
-  // All 250 cloud words must be present (by id)
-  const cloudIds = new Set(cloudWords.map(w => w.id));
-  for (const w of merged) cloudIds.delete(w.id);
-  assert.equal(cloudIds.size, 0,
-    `Missing ${cloudIds.size} cloud words from merged result`);
-
-  // All 58 local-only words must be present
-  for (const w of localOnly58) {
-    assert.ok(merged.some(m => m.id === w.id),
-      `Local-only word "${w.english}" missing from merged result`);
-  }
-
-  // Cloud words win: merged words that exist in cloud must have cloud's level,
-  // not the stale local level=1
-  const cloudMap = new Map(cloudWords.map(w => [w.id, w]));
-  for (const mergedWord of merged) {
-    const original = cloudMap.get(mergedWord.id);
-    if (original) {
-      assert.equal(mergedWord.level, original.level,
-        `Cloud word "${mergedWord.english}" should have level ${original.level}, got ${mergedWord.level}`);
-    }
-  }
-});
-
-// ── NEW Test 10: Fetch-then-push gate condition ────────────────────────────────
-test('After fetch: should push iff merged.length > cloudWords.length (local-only words exist)', () => {
-  const cloudWords = makeWords(250, 'cloud');
-  const localOnly  = makeWords(58,  'new');
-  const localAll   = [...cloudWords.map(w => ({ ...w })), ...localOnly];
-
-  const merged = mergeVocabWords(cloudWords, localAll);
-
-  // The gate: push back if merge has more than cloud (local-only additions exist)
-  const shouldPush = merged.length > cloudWords.length;
-  assert.ok(shouldPush,
-    `Should push because merged (${merged.length}) > cloud (${cloudWords.length})`);
-
-  // Sanity: if local has no extras, should NOT push
-  const mergedNoExtras = mergeVocabWords(cloudWords, cloudWords.map(w => ({ ...w })));
-  const shouldNotPush  = mergedNoExtras.length > cloudWords.length;
-  assert.ok(!shouldNotPush,
-    `Should NOT push when merged (${mergedNoExtras.length}) === cloud (${cloudWords.length})`);
-});
-
-// ── NEW Test 11: verifyPush result interpretation ────────────────────────────
-test('verifyPush: ok when cloud count >= expected; mismatch when fewer; error when null', () => {
-  // ok: cloud has same count as expected
-  assert.equal(interpretVerifyResult(308, 308), 'ok',
-    'Should be ok when cloud count equals expected');
-
-  // ok: cloud has MORE than expected (e.g. race condition added a word between push and verify)
-  assert.equal(interpretVerifyResult(310, 308), 'ok',
-    'Should be ok when cloud count exceeds expected');
-
-  // mismatch: cloud returned fewer rows (push partially failed or was throttled)
-  assert.equal(interpretVerifyResult(250, 308), 'mismatch',
-    'Should be mismatch when cloud count < expected');
-
-  // error: fetchFromCloud returned null (network/parse failure)
-  assert.equal(interpretVerifyResult(null, 308), 'error',
-    'Should be error when cloud returns null');
-});
-
-// ── NEW Test 12: lastReviewedDate preserved through merge ────────────────────
-test('lastReviewedDate is preserved from cloud; local stale date is not used', () => {
-  const now = Date.now();
-  const cloudW = makeWord({ id: 'rv-id', english: 'date', lastReviewedDate: now - 500 });
-  const localW = makeWord({ id: 'rv-id', english: 'date', lastReviewedDate: now - 99999 });
-
-  const merged = mergeVocabWords([cloudW], [localW]);
-  assert.equal(merged.length, 1);
-  // Cloud wins — the newer lastReviewedDate from cloud should be used
-  assert.equal(merged[0].lastReviewedDate, now - 500,
-    `Expected cloud lastReviewedDate (${now - 500}), got ${merged[0].lastReviewedDate}`);
-});
-
-// ── Summary ─────────────────────────────────────────────────────────────────
-console.log(`\nResults: ${passed} passed, ${failed} failed\n`);
-if (failed > 0) {
-  process.exitCode = 1;
-}

@@ -20,8 +20,8 @@
 - Vocabulary: `storage.js`, khóa `vocabmaster_words` và `vocabmaster_stats`.
 - Word: `id`, `english`, `annotation`, `vietnamese`, `imageUrl`, `wordType`, `level`, `currentStreak`, `createdAt`, tùy chọn `lastReviewedDate`.
 - Vocabulary lên cấp theo streak 2/4/8/15; sai giảm một cấp. Smart Quiz kiểm tra lại trước khi giảm cấp vì sai.
-- `cloud.js` gọi webhook trong `src/config.js`; backend tham chiếu là `google-apps-script.js`, ghi lại toàn bộ danh sách vào sheet đầu tiên.
-- Vocabulary tự tải cloud khi mount; merge ưu tiên cloud khi trùng id HOẶC english không phân biệt hoa thường, giữ từ chỉ có local. Push debounce 2 giây, POST `no-cors`, sau đó GET chỉ xác minh số lượng, chưa xác minh nội dung.
+- Vocabulary protocol 1: `vocabSync.js` giữ base/words, tombstone, generation, revision; `cloud.js` gọi `/api/vocab-sync`. Backend `google-apps-script.js` dùng ScriptLock, snapshot JSON bất biến trên Drive + `VOCAB_HEAD`; sheet đầu tiên là mirror. Xem [quy trình phục hồi](docs/VOCABULARY-RECOVERY.md), chưa triển khai production.
+- Vocabulary mặc định pause ở client/proxy/backend. Chưa có base hoặc đổi generation: backup rồi adopt remote, không union cache legacy. Cùng generation dùng three-way merge, xóa thắng; conflict giữ cloud và archive local. ACK kiểm toàn bộ nội dung/revision/requestId. Backend từ chối legacy/unversioned và generation cũ.
 - Grammar dùng các khóa `vocabmaster_grammar_*` trong `grammarStorage.js`: saved, stats, review, cloud_url, revision, pending. Thống kê của cả hai module hiện chỉ lưu local.
 - Câu Grammar lưu bằng `savedId`, kèm `hardMarked`, `userNotes`; review map theo `savedId`, tách khỏi thống kê phiên học.
 - Grammar có L1–L5 độc lập; tự đánh giá đã hiểu tăng một cấp, cần ôn lại giảm một cấp. Vocabulary/Grammar dùng khoảng ôn 1/3/7/14/30 ngày nhưng cách cập nhật khác nhau. Structures có tiến độ thứ ba riêng, ngưỡng streak 2/4/8/15; sai đến hạn ôn ngay.
@@ -35,8 +35,8 @@
 - Giữ riêng ba store Vocabulary, câu Grammar, Structures, các khóa LocalStorage và tiến độ L1–L5. Vocabulary dùng webhook riêng; câu Grammar và Structures chung endpoint nhưng khác scope/revision; không chuyển trạng thái học giữa các kho.
 - `annotation` là ghi chú nhập tay, độc lập với `wordType`; chỉ hiển thị/tìm kiếm, không ghép vào phát âm, đáp án hoặc prompt bài tập. Giữ qua sửa, import/export và sync.
 - `annotation.js` migrate khi chưa có annotation dạng string; giữ ghi chú cũ và cụm như `account (for)`.
-- Không thay dữ liệu local bằng cloud rỗng/lỗi. Vocabulary hard-sync chỉ xóa cache sau khi nhận cloud hợp lệ và merge; giữ các guard chống push lúc fetch.
-- Không coi POST opaque hoặc số lượng khớp là bằng chứng nội dung đã lưu; Vocabulary chưa có CAS/lock/backup.
+- Vocabulary chấp nhận snapshot rỗng hợp lệ có protocol/generation/revision; lỗi/malformed không thay local. Không còn hard-clear khi Sync. Legacy/đổi generation phải backup thành công trước adopt; pending/conflict không tự nhập lại từ archive.
+- Không coi POST opaque hoặc số lượng khớp là bằng chứng nội dung đã lưu. Không rollback backend Vocabulary về nhận mảng; restore chỉ qua hàm quản trị đổi generation, không sửa mirror Sheet đơn thuần. Đóng mọi tab/thiết bị và drain writer legacy trước recovery.
 - Bảo toàn id, ghi chú, dấu sao, streak, level, ngày ôn và pending khi thay đổi schema/sync. Kiểm tra trường hợp offline, thiết bị cũ và sửa trong lúc request đang chạy.
 - Không đưa secret vào frontend. Apps Script trong repo chưa chắc giống bản đang chạy; triển khai riêng cần người dùng cho phép.
 - Không gọi endpoint production để thử ghi/xóa, không xóa LocalStorage hoặc dữ liệu cloud trong quá trình kiểm tra.

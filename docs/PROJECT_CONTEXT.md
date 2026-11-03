@@ -1,5 +1,7 @@
 # VocabMaster — ngữ cảnh dự án
 
+**Cập nhật Vocabulary 2026-11-04:** giao thức cũ mô tả trong ảnh chụp bên dưới đã được thay ở working tree bởi protocol 1 (generation/revision/tombstone, snapshot Drive, proxy ACK đầy đủ, mặc định pause). [Quy trình phục hồi hiện tại](VOCABULARY-RECOVERY.md) và HANDOFF mục 13 là nguồn trạng thái mới; chưa triển khai production. Không áp dụng merge legacy/hard-sync/count verification trong các đoạn lịch sử cho code hiện tại.
+
 Khảo sát ngày **2026-11-02** (Asia/Saigon), commit tham chiếu `4a4aff095591629029e9a2deb75ef7fd7cc8ccc6`. Tài liệu mô tả **working tree đang có thay đổi chưa commit**, không chỉ commit này. Danh sách thay đổi và kết quả kiểm tra nằm trong [HANDOFF.md](HANDOFF.md). Điểm vào bảo trì là [AGENTS.md](../AGENTS.md).
 
 ## 1. Mức độ xác minh
@@ -172,14 +174,13 @@ Validation kiểm tra cấu trúc và trích dẫn; không chứng minh câu AI 
 
 ## 7. Lưu trữ cloud, backup và xung đột
 
-### Vocabulary — giao thức độc lập
+### Vocabulary — protocol 1 (2026-11-04, chưa deploy)
 
-`cloud.js` dùng `WEBHOOK_URL` trong `src/config.js` (giá trị riêng không chép vào tài liệu). `google-apps-script.js::doGet/doPost` là backend tham chiếu: sheet đầu tiên, header 10 cột, POST **ghi lại toàn danh sách**, không append/upsert như comment cấu hình có thể gợi ý.
+`useVocabStore` dùng `vocabSync.js`: persist base + words trong `vocabmaster_vocab_sync_v1`, giữ cache `vocabmaster_words` tương thích và các backup `vocabmaster_vocab_backup_*`. Client mặc định pause; GET vẫn đọc được. Legacy/chưa có base hoặc generation đổi: backup rồi adopt nguyên remote, không union/upload cache cũ. Cùng generation dùng three-way merge; xóa thắng, additions offline giữ lại, conflict cùng record lưu archive và báo để người dùng chọn lại. Lỗi/quota không cho coi là kho rỗng hay đồng bộ thành công.
 
-`useVocabStore` tự GET khi App mount. GET hợp lệ được migrate rồi `mergeVocabWords`: cloud thắng khi trùng ID **hoặc** english không phân biệt hoa/thường; từ chỉ local được giữ. Cloud rỗng/lỗi không thay local. Nút Sync Navbar gọi hard-sync, nhưng chỉ xóa key cache sau GET có dữ liệu hợp lệ và merge; guard chặn push lúc fetch. Từ chỉ local có thể khiến merged được gửi lại sau fetch.
+`cloud.js` gọi `/api/vocab-sync`; proxy dùng env server `VOCAB_APPS_SCRIPT_URL`, `VOCAB_SYNC_SECRET`, `VOCAB_WRITES_ENABLED`. Backend `google-apps-script.js` yêu cầu protocol 1, server generation, CAS revision, requestId, tombstone và confirmEmpty cho xóa cuối. ACK so toàn bộ nội dung và revision/requestId. Legacy/unversioned và generation cũ luôn bị từ chối. Không còn no-cors/count verification/hard-clear.
 
-Sửa từ → persist local → debounce 2 giây → `pushToCloud` POST `no-cors` → chờ 3 giây → GET `verifyPush`. Kiểm tra chỉ là `cloudWords.length >= expectedCount`; opaque POST và trạng thái ok **không chứng minh nội dung đã lưu**. Không có CAS, lock hay backup trong backend tham chiếu. Không push danh sách rỗng; vì vậy xóa từ cuối local không xóa sạch cloud và có thể xuất hiện lại khi fetch. Sửa cùng từ ở thiết bị offline có thể bị cloud ghi đè lần merge sau.
-
+ScriptLock bao GET/POST/pause/restore. Snapshot JSON bất biến trên Drive là bản chuẩn, Script Property `VOCAB_HEAD` là commit pointer; sheet đầu tiên là mirror 10 cột. Tạo/đọc lại file trước mirror/flush/HEAD, giữ file cũ làm backup. Restore editor-only yêu cầu snapshot người dùng xác nhận bằng SHA-256, paused, tạo generation UUID mới/revision 0. Không tự seed từ Sheet/cache; không restore bằng sửa mirror. Client/proxy/backend đều mặc định khóa ghi. Xem [runbook đầy đủ](VOCABULARY-RECOVERY.md) trước triển khai, nhất là cập nhật mọi deployment cũ và drain execution legacy. Grammar/Structures không dùng protocol này.
 ### Câu Grammar — CAS và pending
 
 `grammarStorage.js::getGrammarCloudUrl` mặc định `/api/grammar-sync`; URL tùy chỉnh lưu local và **dùng chung cho Structures**. Chuỗi rỗng trở về default, không tắt cloud bằng cách xóa URL. Badge configured chỉ nói có URL, không chứng minh kết nối thành công.

@@ -17,7 +17,7 @@ export function getWords({ withStatus = false } = {}) {
 export function saveWords(words) {
   localStorage.setItem(LS_WORDS, JSON.stringify(words));
 }
-/** Wipe the words key entirely (used before a hard-sync) */
+/** Legacy utility; protocol-1 sync never calls this. Back up before any manual reset. */
 export function clearWords() {
   localStorage.removeItem(LS_WORDS);
 }

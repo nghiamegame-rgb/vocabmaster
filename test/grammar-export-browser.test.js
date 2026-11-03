@@ -179,9 +179,9 @@ try {
   verifiedPage.on('pageerror', error => errors.push(error.message));
   await verifiedPage.route('**/*', route => {
     const url = new URL(route.request().url());
-    if (route.request().url().startsWith(WEBHOOK_URL) && route.request().method() === 'GET') {
+    if (url.pathname === WEBHOOK_URL && route.request().method() === 'GET') {
       readRequests++;
-      return route.fulfill({ headers: { 'Access-Control-Allow-Origin': '*' }, json: { data: JSON.parse(fixture.vocabmaster_words) } });
+      return route.fulfill({ json: { ok: true, protocol: 1, generation: 'fixture', revision: 0, tombstones: [], paused: true, words: JSON.parse(fixture.vocabmaster_words) } });
     }
     if (url.origin !== origin) return route.abort();
     if (url.pathname.startsWith('/api/')) {

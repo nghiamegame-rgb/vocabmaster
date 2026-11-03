@@ -28,6 +28,7 @@ export default function App() {
     syncMode,
     pushStatus,
     syncFromCloud,
+    syncNotice, syncPaused, pauseSync, resumeSync, exportSyncBackup,
   } = useVocabStore();
   const structureStore = useStructuresStore();
 
@@ -47,6 +48,12 @@ export default function App() {
       />
 
       <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
+        <div data-testid="vocab-sync-controls" className="mb-4 p-3 rounded-lg bg-slate-900 text-sm flex flex-wrap gap-3 items-center" role="status">
+          <span>Vocabulary: {syncPaused || syncStatus === 'paused' ? 'đang tạm dừng ghi cloud' : 'đồng bộ đã bật trên thiết bị'}</span>
+          <button className="underline" onClick={syncPaused ? resumeSync : pauseSync}>{syncPaused ? 'Bật đồng bộ thiết bị' : 'Tạm dừng đồng bộ'}</button>
+          <button className="underline" onClick={exportSyncBackup}>Xuất bản sao Vocabulary</button>
+          {syncNotice && <p className="w-full text-amber-300">{syncNotice}</p>}
+        </div>
         {activeTab === 'dashboard' && (
           <Dashboard
             words={words}
