@@ -4,26 +4,26 @@ const clean = text => text.normalize('NFKC').replace(/[‘’]/g, "'")
   .replace(/[“”]/g, '"').replace(/[‐‑]/g, '-').trim().replace(/\s+/gu, ' ');
 
 // Only the record's sentence is a corpus source. Never inspect notes or distractors.
-export function corpusSentence(record) {
+export function corpusSentence(record, { preserveText = false } = {}) {
   if (typeof record?.sentence !== 'string' || !record.sentence.trim()) return null;
-  let text = clean(record.sentence);
-  const blanks = text.match(/_{2,}|\[(?:blank|gap)\]|\.{3}|…/gi) || [];
+  let text = preserveText ? record.sentence.trim() : clean(record.sentence);
+  const blanks = clean(text).match(/_{2,}|\[(?:blank|gap)\]|\.{3}|…/gi) || [];
   if (blanks.length) {
     // Legacy schema has exactly one _____ and an A/B/C/D answer key.
     const answer = record.options?.[record.answer];
     if (record.schemaVersion === 2 || blanks.length !== 1 || blanks[0] !== '_____' ||
         !['A', 'B', 'C', 'D'].includes(record.answer) || typeof answer !== 'string' || !answer.trim()) return null;
-    text = text.replace('_____', () => clean(answer));
-    if (/_{2,}|\[(?:blank|gap)\]|\.{3}|…/i.test(text)) return null;
+    text = text.replace(/[_\uFF3F]{5}/u, () => preserveText ? answer.trim() : clean(answer));
+    if (/_{2,}|\[(?:blank|gap)\]|\.{3}|…/i.test(clean(text))) return null;
   }
   return text;
 }
 
-export function collectGrammarCorpus(records = []) {
+export function collectGrammarCorpus(records = [], options) {
   const sentences = new Map();
   let unresolved = 0;
   for (const record of records) {
-    const text = corpusSentence(record);
+    const text = corpusSentence(record, options);
     if (text === null) { unresolved++; continue; }
     const key = sentenceKey(text);
     if (!sentences.has(key)) sentences.set(key, text);
@@ -41,14 +41,15 @@ function wordMatcher(english) {
   return new RegExp(`(?<![\\p{L}\\p{N}\\p{M}'])${phrase}(?![\\p{L}\\p{N}\\p{M}'])`, 'u');
 }
 
-export function buildGrammarCorpus(words = [], records = []) {
-  const { grammar, unresolved } = collectGrammarCorpus(records);
+export function buildGrammarCorpus(words = [], records = [], options = {}) {
+  const { grammar, unresolved } = collectGrammarCorpus(records, options);
   const english = new Map();
   let invalidWords = 0;
   for (const word of words) {
     if (typeof word?.english !== 'string' || !word.english.trim()) { invalidWords++; continue; }
-    const text = clean(word.english);
-    if (!english.has(text.toLowerCase())) english.set(text.toLowerCase(), text);
+    const text = options.preserveText ? word.english.trim() : clean(word.english);
+    const key = clean(text).toLowerCase();
+    if (!english.has(key)) english.set(key, text);
   }
   const comparable = grammar.map(matchText);
   const vocab = [...english.values()].map(text => {

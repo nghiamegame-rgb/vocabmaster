@@ -100,12 +100,15 @@ const VERIFY_DELAY_MS = 3000;
 export function useVocabStore() {
   // Run migration once on first load so existing words get their annotation
   // field separated from the english field. Idempotent — safe to re-run.
-  const [words, setWords] = useState(() => migrateWordList(getWords()));
+  const [initialRead] = useState(() => getWords({ withStatus: true }));
+  const [words, setWords] = useState(() => migrateWordList(initialRead.data));
   const [stats, setStats] = useState(() => getStats());
 
   // Cloud sync state — exposed so the Navbar Sync button can reflect it
   // syncStatus: manual Sync button (fetch from cloud)
   const [syncStatus, setSyncStatus] = useState('idle'); // 'idle'|'syncing'|'ok'|'error'
+  // Last GET outcome remains available after the Navbar's transient badge resets.
+  const [cloudReadStatus, setCloudReadStatus] = useState('syncing');
   // Distinguishes hard (clear + fetch) from soft (fetch only) for the Navbar
   const [syncMode,   setSyncMode]   = useState('soft'); // 'soft'|'hard'
 
@@ -128,6 +131,8 @@ export function useVocabStore() {
 
   // ── Persist words to LocalStorage + debounced push to cloud ──────────────
   useEffect(() => {
+    // A failed read must not overwrite the original cache with the fallback [].
+    if (initialRead.error && words.length === 0) return;
     saveWords(words);
 
     // Skip pushing an empty list (avoid overwriting cloud data on a fresh device)
@@ -219,6 +224,7 @@ export function useVocabStore() {
   async function _doFetch(trigger, hardClear = false) {
     setSyncMode(hardClear ? 'hard' : 'soft');
     setSyncStatus('syncing');
+    setCloudReadStatus('syncing');
 
     // ── GUARD: suppress auto-push while fetch is in progress ──────────────
     // Prevents the debounced push effect from firing with [] or stale data.
@@ -246,6 +252,7 @@ export function useVocabStore() {
         // previous render has had time to settle (fixes Bug 5 race condition).
         setTimeout(() => { syncInProgressRef.current = false; }, 0);
         setSyncStatus(trigger === 'manual' ? 'error' : 'idle');
+        setCloudReadStatus('error');
         return;
       }
 
@@ -273,6 +280,7 @@ export function useVocabStore() {
       setTimeout(() => { syncInProgressRef.current = false; }, 0);
 
       setSyncStatus('ok');
+      setCloudReadStatus('ok');
 
       // After a successful fetch that found new cloud words, push the merged
       // list back so any local-only additions reach the sheet.
@@ -290,6 +298,7 @@ export function useVocabStore() {
     } catch {
       setTimeout(() => { syncInProgressRef.current = false; }, 0);
       setSyncStatus('error');
+      setCloudReadStatus('error');
       setTimeout(() => setSyncStatus('idle'), 4000);
     }
   }
@@ -396,6 +405,8 @@ export function useVocabStore() {
 
   return {
     words,
+    dataLoadError: initialRead.error,
+    cloudReadStatus,
     stats,
     syncStatus,
     syncMode,

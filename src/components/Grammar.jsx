@@ -11,6 +11,7 @@ import GrammarStructures from './grammar/GrammarStructures';
 import { saveReadingDraft } from '../utils/grammarReadingItems';
 import { createGrammarBatch } from '../utils/grammarBatch';
 import { buildGrammarCorpus } from '../utils/grammarCorpus';
+import { buildGrammarExportSource } from '../utils/grammarExport';
 
 const SUB_TABS = [
   { id: 'practice',  label: 'Luyện tập',         Icon: Zap       },
@@ -25,13 +26,14 @@ const SUB_TABS = [
  * Manages sub-tab routing and bridges the grammar store with child components.
  * @param {{ addWord: Function }} props — addWord from the Vocabulary store for word integration.
  */
-export default function Grammar({ addWord, words = [], vocabSyncStatus = 'idle', structureStore }) {
+export default function Grammar({ addWord, words = [], vocabSyncStatus = 'idle', vocabDataLoadError = '', structureStore }) {
   const [subTab,      setSubTab]      = useState('practice');
   const [session,     setSession]     = useState(null); // { questions, config } when quiz is active
   const [showCloud,   setShowCloud]   = useState(false);
 
   const {
     savedQuestions,
+    dataLoadError,
     reviewProgress,
     grammarStats,
     underlines,
@@ -58,6 +60,8 @@ export default function Grammar({ addWord, words = [], vocabSyncStatus = 'idle',
   const corpus = useMemo(() => buildGrammarCorpus(words, [...savedQuestions, ...practiceQuestions]), [words, savedQuestions, practiceQuestions]);
   const [promptBatch, setPromptBatch] = useState(() => createGrammarBatch(corpus.data));
   const [promptSettings, setPromptSettings] = useState({ count: 10, topic: 'Mixed' });
+  const exportSource = useMemo(() => buildGrammarExportSource(words, savedQuestions, promptSettings), [words, savedQuestions, promptSettings]);
+  const [exportPackage, setExportPackage] = useState(null);
   const stale = JSON.stringify(promptBatch.data) !== JSON.stringify(corpus.data);
 
   function newPromptBatch() {
@@ -200,7 +204,9 @@ export default function Grammar({ addWord, words = [], vocabSyncStatus = 'idle',
               />
             : <GrammarPractice onStartSession={handleStartSession} batch={promptBatch} onNewBatch={newPromptBatch}
                 settings={promptSettings} onSettingsChange={setPromptSettings}
-                corpus={corpus} stale={stale} syncStatuses={[vocabSyncStatus, syncStatus]} />
+                corpus={corpus} stale={stale} syncStatuses={[vocabSyncStatus, syncStatus]}
+                exportSource={exportSource} exportPackage={exportPackage} onExportPrepared={setExportPackage}
+                exportLoadError={[vocabDataLoadError, dataLoadError].filter(Boolean).join(' ')} />
         )}
 
         {/* Saved tab */}

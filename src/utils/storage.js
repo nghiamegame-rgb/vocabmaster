@@ -3,12 +3,16 @@ export const LS_WORDS = 'vocabmaster_words';
 export const LS_STATS = 'vocabmaster_stats';
 
 // ---------- Words ----------
-export function getWords() {
+export function getWords({ withStatus = false } = {}) {
+  let data = [], error = '';
   try {
-    return JSON.parse(localStorage.getItem(LS_WORDS) || '[]');
+    data = JSON.parse(localStorage.getItem(LS_WORDS) || '[]');
+    if (!Array.isArray(data) || data.some(word => !word || typeof word !== 'object' || typeof word.english !== 'string')) throw new Error('Invalid vocabulary list');
   } catch {
-    return [];
+    data = [];
+    error = 'Không đọc được kho Vocabulary trên thiết bị; không coi đây là kho trống.';
   }
+  return withStatus ? { data, error } : data;
 }
 export function saveWords(words) {
   localStorage.setItem(LS_WORDS, JSON.stringify(words));

@@ -30,14 +30,14 @@ export const GRAMMAR_DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
 export const getTopicLabel = topic => TOPIC_LABELS[topic] || topic || 'Tổng hợp';
 export const getAvailableTopics = questions => [...new Set([...GRAMMAR_TOPICS, ...questions.map(q => q.topic).filter(Boolean)])];
 
-export function buildGrammarPrompt({ count = 10, topic = 'Mixed', batchId = 'preview', data = { vocab: [], grammar: [] } } = {}) {
+export function buildGrammarPrompt({ count = 10, topic = 'Mixed', batchId = 'preview', data = { vocab: [], grammar: [] }, workbookName } = {}) {
   return `You are an English reading instructor for Vietnamese learners preparing for VSTEP B1.
 Generate exactly ${count} complete, grammatically correct English sentences for grammar recognition and sentence analysis.
 Use a graduated difficulty range: mostly B1–B2, with occasional accessible C1-style exposure. Aim for about 40% B1, 30% B1+/B2 medium, 20% harder B2, and 10% C1-style exposure (round sensibly; at most one C1-style item for 5 sentences). Order from easier to medium to harder, ending with occasional C1-style exposure. Do not make all items hard or stay at minimum B1. For harder items, scaffold the clause relationships and unfamiliar language clearly in Vietnamese so a learner targeting VSTEP B1 can still understand.
 Use natural sentences similar to VSTEP reading passages about daily life, education, community, work, travel, health, technology and the environment. C1-style exposure should come from richer sentence structure or nuanced linking, not obscure words or artificially long sentences. Vary structures and contexts.
 These are study categories, NOT an official VSTEP syllabus.
 
-${buildBatchInstructions({ id: batchId, data })}
+${buildBatchInstructions({ id: batchId, data, workbookName })}
 
 MAIN FOCUS: ${topic} (${getTopicLabel(topic)}).
 ${topic === 'Mixed' ? 'Vary primary topics; use the actual dominant topic for each sentence.' : `Every sentence must demonstrate ${topic}; set its topic to "${topic}".`}
@@ -65,12 +65,13 @@ Return exactly ONE valid JSON array. No Markdown code fences, introduction, comm
 Each array element is an object with these required properties:
 - "schemaVersion": number, exactly 2.
 - "type": string, exactly "sentence-analysis".
+- "id": string, unique sequential IDs s1 through s${count} within this batch.
 - "sentence": string, one complete English sentence.
 - "vietnameseSentence": string, natural Vietnamese translation.
 - "topic": string, an exact topic key from the list below.
 - "grammarPoints": non-empty array of objects containing "category" (topic-key string), "phrase" (string), and "explanation" (Vietnamese string).
 - "readingItems": array, possibly empty, of objects containing "category" (one of vocabulary, structure, word-form, preposition, phrase, collocation, pattern), "text" (string), "explanation" (Vietnamese string). Optional non-empty strings: "meaning", "usefulness", "pattern".
-Optional properties on each sentence object: "id" (string s1 through s${count}), "structures" (array of Vietnamese strings), "readingNotes" (array of Vietnamese strings).
+Optional properties on each sentence object: "structures" (array of Vietnamese strings), "readingNotes" (array of Vietnamese strings).
 grammarPoints[].phrase and readingItems[].text MUST be exact, CONTIGUOUS substrings of sentence, preserving capitalization, spacing and punctuation. Never use ellipses (... or …), shortened quotations, stitched-together fragments, or generalized expressions in these substring fields. Generalized expressions belong ONLY in readingItems[].pattern. Do not reproduce or paraphrase any schema illustration.
 Topic and grammar point category keys must be from: ${GRAMMAR_TOPICS.join(', ')}.
 Generate exactly ${count} items with unique ids s1 through s${count}. One complete sentence per item; never use placeholders or exercises.

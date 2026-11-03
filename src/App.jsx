@@ -15,6 +15,8 @@ export default function App() {
 
   const {
     words,
+    dataLoadError: vocabDataLoadError,
+    cloudReadStatus: vocabCloudReadStatus,
     stats,
     addWord,
     deleteWord,
@@ -93,7 +95,8 @@ export default function App() {
             addWord={addWord}
             words={words}
             structureStore={structureStore}
-            vocabSyncStatus={syncStatus}
+            vocabSyncStatus={vocabCloudReadStatus}
+            vocabDataLoadError={vocabDataLoadError}
           />
         )}
       </main>

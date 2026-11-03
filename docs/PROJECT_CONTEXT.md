@@ -154,6 +154,14 @@ Không có gọi API mô hình trực tiếp, API key AI hay backend tạo bài.
 - Payload chỉ `{ vocab: [[english, số câu chứa mục]], grammar: [câu tiếng Anh] }`, giữ toàn danh sách, không giới hạn 50 câu/6.000 ký tự. Mỗi câu chỉ cộng một lần/mục; khớp ranh giới Unicode, hỗ trợ cụm từ qua khoảng trắng/dấu phẩy/gạch nối nhưng không qua dấu kết câu. **Không gộp inflection/động từ bất quy tắc hoặc họ từ**; số đếm bảo thủ, không thể suy ra không có biến thể từ số 0. Không dùng/thêm thư viện NLP, không lấy nghĩa/ghi chú/level/lịch sử/Structures vào payload.
 - `grammarBatch.js` tạo ID và bản sao dữ liệu. Copy/Xem cùng snapshot; đổi số câu/chủ đề thay yêu cầu nhưng giữ snapshot, render/chuyển subtab không tạo bộ mới. Dữ liệu nguồn thay đổi thì báo stale và khóa Copy đến khi Tạo prompt mới. Rời module/reload mất câu tạm chưa lưu, giống giới hạn phiên hiện có; không ghi lịch sử mới. UI nói rõ kho trống, lỗi/đang tải cloud, số mục/câu/ký tự và lỗi clipboard. Không phát hiện paraphrase/ngữ nghĩa tự động; prompt chỉ yêu cầu AI tránh trùng, không bảo đảm tuyệt đối.
 
+### Xuất Excel + Prompt (2026-11-04)
+
+Grammar Practice có thêm panel xuất local, giữ luồng prompt thuần phía trên. `grammarExport.js` dùng `grammarCorpus.js` (preserveText) lấy toàn bộ Vocabulary tiếng Anh không rỗng và **chỉ câu Grammar đã lưu**, hỗ trợ legacy. File `.xlsx` có đúng hai sheet một cột: Vocabulary/English, Grammar/Sentence; literal text, không nghĩa/ghi chú/metadata học tập. Dependency `write-excel-file ^4.1.1` tải động khi tạo Blob. Không dùng file này để backup/restore.
+
+Snapshot package giữ cả data/settings, tên file theo batch ID, Blob và prompt trong state Grammar. Prompt chứa toàn bộ English/count từ chính corpus trong file, yêu cầu AI đọc hai sheet, trả schema v2 trực tiếp, hỏi workbook nếu không truy cập được. Quy tắc độ khó/topic/count, giải thích Việt và exact-substring dùng chung builder; ID s1…sN được yêu cầu thống nhất trong prompt, validator vẫn tương thích ID tùy chọn của câu cũ. Thay nguồn/cấu hình làm package lỗi thời, khóa nút tải/copy cho đến khi tạo lại; giữ qua subtab, mất khi rời module/reload. Câu nhập tạm chỉ dùng cho importer chống trùng, không vào file/count xuất.
+
+Đang tải/sync thì khóa chuẩn bị; cloud chưa xác minh cho phép người dùng chọn rõ xuất dữ liệu hiện có trên thiết bị, có thể thiếu cloud. `useVocabStore.cloudReadStatus` giữ kết quả GET độc lập badge sync thoáng qua. Getter storage có `withStatus` để hook giữ lỗi đọc ban đầu; panel chặn lỗi này thay vì nhận là kho trống. Effect Vocabulary không ghi `[]` lên cache đọc lỗi. Kho trống hợp lệ xuất hai sheet chỉ có header. Dữ liệu lỗi/không khôi phục được hoặc vượt giới hạn Excel/XML chặn toàn bộ file, không tự cắt. Xem HANDOFF mục 11 để biết kiểm tra và giới hạn.
+
 Validation kiểm tra cấu trúc và trích dẫn; không chứng minh câu AI đúng ngữ pháp, bản dịch đúng, độ khó đúng hoặc giải thích đủ tốt.
 
 ### Smart Quiz
@@ -215,6 +223,8 @@ Scripts thực tế (`package.json`): `npm run dev`, `npm run build`, `npm run l
 | `node test/underline-rendering.test.js` | App/React DOM thật trong Edge headless: chọn đoạn, click màu/xóa, cập nhật ngay, giữ assessment/analysis và reload; cần Playwright, cloud bị chặn; thiết lập trong HANDOFF |
 | `node test/sentence-notes.test.js` | dữ liệu note, Unicode/vùng trùng/chồng, sửa/xóa, chuyển key, dữ liệu lỗi và xếp hàng nhãn |
 | `node test/sentence-notes-browser.test.js` | App/Edge thật, typing/autosave/ẩn-hiện, geometry viewport 1100/375/320px, giữ underline/progress, chuyển key và reopen/reload; thiết lập Playwright như underline-rendering |
+| `node test/grammar-export.test.js` | XLSX thật, 2 sheet/1 cột/literal text/no private fields, Unicode/legacy/frequency/snapshot/empty/error; cần Python 3 standard library trong PATH cho reader ZIP/XML độc lập |
+| `node test/grammar-export-browser.test.js` | App/Edge tải XLSX thật, clipboard/manual fallback, stale/config/import/save/GET, cache trống/hỏng/không đọc được và viewport 1280/375/320px; cần Playwright/Edge + Python 3, network/storage cô lập |
 
 Lần khảo sát: **cả 11 file exit 0**. `npm.cmd run lint` exit 0 nhưng còn cảnh báo unused, hook deps, set-state-in-effect, purity/refs…; không sửa vì chỉ bàn giao. Build exit 0 bằng `npm.cmd run build -- --outDir <thư-mục-tạm-mới>` để giữ `dist` hiện có; Vite báo outDir ngoài project không tự dọn và thông tin thời gian plugin. Không chạy dev server/browser.
 

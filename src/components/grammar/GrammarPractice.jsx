@@ -7,11 +7,12 @@ import {
   buildGrammarPrompt,
 } from '../../utils/grammarPrompt';
 import { prepareGrammarImport, completeGrammarImport, formatGrammarIssue } from '../../utils/grammarImport';
+import GrammarExportPanel from './GrammarExportPanel';
 
 /**
  * GrammarPractice — Step 1: Configure → Copy prompt → Paste JSON → Start quiz.
  */
-export default function GrammarPractice({ onStartSession, batch, onNewBatch, settings = { count: 10, topic: 'Mixed' }, onSettingsChange, corpus = { data: { vocab: [], grammar: [] }, unresolved: 0, invalidWords: 0 }, stale = false, syncStatuses = [] }) {
+export default function GrammarPractice({ onStartSession, batch, onNewBatch, settings = { count: 10, topic: 'Mixed' }, onSettingsChange, corpus = { data: { vocab: [], grammar: [] }, unresolved: 0, invalidWords: 0 }, stale = false, syncStatuses = [], exportSource, exportPackage, onExportPrepared, exportLoadError }) {
   const { count, topic } = settings;
   const [copiedPrompt, setCopied] = useState('');
   const [promptOpen, setPromptOpen] = useState(false);
@@ -180,6 +181,8 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
       </div>
 
       {/* Step 3: Paste JSON */}
+      {exportSource && <GrammarExportPanel source={exportSource} prepared={exportPackage} onPrepared={onExportPrepared} syncStatuses={syncStatuses} loadError={exportLoadError} />}
+
       <div className="bg-slate-900/80 border border-slate-700/50 rounded-2xl p-5 space-y-3">
         <div className="flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-purple-600 text-white text-xs font-bold flex items-center justify-center">3</span>

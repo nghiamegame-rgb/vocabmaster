@@ -34,12 +34,16 @@ export function setGrammarPending(isPending) {
 // ── Saved Questions ────────────────────────────────────────────────────────
 
 /** @returns {import('./grammarTypes').SavedQuestion[]} */
-export function getSavedQuestions() {
+export function getSavedQuestions({ withStatus = false } = {}) {
+  let data = [], error = '';
   try {
-    return JSON.parse(localStorage.getItem(LS_GRAMMAR_SAVED) || '[]');
+    data = JSON.parse(localStorage.getItem(LS_GRAMMAR_SAVED) || '[]');
+    if (!Array.isArray(data) || data.some(record => !record || typeof record !== 'object' || Array.isArray(record))) throw new Error('Invalid saved list');
   } catch {
-    return [];
+    data = [];
+    error = 'Không đọc được kho câu Grammar trên thiết bị; không coi đây là kho trống.';
   }
+  return withStatus ? { data, error } : data;
 }
 
 /** @param {import('./grammarTypes').SavedQuestion[]} questions */

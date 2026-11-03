@@ -17,7 +17,8 @@ import { getGrammarSentence } from '../utils/grammarSentence';
 const PUSH_DEBOUNCE_MS = 2500;
 
 export function useGrammarStore() {
-  const [savedQuestions, setSavedQuestions] = useState(() => getSavedQuestions());
+  const [initialRead] = useState(() => getSavedQuestions({ withStatus: true }));
+  const [savedQuestions, setSavedQuestions] = useState(() => initialRead.data);
   const [reviewProgress, setReviewProgress] = useState(() => getReviewProgress());
   const [grammarStats, setGrammarStats] = useState(() => getGrammarStats());
   const [underlines, setUnderlines] = useState(() => getAllUnderlines());
@@ -367,6 +368,7 @@ export function useGrammarStore() {
 
   return {
     // State
+    dataLoadError: initialRead.error,
     savedQuestions,
     reviewProgress,
     grammarStats,
