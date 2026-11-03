@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { isGrammarDueForReview } from '../../utils/grammarStorage';
-import { getAvailableTopics, getTopicLabel } from '../../utils/grammarPrompt';
+import { getAvailableTopics } from '../../utils/grammarPrompt';
+import { getSentenceTopicLabel } from '../../utils/grammarTopic';
 import GrammarSentenceCard from './GrammarAnalysis';
 
 export default function GrammarReview({ savedQuestions, reviewProgress, onRecordReview, onToggleHard, onQuickAdd, onUnderlineChange, underlines = {}, sentenceNotes, onNoteChange }) {
@@ -38,7 +39,7 @@ export default function GrammarReview({ savedQuestions, reviewProgress, onRecord
     <div className="flex flex-wrap items-center gap-3">
       <select aria-label="Lọc chủ đề ôn tập" value={topic} onChange={e => setTopic(e.target.value)} className="max-w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-slate-300 text-sm">
         <option value="All">Tất cả chủ đề</option>
-        {getAvailableTopics(savedQuestions).map(t => <option key={t} value={t}>{getTopicLabel(t)}</option>)}
+        {getAvailableTopics(savedQuestions.filter(q => typeof q.topic === 'string')).map(t => <option key={t} value={t}>{getSentenceTopicLabel({ topic: t })}</option>)}
       </select>
       <label className="text-slate-300 text-sm flex gap-2 items-center"><input type="checkbox" checked={starredOnly} onChange={e => setStarredOnly(e.target.checked)} />Chỉ câu đánh dấu sao ⭐</label>
     </div>

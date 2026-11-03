@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react';
-import { getTopicLabel } from '../../utils/grammarPrompt';
+import { getSentenceTopicLabel } from '../../utils/grammarTopic';
 import { getGrammarSentence, getQuickGrammarPoints, isSentenceAnalysis } from '../../utils/grammarSentence';
 import GrammarReadingNotes from './GrammarReadingNotes';
 import UnderlinedSentence from './UnderlinedSentence';
 import { notesForSentence } from '../../utils/sentenceNotes';
+import GrammarTopicBadge from './GrammarTopicBadge';
 
 export function GrammarAnalysis({ question: q, onQuickAdd, analysisTopic }) {
   const detail = q.detailedExplanation;
@@ -19,7 +20,7 @@ export function GrammarAnalysis({ question: q, onQuickAdd, analysisTopic }) {
       </section>
       <GrammarReadingNotes question={q} onQuickAdd={onQuickAdd} />
     </> : <>
-      <p className="text-purple-300">Chủ đề chính: {getTopicLabel(q.topic)}</p>
+      <p className="text-purple-300">Chủ đề chính: {getSentenceTopicLabel(q)}</p>
       <p className="text-amber-300 text-xs">Bản ghi TOEIC cũ · giữ nguyên dữ liệu gốc</p>
       <p>{q.shortExplanation}</p>
       {detail?.whyCorrect && <p>{detail.whyCorrect}</p>}
@@ -59,7 +60,10 @@ export default function GrammarSentenceCard({
 
   const sentence = getGrammarSentence(question);
 
-  return <div className="bg-slate-900/80 border border-slate-700/50 rounded-2xl p-4 sm:p-6 space-y-4">
+  return <div data-grammar-sentence-card="" className="bg-slate-900/80 border border-slate-700/50 rounded-2xl p-4 sm:p-6 space-y-4">
+    <div className="flex flex-wrap items-start gap-1.5">
+      <GrammarTopicBadge question={question} />
+    </div>
     <UnderlinedSentence
       sentence={sentence}
       segments={segments}

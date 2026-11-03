@@ -3,12 +3,14 @@ import {
   Bookmark, Search, Filter, Star, StarOff,
   ChevronDown, ChevronUp, Trash2, StickyNote, X, Cloud, HardDrive
 } from 'lucide-react';
-import { getAvailableTopics, getTopicLabel } from '../../utils/grammarPrompt';
+import { getAvailableTopics } from '../../utils/grammarPrompt';
 
 import { GrammarAnalysis } from './GrammarAnalysis';
 import { getGrammarSentence } from '../../utils/grammarSentence';
 import UnderlinedSentence from './UnderlinedSentence';
 import { notesForSentence } from '../../utils/sentenceNotes';
+import GrammarTopicBadge from './GrammarTopicBadge';
+import { getSentenceTopicLabel } from '../../utils/grammarTopic';
 
 /**
  * GrammarSaved — Saved Questions library with search, filter, review progress.
@@ -41,11 +43,11 @@ export default function GrammarSaved({
         const s = search.toLowerCase();
         const matches =
           q.sentence?.toLowerCase().includes(s) ||
-          q.topic?.toLowerCase().includes(s) ||
+          (typeof q.topic === 'string' && q.topic.toLowerCase().includes(s)) ||
           q.shortExplanation?.toLowerCase().includes(s) ||
           q.vietnameseSentence?.toLowerCase().includes(s) ||
           q.userNotes?.toLowerCase().includes(s) ||
-          getTopicLabel(q.topic).toLowerCase().includes(s) ||
+          getSentenceTopicLabel(q).toLowerCase().includes(s) ||
           JSON.stringify(q.grammarPoints || []).toLowerCase().includes(s) ||
           JSON.stringify(q.readingItems || []).toLowerCase().includes(s) ||
           JSON.stringify([q.structures, q.readingNotes]).toLowerCase().includes(s) ||
@@ -135,8 +137,8 @@ export default function GrammarSaved({
             className="bg-slate-800 border border-slate-600 text-slate-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-purple-500 transition-colors"
           >
             <option value="All">Tất cả chủ đề</option>
-            {getAvailableTopics(savedQuestions).map(t => (
-              <option key={t} value={t}>{getTopicLabel(t)}</option>
+            {getAvailableTopics(savedQuestions.filter(q => typeof q.topic === 'string')).map(t => (
+              <option key={t} value={t}>{getSentenceTopicLabel({ topic: t })}</option>
             ))}
           </select>
 
@@ -184,6 +186,7 @@ export default function GrammarSaved({
           return (
             <div
               key={q.savedId}
+              data-grammar-sentence-card=""
               className={`bg-slate-900/80 border rounded-2xl overflow-hidden transition-all duration-200 ${
                 q.hardMarked ? 'border-amber-500/40' : 'border-slate-700/50'
               }`}
@@ -205,9 +208,7 @@ export default function GrammarSaved({
                   <div className="flex-1 min-w-0">
                     {/* Meta badges */}
                     <div className="flex flex-wrap gap-1.5 mb-2">
-                      <span className="px-2 py-0.5 rounded-md bg-purple-600/20 text-purple-300 text-xs font-medium border border-purple-500/20">
-                        {getTopicLabel(q.topic)}
-                      </span>
+                      <GrammarTopicBadge question={q} />
                       {/* Review level */}
                       <span className="px-2 py-0.5 rounded-md bg-indigo-600/15 text-indigo-300 text-xs font-medium border border-indigo-500/20">
                         Ôn L{level}
