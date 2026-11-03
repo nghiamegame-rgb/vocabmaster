@@ -93,6 +93,7 @@ export default function App() {
             addWord={addWord}
             words={words}
             structureStore={structureStore}
+            vocabSyncStatus={syncStatus}
           />
         )}
       </main>

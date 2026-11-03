@@ -1,6 +1,6 @@
 import { validateSentenceAnalysis } from './grammarSentence.js';
 import { validateReadingItems } from './grammarReadingItems.js';
-import { buildBatchInstructions } from './grammarBatch.js';
+import { buildBatchInstructions, sentenceKey } from './grammarBatch.js';
 
 // Keep established keys for compatibility with saved records and history.
 export const TOPIC_LABELS = {
@@ -30,19 +30,14 @@ export const GRAMMAR_DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
 export const getTopicLabel = topic => TOPIC_LABELS[topic] || topic || 'Tổng hợp';
 export const getAvailableTopics = questions => [...new Set([...GRAMMAR_TOPICS, ...questions.map(q => q.topic).filter(Boolean)])];
 
-export function buildGrammarPrompt({ count = 10, topic = 'Mixed', batchId = 'preview', recentSentences = [] } = {}) {
+export function buildGrammarPrompt({ count = 10, topic = 'Mixed', batchId = 'preview', data = { vocab: [], grammar: [] } } = {}) {
   return `You are an English reading instructor for Vietnamese learners preparing for VSTEP B1.
 Generate exactly ${count} complete, grammatically correct English sentences for grammar recognition and sentence analysis.
 Use a graduated difficulty range: mostly B1–B2, with occasional accessible C1-style exposure. Aim for about 40% B1, 30% B1+/B2 medium, 20% harder B2, and 10% C1-style exposure (round sensibly; at most one C1-style item for 5 sentences). Order from easier to medium to harder, ending with occasional C1-style exposure. Do not make all items hard or stay at minimum B1. For harder items, scaffold the clause relationships and unfamiliar language clearly in Vietnamese so a learner targeting VSTEP B1 can still understand.
 Use natural sentences similar to VSTEP reading passages about daily life, education, community, work, travel, health, technology and the environment. C1-style exposure should come from richer sentence structure or nuanced linking, not obscure words or artificially long sentences. Vary structures and contexts.
 These are study categories, NOT an official VSTEP syllabus.
 
-${buildBatchInstructions({ id: batchId, recentSentences }, topic)}
-
-VSTEP VOCABULARY AND GRAMMAR PRIORITIES:
-Select useful language targets FIRST, then naturally incorporate them into complete sentences that fit the selected grammar focus and the difficulty distribution above. Prioritize high-utility B1–B2 vocabulary across education, health, the environment, technology, society, work and daily life; frequent collocations and prepositional phrases; and reusable grammar patterns that help learners understand longer, complex reading sentences.
-Include useful word forms and word families that help learners infer meanings and recognize a word's role in context. Prioritize linking expressions, relative clauses, passive constructions, participle clauses, and other recurring reading structures where they fit naturally.
-Prefer common, reusable language over rare or unnecessarily academic vocabulary, including in harder items. Do not force unrelated targets into one sentence or create unnatural combinations. Vary the targets across the set so the sentences offer worthwhile material to save and review for VSTEP preparation.
+${buildBatchInstructions({ id: batchId, data })}
 
 MAIN FOCUS: ${topic} (${getTopicLabel(topic)}).
 ${topic === 'Mixed' ? 'Vary primary topics; use the actual dominant topic for each sentence.' : `Every sentence must demonstrate ${topic}; set its topic to "${topic}".`}
@@ -84,7 +79,7 @@ FINAL SELF-CHECK BEFORE RESPONDING:
 2. Check every required name, type, version and category against the contract; no unsupported fields.
 3. Locate each phrase/text as one uninterrupted exact substring of its sentence; keep generalizations in pattern, never in text.
 4. Check natural Vietnamese, selected-topic focus, concise explanations, useful reading items and the 40/30/20/10 difficulty distribution.
-5. Check this batch varies subpatterns, openings and contexts and does not repeat or lightly paraphrase recent sentences.
+5. Check this batch varies subpatterns, openings and contexts and does not repeat or lightly paraphrase supplied Grammar sentences.
 OUTPUT: JSON array only.`;
 }
 
@@ -101,7 +96,7 @@ export function validateGrammarJSON(parsed, { count, topic } = {}) {
     if (!GRAMMAR_TOPICS.includes(q.topic) || q.grammarPoints.some(p => !GRAMMAR_TOPICS.includes(p.category))) errors.push(`Câu ${i + 1}: chủ đề hoặc category không nằm trong danh sách.`);
     if (topic && topic !== 'Mixed' && q.topic !== topic) errors.push(`Câu ${i + 1}: chủ đề chính phải là ${getTopicLabel(topic)}.`);
     if (q.topic !== 'Mixed' && !q.grammarPoints.some(p => p.category === q.topic)) errors.push(`Câu ${i + 1}: chưa phân tích chủ đề chính.`);
-    const key = q.sentence.trim().toLowerCase();
+    const key = sentenceKey(q.sentence);
     if (sentences.has(key)) errors.push(`Câu ${i + 1}: câu tiếng Anh bị trùng.`);
     sentences.add(key);
   });

@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useMemo, useState } from 'react';
 import { Zap, Bookmark, Brain, BarChart2, Cloud, Layers } from 'lucide-react';
 import { useGrammarStore } from '../hooks/useGrammarStore';
 import GrammarPractice     from './grammar/GrammarPractice';
@@ -9,8 +9,8 @@ import GrammarStats        from './grammar/GrammarStats';
 import GrammarCloudSettings from './grammar/GrammarCloudSettings';
 import GrammarStructures from './grammar/GrammarStructures';
 import { saveReadingDraft } from '../utils/grammarReadingItems';
-import { createGrammarBatch, getRecentGrammarSentences, rememberGrammarSentences } from '../utils/grammarBatch';
-import { isSentenceAnalysis } from '../utils/grammarSentence';
+import { createGrammarBatch } from '../utils/grammarBatch';
+import { buildGrammarCorpus } from '../utils/grammarCorpus';
 
 const SUB_TABS = [
   { id: 'practice',  label: 'Luyện tập',         Icon: Zap       },
@@ -25,7 +25,7 @@ const SUB_TABS = [
  * Manages sub-tab routing and bridges the grammar store with child components.
  * @param {{ addWord: Function }} props — addWord from the Vocabulary store for word integration.
  */
-export default function Grammar({ addWord, words = [], structureStore }) {
+export default function Grammar({ addWord, words = [], vocabSyncStatus = 'idle', structureStore }) {
   const [subTab,      setSubTab]      = useState('practice');
   const [session,     setSession]     = useState(null); // { questions, config } when quiz is active
   const [showCloud,   setShowCloud]   = useState(false);
@@ -53,18 +53,19 @@ export default function Grammar({ addWord, words = [], structureStore }) {
     updateUnderlines,
     syncFromCloud,
   } = useGrammarStore();
-  const [promptBatch, setPromptBatch] = useState(() => createGrammarBatch(
-    getRecentGrammarSentences(savedQuestions.filter(isSentenceAnalysis).map(q => q.sentence))
-  ));
+  // Unsaved imports remain available across subtabs, until leaving this module.
+  const [practiceQuestions, setPracticeQuestions] = useState([]);
+  const corpus = useMemo(() => buildGrammarCorpus(words, [...savedQuestions, ...practiceQuestions]), [words, savedQuestions, practiceQuestions]);
+  const [promptBatch, setPromptBatch] = useState(() => createGrammarBatch(corpus.data));
   const [promptSettings, setPromptSettings] = useState({ count: 10, topic: 'Mixed' });
+  const stale = JSON.stringify(promptBatch.data) !== JSON.stringify(corpus.data);
 
   function newPromptBatch() {
-    setPromptBatch(createGrammarBatch(getRecentGrammarSentences(savedQuestions.filter(isSentenceAnalysis).map(q => q.sentence))));
+    setPromptBatch(createGrammarBatch(corpus.data));
   }
 
-  // ── Session lifecycle ─────────────────────────────────────────────────────
   function handleStartSession(sess) {
-    rememberGrammarSentences(sess.questions.map(q => q.sentence));
+    setPracticeQuestions(previous => [...previous, ...sess.questions]);
     setSession(sess);
   }
 
@@ -198,7 +199,8 @@ export default function Grammar({ addWord, words = [], structureStore }) {
                 sentenceNotes={sentenceNotes} onNoteChange={updateSentenceNote}
               />
             : <GrammarPractice onStartSession={handleStartSession} batch={promptBatch} onNewBatch={newPromptBatch}
-                settings={promptSettings} onSettingsChange={setPromptSettings} />
+                settings={promptSettings} onSettingsChange={setPromptSettings}
+                corpus={corpus} stale={stale} syncStatuses={[vocabSyncStatus, syncStatus]} />
         )}
 
         {/* Saved tab */}

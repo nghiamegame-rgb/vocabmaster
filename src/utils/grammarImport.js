@@ -161,7 +161,7 @@ export function prepareGrammarImport(input, config = {}) {
 export function completeGrammarImport(result, { excludedItems = [], allowDuplicates = false } = {}) {
   if (result.errors.length) return { valid: false, errors: result.errors.map(formatGrammarIssue) };
   if (result.optionalIssues.some(issue => !excludedItems.includes(issue.key))) return { valid: false, errors: ['Cần xác nhận từng mục đọc hiểu lỗi trước khi loại nội dung.'] };
-  if (result.duplicates.length && !allowDuplicates) return { valid: false, errors: ['Có câu đã gặp gần đây. Tạo bộ khác hoặc xác nhận vẫn muốn luyện.'] };
+  if (result.duplicates.length && !allowDuplicates) return { valid: false, errors: ['Có câu trùng với kho Grammar hiện tại. Sửa JSON hoặc xác nhận vẫn muốn luyện.'] };
   const questions = result.questions.map((q, i) => {
     const issues = result.optionalIssues.filter(issue => issue.questionIndex === i);
     if (!issues.length) return q;

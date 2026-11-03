@@ -7,14 +7,13 @@ import {
   buildGrammarPrompt,
 } from '../../utils/grammarPrompt';
 import { prepareGrammarImport, completeGrammarImport, formatGrammarIssue } from '../../utils/grammarImport';
-import { getRecentGrammarSentences } from '../../utils/grammarBatch';
 
 /**
  * GrammarPractice — Step 1: Configure → Copy prompt → Paste JSON → Start quiz.
  */
-export default function GrammarPractice({ onStartSession, batch, onNewBatch, settings = { count: 10, topic: 'Mixed' }, onSettingsChange }) {
+export default function GrammarPractice({ onStartSession, batch, onNewBatch, settings = { count: 10, topic: 'Mixed' }, onSettingsChange, corpus = { data: { vocab: [], grammar: [] }, unresolved: 0, invalidWords: 0 }, stale = false, syncStatuses = [] }) {
   const { count, topic } = settings;
-  const [copied,     setCopied]     = useState(false);
+  const [copiedPrompt, setCopied] = useState('');
   const [promptOpen, setPromptOpen] = useState(false);
   const [jsonInput,  setJsonInput]  = useState('');
   const [error,      setError]      = useState(null);
@@ -22,32 +21,45 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
   const [excludedItems, setExcludedItems] = useState([]);
   const [allowDuplicates, setAllowDuplicates] = useState(false);
 
-  const prompt = buildGrammarPrompt({ count, topic, batchId: batch?.id, recentSentences: batch?.recentSentences });
+  const prompt = buildGrammarPrompt({ count, topic, batchId: batch?.id, data: batch?.data });
+  const copied = copiedPrompt === prompt && !stale;
+  const incomplete = corpus.unresolved > 0 || corpus.invalidWords > 0;
+  const [copyError, setCopyError] = useState('');
 
   function resetImportReview() {
     setError(null); setImportReview(null); setExcludedItems([]); setAllowDuplicates(false);
   }
 
   async function handleCopy() {
+    setCopyError('');
+    setCopied('');
     try {
       await navigator.clipboard.writeText(prompt);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+      setCopied(prompt);
+      setTimeout(() => setCopied(''), 2500);
     } catch {
-      // fallback
+      setCopyError('Không thể copy toàn bộ prompt vào clipboard. Hãy mở Xem prompt và sao chép thủ công; dữ liệu không bị cắt.');
     }
   }
 
   function handleImport() {
     resetImportReview();
-    const result = prepareGrammarImport(jsonInput, { count, topic, recentSentences: getRecentGrammarSentences(batch?.recentSentences || []) });
+    const result = prepareGrammarImport(jsonInput, { count, topic, recentSentences: corpus.data.grammar });
     if (result.errors.length) { setError(result.errors.map(formatGrammarIssue)); return; }
     if (result.optionalIssues.length || result.duplicates.length) { setImportReview(result); return; }
     startImport(result);
   }
 
   function startImport(result, choices = {}) {
-    const check = completeGrammarImport(result, choices);
+    // Revalidate against the current corpus even after the confirmation panel was opened.
+    const latest = prepareGrammarImport(jsonInput, { count, topic, recentSentences: corpus.data.grammar });
+    if (latest.errors.length) { setError(latest.errors.map(formatGrammarIssue)); return; }
+    if (JSON.stringify(latest.duplicates) !== JSON.stringify(result.duplicates)) {
+      setImportReview(latest); setAllowDuplicates(false);
+      setError(['Kho Grammar vừa thay đổi. Hãy kiểm tra lại danh sách câu trùng trước khi xác nhận.']);
+      return;
+    }
+    const check = completeGrammarImport(latest, choices);
     if (!check.valid) { setError(check.errors); return; }
     onStartSession({ questions: check.questions, config: { count, topic } });
   }
@@ -119,12 +131,26 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
         <p className="text-slate-400 text-sm">
           Dán prompt vào ChatGPT, Gemini, Claude hoặc AI khác, sau đó copy toàn bộ JSON kết quả trả về.
         </p>
-        <p className="text-slate-500 text-xs break-all">Bộ gợi ý: {batch?.id || 'preview'} · Giữ nguyên cho đến khi tạo bộ mới.</p>
+        <p className="text-slate-500 text-xs break-all">Bộ prompt: {batch?.id || 'preview'} · Dữ liệu giữ nguyên đến khi tạo prompt mới; số câu/chủ đề theo lựa chọn hiện tại.</p>
+
+        <div className="text-xs text-slate-400 space-y-2" role="status">
+          <p>{batch?.data.vocab.length || 0} mục Vocabulary · {batch?.data.grammar.length || 0} câu Grammar riêng biệt · {prompt.length.toLocaleString('vi-VN')} ký tự. Gửi đầy đủ, không cắt danh sách.</p>
+          <p>Đếm khớp từ/cụm từ; không tự gộp purchase/purchased, go/went hoặc từ cùng họ. Không gửi nghĩa, ghi chú hay tiến độ học.</p>
+          <p>Câu chưa lưu được đối chiếu trong lần mở Grammar này. Lưu câu để dùng tiếp sau khi rời module/tải lại.</p>
+          {!batch?.data.vocab.length && <p>Kho Vocabulary trống: tạo câu theo chủ đề, không có danh sách từ mục tiêu.</p>}
+          {!batch?.data.grammar.length && <p>Chưa có câu Grammar hoàn chỉnh để đối chiếu.</p>}
+          {syncStatuses.some(status => status === 'syncing' || status === 'conflict') && <p className="text-amber-300">Đang đồng bộ: snapshot chỉ gồm dữ liệu đã tải trên thiết bị. Tạo prompt mới sau khi đồng bộ để cập nhật.</p>}
+          {syncStatuses.some(status => status === 'error' || status === 'idle') && <p className="text-amber-300">Đồng bộ chưa được xác nhận: đang dùng dữ liệu trên thiết bị, chưa xác minh toàn bộ cloud.</p>}
+          {stale && <p className="text-amber-300">Dữ liệu đã thay đổi. Bấm Tạo prompt mới để cập nhật số đếm và danh sách câu trước khi copy.</p>}
+          {incomplete && <p className="text-rose-300">Chưa thể tạo/copy prompt đầy đủ: {corpus.unresolved} bản ghi Grammar thiếu câu hoàn chỉnh/đáp án khôi phục, {corpus.invalidWords} mục Vocabulary thiếu tiếng Anh. Hãy kiểm tra dữ liệu nguồn; ứng dụng không đoán hoặc âm thầm bỏ mục.</p>}
+          {copyError && <p className="text-rose-300" role="alert">{copyError}</p>}
+        </div>
 
         <div className="flex flex-wrap gap-2">
           <button
             onClick={handleCopy}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+            disabled={incomplete || stale}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed ${
               copied
                 ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30'
                 : 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-500/20'
@@ -133,7 +159,7 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
             {copied ? <Check size={16} /> : <Copy size={16} />}
             {copied ? 'Đã copy!' : 'Copy Prompt'}
           </button>
-          <button onClick={() => { onNewBatch?.(); setCopied(false); resetImportReview(); }}
+          <button disabled={incomplete} onClick={() => { onNewBatch?.(); setCopied(''); setCopyError(''); resetImportReview(); }}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700">
             <RefreshCw size={16} /> Tạo prompt mới
           </button>
@@ -193,7 +219,7 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
             </label>)}
           </>}
           {importReview.duplicates.length > 0 && <>
-            <p className="text-slate-300">Đã gặp gần đây:</p>
+            <p className="text-slate-300">Câu trùng với kho Grammar hiện tại:</p>
             <ul className="list-disc pl-5 text-amber-100">{importReview.duplicates.map(item => <li key={item.sentence}>Câu {item.sentence}: {item.text}</li>)}</ul>
             <label className="flex items-start gap-2 text-slate-300"><input type="checkbox" checked={allowDuplicates} onChange={e => setAllowDuplicates(e.target.checked)} className="mt-1" />Tôi vẫn muốn luyện các câu trùng được liệt kê.</label>
             <p className="text-slate-400 text-xs">Bạn cũng có thể tạo prompt mới để yêu cầu AI sinh bộ khác.</p>
