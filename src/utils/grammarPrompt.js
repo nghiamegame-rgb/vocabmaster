@@ -33,8 +33,8 @@ export const getAvailableTopics = questions => [...new Set([...GRAMMAR_TOPICS, .
 export function buildGrammarPrompt({ count = 10, topic = 'Mixed', batchId = 'preview', data = { vocab: [], grammar: [] }, workbookName } = {}) {
   return `You are an English reading instructor for Vietnamese learners preparing for VSTEP B1.
 Generate exactly ${count} complete, grammatically correct English sentences for grammar recognition and sentence analysis.
-Use a graduated difficulty range: mostly B1–B2, with occasional accessible C1-style exposure. Aim for about 40% B1, 30% B1+/B2 medium, 20% harder B2, and 10% C1-style exposure (round sensibly; at most one C1-style item for 5 sentences). Order from easier to medium to harder, ending with occasional C1-style exposure. Do not make all items hard or stay at minimum B1. For harder items, scaffold the clause relationships and unfamiliar language clearly in Vietnamese so a learner targeting VSTEP B1 can still understand.
-Use natural sentences similar to VSTEP reading passages about daily life, education, community, work, travel, health, technology and the environment. C1-style exposure should come from richer sentence structure or nuanced linking, not obscure words or artificially long sentences. Vary structures and contexts.
+B1–B2 DIFFICULTY POLICY: target the learner's B1–B2 range, never above B2. Aim for about ${Math.round(count * 0.7)} B1 sentences (~70%) and ${count - Math.round(count * 0.7)} manageable B2 sentences (~30%) in this batch; keep this ratio sensible and do not make every item B2 or every item minimum B1. Order from easier to harder within B1–B2. B1 items use common, practical grammar in clear everyday contexts; B2 items may use useful, common B2 structures (e.g. passive and reporting patterns, relative and reduced clauses, second/third conditionals, wish/if-only, linking and contrast, participle clauses, ordinary inversion or cleft use that stays clear) with clearly signposted clause relationships. Do NOT include deliberate C1 exposure or escalate beyond B2. When unsure whether a structure is manageable, choose a simpler construction.
+Practical restrictions: avoid unnecessarily elaborate constructions, such as stacked or heavily nested clauses, very long sentences, multi-layered inversion plus ellipsis, or rare literary/formal syntax. Do not treat every inversion, cleft, conditional or reduced clause as off-limits: ordinary B2 uses are welcome when the meaning stays clear. Keep Vietnamese explanations concise so a learner can follow B2 items. Use natural sentences similar to VSTEP reading passages about daily life, education, community, work, travel, health, technology and the environment. Prefer familiar vocabulary over obscure words or artificially long sentences. Vary structures and contexts.
 These are study categories, NOT an official VSTEP syllabus.
 
 ${buildBatchInstructions({ id: batchId, data, workbookName })}
@@ -79,7 +79,7 @@ FINAL SELF-CHECK BEFORE RESPONDING:
 1. Parse your output mentally as one JSON array: correct quotes/escaping, no comments/trailing commas or extra text, exactly ${count} items.
 2. Check every required name, type, version and category against the contract; no unsupported fields.
 3. Locate each phrase/text as one uninterrupted exact substring of its sentence; keep generalizations in pattern, never in text.
-4. Check natural Vietnamese, selected-topic focus, concise explanations, useful reading items and the 40/30/20/10 difficulty distribution.
+4. Check natural Vietnamese, selected-topic focus, concise explanations, useful reading items, and the B1–B2 policy: about 70% B1 / 30% B2 for this count, nothing above B2, no deliberate C1 exposure, and no needlessly elaborate or deeply nested sentences (simplify if found).
 5. Check this batch varies subpatterns, openings and contexts and does not repeat or lightly paraphrase supplied Grammar sentences.
 OUTPUT: JSON array only.`;
 }

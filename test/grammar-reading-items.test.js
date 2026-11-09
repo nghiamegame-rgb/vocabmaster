@@ -34,9 +34,7 @@ test('new notes are validated on import, while old string notes remain supported
   assert.deepEqual(merged[0].readingNotes, copy.readingNotes);
   assert.deepEqual(question, copy);
   const prompt = buildGrammarPrompt({ count: 10 });
-  assert.ok(prompt.includes('40% B1'));
-  assert.ok(prompt.includes('20% harder B2'));
-  assert.ok(prompt.includes('10% C1-style'));
+  assert.ok(prompt.includes('B1–B2 DIFFICULTY POLICY'));
   assert.ok(prompt.includes('NO A/B/C/D'));
   assert.ok(prompt.includes('readingItems'));
 });

@@ -60,7 +60,7 @@ test('snapshot and settings are detached; workbook name and full prompt remain p
   assert.ok(prepared.prompt.includes('"vocab":[["purchase",1]]'));
   assert.ok(!prepared.prompt.includes('They purchase books.'));
   for (const changed of [buildGrammarExportSource(words, records, settings), buildGrammarExportSource([word('purchase')], [sentence('They purchase books.')], { count: 10, topic: 'Mixed' })]) assert.notEqual(changed.key, prepared.key);
-  for (const text of ['Read BOTH sheets', 'ask the user to attach it and STOP', '1–2 suitable', 'NOT mastery', 'inflections and irregular', '40% B1', 'MAIN FOCUS: Tenses', 'Vietnamese', 'EXACT contiguous', 'JSON array only', 'unique ids s1 through s5']) assert.ok(prepared.prompt.includes(text), text);
+  for (const text of ['Read BOTH sheets', 'ask the user to attach it and STOP', '1–2 suitable', 'NOT mastery', 'inflections and irregular', 'B1–B2 DIFFICULTY POLICY', 'MAIN FOCUS: Tenses', 'Vietnamese', 'EXACT contiguous', 'JSON array only', 'unique ids s1 through s5']) assert.ok(prepared.prompt.includes(text), text);
   assert.ok(!prepared.prompt.includes('Optional properties on each sentence object: "id"'));
   const sample = Array.from({ length: 5 }, (_, i) => ({ schemaVersion: 2, type: 'sentence-analysis', id: `s${i + 1}`, sentence: `They purchase item ${i}.`, vietnameseSentence: 'Họ mua đồ.', topic: 'Tenses', grammarPoints: [{ category: 'Tenses', phrase: 'purchase', explanation: 'Hiện tại đơn.' }], readingItems: [] }));
   assert.equal(validateGrammarJSON(sample, settings).valid, true);
