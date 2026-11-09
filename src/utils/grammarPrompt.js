@@ -80,7 +80,7 @@ FINAL SELF-CHECK BEFORE RESPONDING:
 2. Check every required name, type, version and category against the contract; no unsupported fields.
 3. Locate each phrase/text as one uninterrupted exact substring of its sentence; keep generalizations in pattern, never in text.
 4. Check natural Vietnamese, selected-topic focus, concise explanations, useful reading items, and the B1–B2 policy: about 70% B1 / 30% B2 for this count, nothing above B2, no deliberate C1 exposure, and no needlessly elaborate or deeply nested sentences (simplify if found).
-5. Check this batch varies subpatterns, openings and contexts and does not repeat or lightly paraphrase supplied Grammar sentences.
+5. Check that common, practical B1–B2 grammar was chosen over novelty: repeated patterns are fine when purpose, use, construction or context differ meaningfully; no exact duplicates, superficial substitutions or near-identical examples of supplied Grammar sentences; and no rare, literary or advanced structure was added merely to avoid repetition.
 OUTPUT: JSON array only.`;
 }
 

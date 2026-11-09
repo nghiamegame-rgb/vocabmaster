@@ -7,8 +7,8 @@ const data = { vocab: [['mitigate', 0], ['purchase', 2]], grammar: [advancedRef]
 const banned = [/40% B1/, /30% B1\+/, /harder B2/, /C1-style/, /graduated difficulty/i, /40\/30\/20\/10/, /B1-ONLY/, /B1 only/, /do NOT escalate to B2/i, /Never\/Rarely\/Not only/];
 const required = ['B1–B2 DIFFICULTY POLICY', 'never above B2', 'Do NOT include deliberate C1 exposure', 'choose a simpler construction',
   'heavily nested', 'Do not treat every inversion, cleft, conditional or reduced clause as off-limits', 'Keep Vietnamese explanations concise',
-  'clear B1–B2 grammatical frames', 'do NOT imitate their difficulty', 'about 70% B1 / 30% B2', 'nothing above B2',
-  'Use ONLY the supplied Vocabulary', 'JSON array only', 'schemaVersion', 'Never escalate to C1'];
+  'clear B1–B2 grammatical frames', 'NOT models for difficulty', 'about 70% B1 / 30% B2', 'nothing above B2',
+  'Use ONLY the supplied Vocabulary', 'JSON array only', 'schemaVersion', 'GRAMMAR SELECTION PRIORITY', 'familiarity and usefulness come BEFORE novelty', 'NOT thereby common', 'do not claim any statistical frequency', 'Purposeful repetition is welcome', 'do not impose a quota of unseen structures', 'Only AMONG common, practical B1', 'never hunt for obscure subpatterns', 'write fresh examples of them', 'NOT what the learner has mastered', 'Check that common, practical B1'];
 const expectedB2 = { 5: 1, 10: 3, 15: 4, 20: 6 };
 
 function check(prompt, label, count, inline = true) {
