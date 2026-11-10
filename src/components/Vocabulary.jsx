@@ -2,7 +2,7 @@ import { memo, useCallback, useMemo, useState, useRef } from 'react';
 import {
   Plus, Trash2, Pencil, Volume2, Download, Upload, X, Check,
   BookOpen, AlertCircle, Image as ImageIcon, CheckSquare, Square,
-  ChevronDown, ChevronLeft, ChevronRight, Tag, Layers, Search,
+  ChevronDown, ChevronLeft, ChevronRight, Tag, Layers, Search, Star,
 } from 'lucide-react';
 import { playAudio } from '../utils/audio';
 import { isDueForReview } from '../hooks/useVocabStore';
@@ -76,7 +76,7 @@ function Pagination({ page, pageCount, onChange, position }) {
 /* ------------------------------------------------------------------ */
 /* WordCard                                                             */
 /* ------------------------------------------------------------------ */
-const WordCard = memo(function WordCard({ word, onDelete, onUpdate, selected, onToggleSelect }) {
+const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard, selected, onToggleSelect }) {
   const [editing,    setEditing]    = useState(false);
   const [editFields, setEditFields] = useState({
     english:    word.english,
@@ -123,18 +123,43 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, selected, on
 
   return (
     <div className={`bg-slate-800/60 border rounded-2xl overflow-hidden shadow-lg hover:shadow-indigo-500/5 transition-all duration-200 group animate-fade-in ${
-      selected ? 'border-indigo-500 ring-2 ring-indigo-500/30' : 'border-slate-700/50 hover:border-slate-600'
+      selected
+        ? 'border-indigo-500 ring-2 ring-indigo-500/30'
+        : word.hardMarked
+          ? 'border-amber-500/40 hover:border-amber-500/60'
+          : 'border-slate-700/50 hover:border-slate-600'
     }`}>
-      {/* Select checkbox row */}
+      {/* Select checkbox + difficult-word star row */}
       <div className="flex items-center justify-between px-4 pt-3 pb-1">
-        <button
-          id={`select-${word.id}`}
-          onClick={() => onToggleSelect(word.id)}
-          className="text-slate-500 hover:text-indigo-400 transition-colors"
-          title={selected ? 'Deselect' : 'Select'}
-        >
-          {selected ? <CheckSquare size={16} className="text-indigo-400" /> : <Square size={16} />}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            id={`select-${word.id}`}
+            type="button"
+            onClick={() => onToggleSelect(word.id)}
+            className="text-slate-500 hover:text-indigo-400 transition-colors"
+            title={selected ? 'Deselect' : 'Select'}
+          >
+            {selected ? <CheckSquare size={16} className="text-indigo-400" /> : <Square size={16} />}
+          </button>
+          <button
+            id={`star-${word.id}`}
+            type="button"
+            onClick={e => {
+              e.stopPropagation();
+              onToggleHard?.(word.id);
+            }}
+            aria-label={word.hardMarked ? 'Bỏ đánh dấu từ khó' : 'Đánh dấu từ khó'}
+            aria-pressed={Boolean(word.hardMarked)}
+            title={word.hardMarked ? 'Bỏ đánh dấu từ khó' : 'Đánh dấu từ khó'}
+            className={`p-1 rounded-lg transition-colors ${
+              word.hardMarked
+                ? 'text-amber-400 hover:bg-amber-500/15'
+                : 'text-slate-500 hover:text-amber-300 hover:bg-slate-700/50'
+            }`}
+          >
+            <Star size={15} className={word.hardMarked ? 'fill-amber-400 text-amber-400' : ''} />
+          </button>
+        </div>
         <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${typeMeta.color}`}>
           {typeMeta.icon} {word.wordType || 'Word'}
         </span>
@@ -281,7 +306,7 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, selected, on
 /* Main Vocabulary Component                                           */
 /* ------------------------------------------------------------------ */
 export default memo(function Vocabulary({
-  words, addWord, deleteWord, updateWord, bulkUpdateLevel,
+  words, addWord, deleteWord, updateWord, toggleWordHard, bulkUpdateLevel,
   vocabFilter, setVocabFilter,
 }) {
   const [english,     setEnglish]     = useState('');
@@ -292,6 +317,7 @@ export default memo(function Vocabulary({
   const [error,       setError]       = useState('');
   const [success,     setSuccess]     = useState('');
   const [typeFilter,  setTypeFilter]  = useState('All'); // All | Word | Phrase | Family | Preposition
+  const [hardOnly,    setHardOnly]    = useState(false);
   const [selected,    setSelected]    = useState(new Set());
   const [bulkLevel,   setBulkLevel]   = useState('');
   const [showBulkDd,  setShowBulkDd]  = useState(false);
@@ -300,37 +326,69 @@ export default memo(function Vocabulary({
   const fileInputRef = useRef(null);
   const listRef = useRef(null);
 
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+
+  const poolForLevelCounts = useMemo(() => {
+    return words.filter(w =>
+      (!hardOnly || Boolean(w.hardMarked)) &&
+      (typeFilter === 'All' || (w.wordType || 'Word') === typeFilter) &&
+      (!normalizedQuery || (
+        w.english.toLowerCase().includes(normalizedQuery) ||
+        w.vietnamese.toLowerCase().includes(normalizedQuery) ||
+        (w.annotation || '').toLowerCase().includes(normalizedQuery)
+      )),
+    );
+  }, [words, hardOnly, typeFilter, normalizedQuery]);
+
   const levelCounts = useMemo(() => {
     const counts = {};
-    for (const word of words) counts[word.level] = (counts[word.level] || 0) + 1;
+    for (const word of poolForLevelCounts) counts[word.level] = (counts[word.level] || 0) + 1;
     return counts;
-  }, [words]);
+  }, [poolForLevelCounts]);
 
   const afterLevel = useMemo(
     () => vocabFilter ? words.filter(w => w.level === vocabFilter) : words,
     [words, vocabFilter],
   );
+
+  const poolForTypeCounts = useMemo(() => {
+    return afterLevel.filter(w =>
+      (!hardOnly || Boolean(w.hardMarked)) &&
+      (!normalizedQuery || (
+        w.english.toLowerCase().includes(normalizedQuery) ||
+        w.vietnamese.toLowerCase().includes(normalizedQuery) ||
+        (w.annotation || '').toLowerCase().includes(normalizedQuery)
+      )),
+    );
+  }, [afterLevel, hardOnly, normalizedQuery]);
+
   const typeCounts = useMemo(() => {
     const counts = {};
-    for (const word of afterLevel) {
+    for (const word of poolForTypeCounts) {
       const type = word.wordType || 'Word';
       counts[type] = (counts[type] || 0) + 1;
     }
     return counts;
-  }, [afterLevel]);
+  }, [poolForTypeCounts]);
+
+  const hardCount = useMemo(() => {
+    return afterLevel.filter(w =>
+      Boolean(w.hardMarked) &&
+      (typeFilter === 'All' || (w.wordType || 'Word') === typeFilter) &&
+      (!normalizedQuery || (
+        w.english.toLowerCase().includes(normalizedQuery) ||
+        w.vietnamese.toLowerCase().includes(normalizedQuery) ||
+        (w.annotation || '').toLowerCase().includes(normalizedQuery)
+      )),
+    ).length;
+  }, [afterLevel, typeFilter, normalizedQuery]);
 
   // Filtering and select-all cover the entire collection, before pagination.
   const filtered = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    return afterLevel.filter(w =>
-      (typeFilter === 'All' || (w.wordType || 'Word') === typeFilter) &&
-      (!q || (
-        w.english.toLowerCase().includes(q) ||
-        w.vietnamese.toLowerCase().includes(q) ||
-        (w.annotation || '').toLowerCase().includes(q)
-      )),
+    return poolForTypeCounts.filter(w =>
+      typeFilter === 'All' || (w.wordType || 'Word') === typeFilter,
     );
-  }, [afterLevel, typeFilter, searchQuery]);
+  }, [poolForTypeCounts, typeFilter]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   // Deleting or moving the last word on a page must not leave an empty page.
@@ -504,13 +562,13 @@ export default memo(function Vocabulary({
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Row 1: English + Annotation */}
-          <div className="flex gap-2 sm:col-span-2 lg:col-span-2">
+          <div className="flex gap-2 sm:col-span-2 lg:col-span-2 min-w-0">
             <input
               id="input-english"
               value={english}
               onChange={e => setEnglish(e.target.value)}
               placeholder="English word / phrase *"
-              className="flex-1 bg-slate-700 border border-slate-600 rounded-xl px-4 py-2.5 text-white text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-colors"
+              className="flex-1 min-w-0 bg-slate-700 border border-slate-600 rounded-xl px-4 py-2.5 text-white text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-colors"
             />
             <input
               id="input-annotation"
@@ -518,7 +576,7 @@ export default memo(function Vocabulary({
               onChange={e => setAnnotation(e.target.value)}
               placeholder="Từ loại (adj, v…)"
               title="Từ loại / Ghi chú"
-              className="w-36 bg-slate-700 border border-slate-600 rounded-xl px-3 py-2.5 text-slate-300 text-xs placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+              className="w-28 sm:w-36 shrink-0 bg-slate-700 border border-slate-600 rounded-xl px-3 py-2.5 text-slate-300 text-xs placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
             />
           </div>
           <input
@@ -595,14 +653,30 @@ export default memo(function Vocabulary({
           >
             {opt.label}
             <span className="ml-1.5 text-xs opacity-70">
-              ({opt.value === null ? words.length : levelCounts[opt.value] || 0})
+              ({opt.value === null ? poolForLevelCounts.length : levelCounts[opt.value] || 0})
             </span>
           </button>
         ))}
+        <button
+          id="filter-hard-only"
+          type="button"
+          onClick={() => { setHardOnly(v => !v); setPage(1); }}
+          aria-pressed={hardOnly}
+          title={hardOnly ? 'Hiện tất cả từ' : 'Chỉ hiện từ khó đã đánh dấu sao'}
+          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 border ${
+            hardOnly
+              ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-md shadow-amber-500/10'
+              : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-amber-300 border-slate-700'
+          }`}
+        >
+          <Star size={14} className={hardOnly ? 'fill-amber-400 text-amber-400' : 'text-amber-400'} />
+          <span>Khó ⭐</span>
+          <span className="ml-0.5 text-xs opacity-80">({hardCount})</span>
+        </button>
       </div>
 
       {/* Type Filter Sub-Tabs */}
-      <div className="flex items-center gap-1 mb-5 bg-slate-800/40 border border-slate-700/40 rounded-xl p-1 w-fit">
+      <div className="flex items-center gap-1 mb-5 bg-slate-800/40 border border-slate-700/40 rounded-xl p-1 w-fit max-w-full flex-wrap">
         {typeFilterOptions.map(opt => (
           <button
             key={opt.value}
@@ -618,7 +692,7 @@ export default memo(function Vocabulary({
             <span className="hidden sm:inline">{opt.label.split('(')[0].trim()}</span>
             <span className="text-xs opacity-60">
               ({opt.value === 'All'
-                ? afterLevel.length
+                ? poolForTypeCounts.length
                 : typeCounts[opt.value] || 0})
             </span>
           </button>
@@ -695,14 +769,18 @@ export default memo(function Vocabulary({
         <div className="text-center py-20">
           <BookOpen size={56} className="text-slate-700 mx-auto mb-4" />
           <p className="text-slate-400 font-medium text-lg">
-            {vocabFilter || typeFilter !== 'All' || searchQuery
-              ? 'No words match this filter'
-              : 'No words yet'}
+            {hardOnly
+              ? 'Chưa có từ khó ⭐ nào khớp bộ lọc hiện tại'
+              : vocabFilter || typeFilter !== 'All' || searchQuery
+                ? 'No words match this filter'
+                : 'No words yet'}
           </p>
           <p className="text-slate-500 text-sm mt-2">
-            {vocabFilter || typeFilter !== 'All' || searchQuery
-              ? 'Try a different filter or search term.'
-              : 'Add your first word using the form above!'}
+            {hardOnly
+              ? 'Hãy đánh dấu ⭐ cho từ khó trong danh sách hoặc tắt bộ lọc "Khó ⭐".'
+              : vocabFilter || typeFilter !== 'All' || searchQuery
+                ? 'Try a different filter or search term.'
+                : 'Add your first word using the form above!'}
           </p>
         </div>
       ) : (
@@ -713,6 +791,7 @@ export default memo(function Vocabulary({
               word={word}
               onDelete={deleteWord}
               onUpdate={updateWord}
+              onToggleHard={toggleWordHard}
               selected={selected.has(word.id)}
               onToggleSelect={toggleSelect}
             />

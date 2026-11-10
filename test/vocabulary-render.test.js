@@ -23,6 +23,9 @@ const server = await createServer({
 
 try {
   const { default: Vocabulary } = await server.ssrLoadModule('/src/components/Vocabulary.jsx');
+  const { default: Flashcard } = await server.ssrLoadModule('/src/components/Flashcard.jsx');
+  const { default: ListeningReview } = await server.ssrLoadModule('/src/components/ListeningReview.jsx');
+  const { default: Quiz } = await server.ssrLoadModule('/src/components/Quiz.jsx');
   const noop = () => {};
   const types = ['Word', 'Phrase', 'Preposition', 'Family'];
   const words = Object.freeze(Array.from({ length: 1000 }, (_, i) => Object.freeze({
@@ -117,6 +120,49 @@ try {
     assert.ok(html.includes('1001 words'));
     assert.ok(html.indexOf('id="select-fixture-new"') < html.indexOf('id="select-fixture-0"'));
     assert.equal(JSON.stringify(words), before);
+  });
+
+  await test('difficult-word star button and Khó ⭐ filter pill render with accessible Vietnamese labels', () => {
+    const sample = [
+      { ...words[0], id: 'starred-1', hardMarked: true },
+      { ...words[1], id: 'unstarred-2' },
+    ];
+    const html = render(sample);
+    assert.ok(html.includes('id="star-starred-1"'));
+    assert.ok(html.includes('aria-label="Bỏ đánh dấu từ khó"'));
+    assert.ok(html.includes('id="star-unstarred-2"'));
+    assert.ok(html.includes('aria-label="Đánh dấu từ khó"'));
+    assert.ok(html.includes('id="filter-hard-only"'));
+    assert.ok(html.includes('Khó ⭐'));
+  });
+
+  await test('Flashcard, ListeningReview, and Quiz render "Chỉ từ khó ⭐" practice filter toggles with accurate starred counts', () => {
+    const sample = [
+      { ...words[0], id: 's1', hardMarked: true },
+      { ...words[1], id: 's2', hardMarked: true },
+      { ...words[2], id: 's3' },
+      { ...words[3], id: 's4' },
+    ];
+    const flashHtml = renderToStaticMarkup(createElement(Flashcard, { words: sample, updateWordLevel: noop }));
+    assert.ok(flashHtml.includes('id="flashcard-hard-toggle"'));
+    assert.ok(flashHtml.includes('Chỉ từ khó ⭐'));
+    assert.ok(flashHtml.includes('(2)'));
+
+    const lrHtml = renderToStaticMarkup(createElement(ListeningReview, { words: sample, updateWordLevel: noop }));
+    assert.ok(lrHtml.includes('id="lr-hard-toggle"'));
+    assert.ok(lrHtml.includes('Chỉ từ khó ⭐'));
+    assert.ok(lrHtml.includes('2 từ khó'));
+
+    const quizHtml = renderToStaticMarkup(createElement(Quiz, {
+      words: sample,
+      structures: [],
+      updateWordLevel: noop,
+      recordQuizResult: noop,
+      recordStructureResult: noop,
+    }));
+    assert.ok(quizHtml.includes('id="quiz-hard-toggle"'));
+    assert.ok(quizHtml.includes('Chỉ từ khó ⭐'));
+    assert.ok(quizHtml.includes('(2)'));
   });
 } finally {
   await server.close();

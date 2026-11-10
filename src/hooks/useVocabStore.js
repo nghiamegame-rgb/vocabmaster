@@ -70,6 +70,7 @@ export function useVocabStore() {
       currentStreak: wordObj.currentStreak ?? 0,
       createdAt:     wordObj.createdAt     ?? Date.now(),
       ...(wordObj.lastReviewedDate != null ? { lastReviewedDate: wordObj.lastReviewedDate } : {}),
+      ...(wordObj.hardMarked ? { hardMarked: true } : {}),
     };
     return setWords(prev => [newWord, ...prev]);
   }, [engine, setWords]);
@@ -79,7 +80,7 @@ export function useVocabStore() {
     setWords(prev => prev.filter(w => w.id !== id));
   }, [setWords]);
 
-  /** Update word fields (annotation is preserved across updates) */
+  /** Update word fields (annotation and hardMarked are preserved across updates) */
   const updateWord = useCallback((id, fields) => {
     setWords(prev =>
       prev.map(w => {
@@ -87,7 +88,24 @@ export function useVocabStore() {
         const updated = { ...w, ...fields };
         // Always ensure annotation field is a string
         if (typeof updated.annotation !== 'string') updated.annotation = '';
+        if ('hardMarked' in updated) {
+          if (updated.hardMarked) updated.hardMarked = true;
+          else delete updated.hardMarked;
+        }
         return updated;
+      })
+    );
+  }, [setWords]);
+
+  /** Toggle independent difficult-word star flag without affecting progress/stats */
+  const toggleWordHard = useCallback((id) => {
+    setWords(prev =>
+      prev.map(w => {
+        if (w.id !== id) return w;
+        const next = { ...w };
+        if (next.hardMarked) delete next.hardMarked;
+        else next.hardMarked = true;
+        return next;
       })
     );
   }, [setWords]);
@@ -161,6 +179,7 @@ export function useVocabStore() {
     addWord,
     deleteWord,
     updateWord,
+    toggleWordHard,
     updateWordLevel,
     bulkUpdateLevel,
     recordQuizResult,

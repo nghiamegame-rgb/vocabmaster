@@ -1,4 +1,4 @@
-﻿// Vocabulary protocol 1. Legacy caches never become an authoritative base.
+// Vocabulary protocol 1. Legacy caches never become an authoritative base.
 export const STATE_KEY = 'vocabmaster_vocab_sync_v1';
 export const PAUSE_KEY = 'vocabmaster_vocab_sync_paused';
 export const BACKUP_PREFIX = 'vocabmaster_vocab_backup_';
@@ -17,7 +17,8 @@ export function validateSnapshot(s) {
   for (const w of s.words) {
     if (!w || typeof w.id !== 'string' || !w.id || ids.has(w.id)
         || typeof w.english !== 'string' || !w.english.trim()
-        || typeof w.vietnamese !== 'string') throw new Error('invalid_word');
+        || typeof w.vietnamese !== 'string'
+        || (w.hardMarked !== undefined && typeof w.hardMarked !== 'boolean')) throw new Error('invalid_word');
     ids.add(w.id);
   }
   const deleted = new Set();
@@ -26,6 +27,19 @@ export function validateSnapshot(s) {
     deleted.add(id);
   }
   return s;
+}
+const isStarred = word => Boolean(word?.hardMarked);
+function withoutStar(word) {
+  if (!word || typeof word !== 'object') return word;
+  const copy = { ...word };
+  delete copy.hardMarked;
+  return copy;
+}
+function applyStar(word, starred) {
+  const copy = clone(word);
+  if (starred) copy.hardMarked = true;
+  else delete copy.hardMarked;
+  return copy;
 }
 // Unchanged local records have no authority. Deletion wins; conflicting local
 // edits are archived for explicit review, never silently thrown away.
@@ -42,9 +56,27 @@ export function reconcile(base, local, remote) {
   for (const w of local) {
     const old = before.get(w.id), cloud = result.get(w.id);
     if (equal(w, old)) continue;
-    if (deleted.has(w.id) || (cloud && !equal(cloud, old) && !equal(cloud, w))) conflicts.push(clone(w));
-    else if (!old || cloud) result.set(w.id, clone(w));
-    else conflicts.push(clone(w));
+    if (deleted.has(w.id)) { conflicts.push(clone(w)); continue; }
+    if (!old) {
+      if (cloud && !equal(cloud, w)) conflicts.push(clone(w));
+      else if (!cloud) result.set(w.id, clone(w));
+      continue;
+    }
+    if (!cloud) { conflicts.push(clone(w)); continue; }
+    if (equal(cloud, old)) { result.set(w.id, clone(w)); continue; }
+    if (equal(cloud, w)) continue;
+    const oldRest = withoutStar(old), localRest = withoutStar(w), cloudRest = withoutStar(cloud);
+    const localRestChanged = !equal(localRest, oldRest), cloudRestChanged = !equal(cloudRest, oldRest);
+    const oldStar = isStarred(old), localStar = isStarred(w), cloudStar = isStarred(cloud);
+    const localStarChanged = localStar !== oldStar, cloudStarChanged = cloudStar !== oldStar;
+    if (!localRestChanged || !cloudRestChanged || equal(localRest, cloudRest)) {
+      const winningRest = localRestChanged ? w : cloud;
+      const finalStar = localStarChanged && !cloudStarChanged ? localStar : cloudStar;
+      result.set(w.id, applyStar(winningRest, finalStar));
+    } else {
+      conflicts.push(clone(w));
+      if (localStarChanged && !cloudStarChanged) result.set(w.id, applyStar(cloud, localStar));
+    }
   }
   return { words: [...result.values()], tombstones: [...deleted].sort(), conflicts };
 }
@@ -109,7 +141,7 @@ export class VocabSync {
     const valid = () => this.active && serial === this.serial;
     let retry = false;
     try {
-      this.notice = this.state.notice || '';
+      this.notice = this.state.notice && !this.state.notice.startsWith('Vocabulary chưa đồng bộ:') ? this.state.notice : '';
       this.status = 'syncing'; this.emit();
       const remote = validateSnapshot(await this.transport.read(this.controller.signal));
       if (!valid()) return;

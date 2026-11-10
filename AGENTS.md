@@ -18,10 +18,10 @@
 
 ## Dữ liệu và đồng bộ
 - Vocabulary: `storage.js`, khóa `vocabmaster_words` và `vocabmaster_stats`.
-- Word: `id`, `english`, `annotation`, `vietnamese`, `imageUrl`, `wordType`, `level`, `currentStreak`, `createdAt`, tùy chọn `lastReviewedDate`.
-- Vocabulary lên cấp theo streak 2/4/8/15; sai giảm một cấp. Smart Quiz kiểm tra lại trước khi giảm cấp vì sai.
+- Word: `id`, `english`, `annotation`, `vietnamese`, `imageUrl`, `wordType`, `level`, `currentStreak`, `createdAt`, tùy chọn `lastReviewedDate`, tùy chọn `hardMarked` (`true` khi đánh dấu sao từ khó, lược bỏ khi không đánh dấu).
+- Vocabulary lên cấp theo streak 2/4/8/15; sai giảm một cấp. Smart Quiz kiểm tra lại trước khi giảm cấp vì sai. Cờ `hardMarked` là tùy chọn đánh dấu cá nhân trên thẻ từ (kèm bộ lọc `Khó ⭐` trong Vocabulary và `Chỉ từ khó ⭐` giao chặt với các bộ lọc khác ở Flashcard, Listening, Smart Quiz Vocabulary), hoàn toàn độc lập với L1–L5, streak, ngày ôn và thống kê.
 - Vocabulary protocol 1: `vocabSync.js` giữ base/words, tombstone, generation, revision; `cloud.js` gọi `/api/vocab-sync`. Backend `google-apps-script.js` dùng ScriptLock, snapshot JSON bất biến trên Drive + `VOCAB_HEAD`; sheet đầu tiên là mirror. Xem [quy trình phục hồi](docs/VOCABULARY-RECOVERY.md), chưa triển khai production.
-- Vocabulary mặc định pause ở client/proxy/backend. Chưa có base hoặc đổi generation: backup rồi adopt remote, không union cache legacy. Cùng generation dùng three-way merge, xóa thắng; conflict giữ cloud và archive local. ACK kiểm toàn bộ nội dung/revision/requestId. Backend từ chối legacy/unversioned và generation cũ.
+- Vocabulary mặc định pause ở client/proxy/backend. Chưa có base hoặc đổi generation: backup rồi adopt remote, không union cache legacy. Cùng generation dùng three-way merge, xóa thắng; sửa `hardMarked` trên một thiết bị và sửa tiến độ/nội dung trên thiết bị khác được hợp nhất trực giao; conflict nội dung giữ cloud (vẫn giữ thay đổi sao local nếu remote không đổi sao) và archive local. ACK kiểm toàn bộ nội dung/revision/requestId. Backend từ chối legacy/unversioned và generation cũ.
 - Grammar dùng các khóa `vocabmaster_grammar_*` trong `grammarStorage.js`: saved, stats, review, cloud_url, revision, pending. Thống kê của cả hai module hiện chỉ lưu local.
 - Câu Grammar lưu bằng `savedId`, kèm `hardMarked`, `userNotes`; review map theo `savedId`, tách khỏi thống kê phiên học.
 - Grammar có L1–L5 độc lập; tự đánh giá đã hiểu tăng một cấp, cần ôn lại giảm một cấp. Vocabulary/Grammar dùng khoảng ôn 1/3/7/14/30 ngày nhưng cách cập nhật khác nhau. Structures có tiến độ thứ ba riêng, ngưỡng streak 2/4/8/15; sai đến hạn ôn ngay.

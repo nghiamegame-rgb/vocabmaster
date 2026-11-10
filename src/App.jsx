@@ -21,6 +21,7 @@ export default function App() {
     addWord,
     deleteWord,
     updateWord,
+    toggleWordHard,
     updateWordLevel,
     bulkUpdateLevel,
     recordQuizResult,
@@ -71,6 +72,7 @@ export default function App() {
             addWord={addWord}
             deleteWord={deleteWord}
             updateWord={updateWord}
+            toggleWordHard={toggleWordHard}
             bulkUpdateLevel={bulkUpdateLevel}
             vocabFilter={vocabFilter}
             setVocabFilter={setVocabFilter}

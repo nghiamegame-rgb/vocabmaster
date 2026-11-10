@@ -1,4 +1,4 @@
-﻿import assert from 'node:assert/strict';
+import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import vm from 'node:vm';
 import fs from 'node:fs';
@@ -176,4 +176,73 @@ test('actual cloud adapter rejects failed HTTP/opaque responses and sends readab
     global.fetch = async (_url, opts) => ({ ok: true, json: async () => ({ ...snap(), ok: true, sent: JSON.parse(opts.body) }) });
     const response = await pushToCloud({ protocol: 1 }); assert.equal(response.sent.protocol, 1);
   } finally { global.fetch = previous; }
+});
+test('hardMarked star flag validates, merges orthogonally with progress/field edits, and never resurrects deleted words', async () => {
+  const b = enabled([w('alpha'), w('beta', { hardMarked: true }), w('gone')]);
+  assert.equal(b.post(payload(b.read(), [w('alpha', { hardMarked: 'yes' }), w('beta'), w('gone')])).error, 'invalid_field');
+
+  const base = copy(b.read());
+  // Device A stars alpha and unstars beta; Device B updates alpha's SRS progress and edits beta's meaning + deletes gone while A stars gone.
+  const localWords = [
+    w('alpha', { hardMarked: true }),
+    w('beta'),
+    w('gone', { hardMarked: true }),
+  ];
+  const remoteSnap = snap([
+    w('alpha', { level: 3, currentStreak: 0, lastReviewedDate: 999 }),
+    w('beta', { hardMarked: true, vietnamese: 'nghĩa mới', annotation: 'updated' }),
+  ], { revision: 1, tombstones: ['gone'] });
+
+  const merged = reconcile(base, localWords, remoteSnap);
+  const mergedAlpha = merged.words.find(x => x.id === 'alpha');
+  const mergedBeta = merged.words.find(x => x.id === 'beta');
+  assert.equal(mergedAlpha.hardMarked, true);
+  assert.equal(mergedAlpha.level, 3);
+  assert.equal(mergedAlpha.currentStreak, 0);
+  assert.equal(mergedAlpha.lastReviewedDate, 999);
+  assert.equal(mergedBeta.hardMarked, undefined);
+  assert.equal(mergedBeta.vietnamese, 'nghĩa mới');
+  assert.equal(mergedBeta.annotation, 'updated');
+  assert.equal(merged.words.some(x => x.id === 'gone'), false);
+  assert.deepEqual(merged.tombstones, ['gone']);
+  // Only 'gone' (deleted remotely while starred locally) is archived as conflict; alpha and beta merged cleanly!
+  assert.deepEqual(merged.conflicts.map(x => x.id), ['gone']);
+
+  // End-to-end two-device sync with backend
+  const d1 = client(b, base, [w('alpha', { hardMarked: true }), w('beta', { hardMarked: true }), w('gone')]);
+  await d1.sync();
+  assert.equal(b.read().words.find(x => x.id === 'alpha').hardMarked, true);
+
+  const d2 = client(b, base, [w('alpha', { level: 4, currentStreak: 0, lastReviewedDate: 5000 }), w('beta'), w('gone')]);
+  await d2.sync();
+  assert.equal(d2.notice, '');
+  const afterD2 = b.read().words;
+  assert.equal(afterD2.find(x => x.id === 'alpha').hardMarked, true);
+  assert.equal(afterD2.find(x => x.id === 'alpha').level, 4);
+  assert.equal(afterD2.find(x => x.id === 'beta').hardMarked, undefined);
+  d1.stop(); d2.stop();
+});
+test('transient sync error notice persisted during offline edit clears after subsequent successful sync', async () => {
+  const b = enabled([w('a')]);
+  const initial = copy(b.read());
+  let failRead = true;
+  const c = client(b, initial, [w('a')], {
+    transport: {
+      read: async () => { if (failRead) throw Error('Failed to fetch'); return b.transport.read(); },
+      write: b.transport.write,
+    },
+  });
+  await c.sync();
+  assert.match(c.notice, /Vocabulary chưa đồng bộ: Failed to fetch/);
+  // Editing while offline persists state (including notice) to storage
+  c.edit(words => words.map(x => ({ ...x, hardMarked: true })));
+  assert.match(JSON.parse(c.storage.getItem(STATE_KEY)).notice, /Failed to fetch/);
+  // Reconnect and sync: transient error notice must clear
+  failRead = false;
+  await c.sync();
+  assert.equal(c.status, 'ok');
+  assert.equal(c.notice, '');
+  assert.equal(JSON.parse(c.storage.getItem(STATE_KEY)).notice, '');
+  assert.equal(b.read().words[0].hardMarked, true);
+  c.stop();
 });

@@ -25,6 +25,7 @@ function vocabValidate(s) {
     if (!w || typeof w.id !== 'string' || !w.id || ids.has(w.id) || typeof w.english !== 'string' || !w.english.trim()
         || typeof w.vietnamese !== 'string' || JSON.stringify(w).length > 45000) throw new Error('invalid_word');
     ['annotation', 'imageUrl', 'wordType'].forEach(function(k) { if (w[k] !== undefined && typeof w[k] !== 'string') throw new Error('invalid_field'); });
+    if (w.hardMarked !== undefined && typeof w.hardMarked !== 'boolean') throw new Error('invalid_field');
     ['level', 'currentStreak', 'createdAt', 'lastReviewedDate'].forEach(function(k) { if (w[k] != null && (!Number.isFinite(w[k]) || w[k] < 0)) throw new Error('invalid_number'); });
     if (w.level !== undefined && (!Number.isInteger(w.level) || w.level < 1 || w.level > 5)) throw new Error('invalid_level');
     ids.add(w.id);

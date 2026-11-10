@@ -3,7 +3,7 @@ import {
   Brain, ChevronRight, CheckCircle, XCircle,
   RotateCcw, AlertCircle, Trophy, Zap,
   Copy, Check, ClipboardPaste, BookOpen, Volume2,
-  Headphones, Type, Send, FastForward
+  Headphones, Type, Send, FastForward, Star
 } from 'lucide-react';
 import { playAudio } from '../utils/audio';
 import { selectStructures } from '../utils/structureStorage';
@@ -86,15 +86,19 @@ function shuffleOptions(q) {
   };
 }
 
-/** Shuffle & filter word pool by selected priority */
+/** Check whether a word matches the selected level priority */
+function matchesPriority(word, priority) {
+  if (priority === 'l1')   return word.level === 1;
+  if (priority === 'l1l2') return word.level <= 2;
+  if (priority === 'l3l4') return word.level === 3 || word.level === 4;
+  if (priority === 'l5')   return word.level === 5;
+  return true;
+}
+
+/** Shuffle & filter word pool by selected priority (strict intersection, no fallback to unfiltered words) */
 function buildPool(words, priority, count) {
-  let pool = [...words];
-  if (priority === 'l1')   pool = words.filter(w => w.level === 1);
-  if (priority === 'l1l2') pool = words.filter(w => w.level <= 2);
-  if (priority === 'l3l4') pool = words.filter(w => w.level === 3 || w.level === 4);
-  if (priority === 'l5')   pool = words.filter(w => w.level === 5);
-  if (pool.length < 4)     pool = [...words]; // always fallback to all
-  return pool.sort(() => Math.random() - 0.5).slice(0, Math.max(count * 2, 20));
+  const pool = words.filter(w => matchesPriority(w, priority));
+  return [...pool].sort(() => Math.random() - 0.5).slice(0, Math.max(count * 2, 20));
 }
 
 /**
@@ -326,6 +330,7 @@ function QuizConfig({ words, structures = [], onStart }) {
   const [mode,           setMode]           = useState('vn');
   const [answerMode,     setAnswerMode]     = useState('mc');
   const [wordTypeFilter, setWordTypeFilter] = useState('All'); // 'All'|'Word'|'Phrase'|'Family'|'Preposition'
+  const [hardOnly,       setHardOnly]       = useState(false);
   const [selectedStructureIds, setSelectedStructureIds] = useState(() => new Set(structures.map(item => item.id)));
 
   const [copied,     setCopied]     = useState(false);
@@ -336,11 +341,18 @@ function QuizConfig({ words, structures = [], onStart }) {
   const promptIdsRef = useRef(null);
   const knownStructureIdsRef = useRef(new Set(structures.map(item => item.id)));
 
-  // Apply wordType filter before anything else
-  const filteredWords = wordTypeFilter === 'All'
-    ? words
-    : words.filter(w => (w.wordType || 'Word') === wordTypeFilter);
-  const hasWords = filteredWords.length >= 4;
+  // Strict intersection across hardOnly, wordTypeFilter, and priority
+  const eligibleWords = words.filter(w =>
+    (!hardOnly || Boolean(w.hardMarked)) &&
+    (wordTypeFilter === 'All' || (w.wordType || 'Word') === wordTypeFilter) &&
+    matchesPriority(w, priority)
+  );
+  const hardCount = words.filter(w =>
+    Boolean(w.hardMarked) &&
+    (wordTypeFilter === 'All' || (w.wordType || 'Word') === wordTypeFilter) &&
+    matchesPriority(w, priority)
+  ).length;
+  const hasWords = eligibleWords.length >= 4;
   const selectedStructures = structures.filter(item => selectedStructureIds.has(item.id));
   const hasSource = mode === 'structure' ? selectedStructures.length > 0 : hasWords;
 
@@ -363,7 +375,7 @@ function QuizConfig({ words, structures = [], onStart }) {
     promptIdsRef.current = mode === 'structure' ? pool.map(item => item.id) : null;
     const prompt = mode === 'structure'
       ? buildStructurePrompt(pool, count, diff)
-      : buildPrompt(buildPool(filteredWords, priority, count), count, diff, mode);
+      : buildPrompt(buildPool(eligibleWords, priority, count), count, diff, mode);
 
     const write = () => {
       setCopied(true);
@@ -393,12 +405,29 @@ function QuizConfig({ words, structures = [], onStart }) {
   /* Parse pasted JSON and start quiz */
   function handleStart() {
     setParseError('');
+    if (!hasSource) {
+      setParseError(
+        mode === 'structure'
+          ? 'Chưa có cấu trúc được chọn.'
+          : `Cần ít nhất 4 từ khớp bộ lọc hiện tại để tạo và bắt đầu bài tập (hiện có ${eligibleWords.length} từ khớp).`
+      );
+      return;
+    }
     try {
       const questions = parseResponse(jsonPaste, mode === 'structure');
+      const activeQuestions = questions.slice(0, count);
       if (mode === 'structure') {
         validateStructureQuestions(questions, promptIdsRef.current || selectedStructures.map(item => item.id), structures, count);
+      } else if (hardOnly) {
+        const eligibleSet = new Set(eligibleWords.map(w => w.english.trim().toLowerCase()));
+        const mismatch = activeQuestions.find(q => !eligibleSet.has((q.wordEnglish || '').trim().toLowerCase()));
+        if (mismatch) {
+          throw new Error(
+            'Bộ đề JSON đã dán chứa từ không thuộc danh sách "Chỉ từ khó ⭐" (hoặc bộ lọc hiện tại). Bộ lọc "Chỉ từ khó ⭐" dùng để tạo AI Prompt mới — hãy bấm "Copy AI Prompt" để tạo đề mới hoặc tắt bộ lọc này.'
+          );
+        }
       }
-      onStart(questions.slice(0, count), mode === 'structure' ? 'mc' : answerMode, mode);
+      onStart(activeQuestions, mode === 'structure' ? 'mc' : answerMode, mode);
     } catch (err) {
       setParseError(err.message || 'Failed to parse JSON.');
       textareaRef.current?.focus();
@@ -422,9 +451,13 @@ function QuizConfig({ words, structures = [], onStart }) {
           <p className="text-amber-300 text-sm">
             {mode === 'structure'
               ? <>Chưa có cấu trúc được chọn. Hãy thêm cấu trúc trong tab <strong>Grammar → Structures</strong>.</>
-              : wordTypeFilter === 'All'
-              ? <>You need at least <strong>4 vocabulary words</strong> to generate a quiz. Add words in the <strong>Vocabulary</strong> tab first.</>
-              : <>Not enough <strong>{wordTypeFilter}</strong> words (need ≥ 4). Try <strong>All Types</strong> or add more words of this type.</>
+              : hardOnly
+                ? <>Chưa đủ từ khó ⭐ khớp bộ lọc để tạo prompt (cần ít nhất <strong>4 từ</strong>, hiện có <strong>{eligibleWords.length}</strong> từ khớp). Hãy đánh dấu ⭐ thêm từ trong <strong>Vocabulary</strong> hoặc nới bộ lọc.</>
+                : priority !== 'all' && priority !== 'custom'
+                  ? <>Không đủ từ khớp bộ lọc hiện tại (cần ≥ <strong>4 từ</strong>, hiện có <strong>{eligibleWords.length}</strong> từ). Hãy thử đổi <strong>Level Priority</strong> hoặc <strong>Vocabulary Type</strong>.</>
+                  : wordTypeFilter === 'All'
+                    ? <>You need at least <strong>4 vocabulary words</strong> to generate a quiz (currently <strong>{eligibleWords.length}</strong>). Add words in the <strong>Vocabulary</strong> tab first.</>
+                    : <>Not enough <strong>{wordTypeFilter}</strong> words (need ≥ 4, currently <strong>{eligibleWords.length}</strong>). Try <strong>All Types</strong> or add more words of this type.</>
             }
           </p>
         </div>
@@ -440,7 +473,7 @@ function QuizConfig({ words, structures = [], onStart }) {
                 id={`count-${n}`}
                 label={String(n)}
                 selected={count === n}
-                onClick={() => setCount(n)}
+                onClick={() => { setCount(n); setCopied(false); }}
               />
             ))}
           </div>
@@ -455,7 +488,7 @@ function QuizConfig({ words, structures = [], onStart }) {
                 id={`diff-${d.toLowerCase()}`}
                 label={d}
                 selected={diff === d}
-                onClick={() => setDiff(d)}
+                onClick={() => { setDiff(d); setCopied(false); }}
               />
             ))}
           </div>
@@ -464,15 +497,22 @@ function QuizConfig({ words, structures = [], onStart }) {
         {/* Level Priority */}
         {mode !== 'structure' && <Section title="Level Priority">
           <div className="flex flex-wrap gap-2">
-            {LEVEL_PRIORITIES.map(lp => (
-              <Pill
-                key={lp.id}
-                id={`priority-${lp.id}`}
-                label={lp.label}
-                selected={priority === lp.id}
-                onClick={() => setPriority(lp.id)}
-              />
-            ))}
+            {LEVEL_PRIORITIES.map(lp => {
+              const cnt = words.filter(w =>
+                (!hardOnly || Boolean(w.hardMarked)) &&
+                (wordTypeFilter === 'All' || (w.wordType || 'Word') === wordTypeFilter) &&
+                matchesPriority(w, lp.id)
+              ).length;
+              return (
+                <Pill
+                  key={lp.id}
+                  id={`priority-${lp.id}`}
+                  label={`${lp.label} (${cnt})`}
+                  selected={priority === lp.id}
+                  onClick={() => { setPriority(lp.id); setCopied(false); }}
+                />
+              );
+            })}
           </div>
         </Section>}
 
@@ -480,14 +520,16 @@ function QuizConfig({ words, structures = [], onStart }) {
         {mode !== 'structure' && <Section title="Vocabulary Type">
           <div className="flex flex-wrap gap-2">
             {WORD_TYPE_FILTERS.map(wt => {
-              const cnt = wt.id === 'All'
-                ? words.length
-                : words.filter(w => (w.wordType || 'Word') === wt.id).length;
+              const cnt = words.filter(w =>
+                (!hardOnly || Boolean(w.hardMarked)) &&
+                matchesPriority(w, priority) &&
+                (wt.id === 'All' || (w.wordType || 'Word') === wt.id)
+              ).length;
               return (
                 <button
                   key={wt.id}
                   id={`wtype-${wt.id.toLowerCase()}`}
-                  onClick={() => setWordTypeFilter(wt.id)}
+                  onClick={() => { setWordTypeFilter(wt.id); setCopied(false); }}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 border ${
                     wordTypeFilter === wt.id
                       ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/20'
@@ -502,6 +544,34 @@ function QuizConfig({ words, structures = [], onStart }) {
             })}
           </div>
         </Section>}
+
+        {/* Difficult Words Filter */}
+        {mode !== 'structure' && (
+          <Section title="Từ khó (Difficult Words)">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex-1 min-w-[200px]">
+                <button
+                  id="quiz-hard-toggle"
+                  type="button"
+                  onClick={() => { setHardOnly(v => !v); setCopied(false); }}
+                  aria-pressed={hardOnly}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 border ${
+                    hardOnly
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-lg shadow-amber-500/10'
+                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-amber-500/40 hover:text-amber-300'
+                  }`}
+                >
+                  <Star size={15} className={hardOnly ? 'fill-amber-400 text-amber-400' : 'text-amber-400'} />
+                  <span>Chỉ từ khó ⭐</span>
+                  <span className="text-xs opacity-80">({hardCount})</span>
+                </button>
+                <p className="text-slate-500 text-xs mt-2">
+                  Áp dụng cho nguồn từ Vocabulary khi tạo AI Prompt mới (hiện có <strong className="text-slate-300">{eligibleWords.length}</strong> từ khớp bộ lọc, cần tối thiểu 4 từ).
+                </p>
+              </div>
+            </div>
+          </Section>
+        )}
 
         {mode === 'structure' && (
           <Section title="Structures to practice">
@@ -522,7 +592,7 @@ function QuizConfig({ words, structures = [], onStart }) {
               <button
                 key={qm.id}
                 id={`mode-${qm.id}`}
-                onClick={() => setMode(qm.id)}
+                onClick={() => { setMode(qm.id); setCopied(false); }}
                 className={`text-left p-4 rounded-xl border transition-all duration-200 ${
                   mode === qm.id
                     ? 'bg-indigo-600/20 border-indigo-500 text-white'
@@ -747,6 +817,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
   const repeatTimerRef = useRef(null);
   const repeatGenerationRef = useRef(0);
   const advanceTimerRef = useRef(null);
+  const answeredRef = useRef(false);
 
   const isDictation = answerMode === 'dictation';
 
@@ -812,6 +883,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
 
   // Reset dictation state when question advances
   useEffect(() => {
+    answeredRef.current = false;
     setTypedAnswer('');
     setDictAnswered(false);
     setDictCorrect(false);
@@ -948,7 +1020,8 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
   }
 
   function handleSelect(idx) {
-    if (answered) return;
+    if (answered || answeredRef.current) return;
+    answeredRef.current = true;
     setSelected(idx);
     const isCorrect = idx === q.correctIndex;
     grade(isCorrect, q, resultsRef.current);
@@ -965,7 +1038,8 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
 
   // Dictation: submit typed answer
   function handleDictationSubmit() {
-    if (!typedAnswer.trim() || dictAnswered) return;
+    if (!typedAnswer.trim() || dictAnswered || answeredRef.current) return;
+    answeredRef.current = true;
     stopRepeatingPlayback();
     const isCorrect =
       typedAnswer.trim().toLowerCase() === (q.wordEnglish || '').toLowerCase();
@@ -977,7 +1051,8 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
 
   // Dictation: I Know It (auto-skip)
   function handleIKnowIt() {
-    if (dictAnswered) return;
+    if (dictAnswered || answeredRef.current) return;
+    answeredRef.current = true;
     stopRepeatingPlayback();
     setTypedAnswer(q.wordEnglish || '');
     setDictCorrect(true);
@@ -1117,7 +1192,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
           )}
 
           {/* Text input */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <input
               id="dictation-input"
               ref={inputRef}
@@ -1131,7 +1206,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
               autoCorrect="off"
               autoCapitalize="off"
               spellCheck={false}
-              className={`flex-1 bg-slate-900/60 border rounded-xl px-4 py-3 text-white text-sm font-mono placeholder-slate-600
+              className={`flex-1 min-w-0 bg-slate-900/60 border rounded-xl px-4 py-3 text-white text-sm font-mono placeholder-slate-600
                 focus:outline-none transition-colors
                 ${
                   dictAnswered

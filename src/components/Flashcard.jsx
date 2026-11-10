@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Volume2, CheckCircle, XCircle, RefreshCw, Filter } from 'lucide-react';
+import { Volume2, CheckCircle, XCircle, RefreshCw, Filter, Star } from 'lucide-react';
 import { playAudio } from '../utils/audio';
 import { pickNextWord } from '../utils/wordSelection';
 
@@ -52,6 +52,7 @@ export default function Flashcard({ words, updateWordLevel }) {
   const [mode,        setMode]        = useState('eng-vie'); // 'eng-vie' | 'vie-eng'
   const [levelFilter, setLevelFilter] = useState(null);      // null = all
   const [typeFilter,  setTypeFilter]  = useState('All');
+  const [hardOnly,    setHardOnly]    = useState(false);
 
   // ── Current card state ───────────────────────────────────────────────────
   const [currentWord,  setCurrentWord]  = useState(null);
@@ -69,14 +70,30 @@ export default function Flashcard({ words, updateWordLevel }) {
    * We use a ref instead of state because updating it should NOT trigger a
    * re-render — it's internal bookkeeping for the selection algorithm.
    */
-  const recentArrRef = useRef([]);
+  const recentArrRef       = useRef([]);
+  const advanceTimerRef    = useRef(null);
+  const isTransitioningRef = useRef(false);
+  const filteredWordsRef   = useRef([]);
 
   // ── Filtered word pool ───────────────────────────────────────────────────
   const filteredWords = useMemo(() => {
     let result = words;
+    if (hardOnly)           result = result.filter(w => Boolean(w.hardMarked));
     if (levelFilter !== null) result = result.filter(w => w.level === levelFilter);
     if (typeFilter  !== 'All') result = result.filter(w => (w.wordType || 'Word') === typeFilter);
     return result;
+  }, [words, hardOnly, levelFilter, typeFilter]);
+
+  useEffect(() => {
+    filteredWordsRef.current = filteredWords;
+  }, [filteredWords]);
+
+  const hardCount = useMemo(() => {
+    return words.filter(w =>
+      Boolean(w.hardMarked) &&
+      (levelFilter === null || w.level === levelFilter) &&
+      (typeFilter === 'All' || (w.wordType || 'Word') === typeFilter),
+    ).length;
   }, [words, levelFilter, typeFilter]);
 
   // ── Pick the next card ───────────────────────────────────────────────────
@@ -122,15 +139,27 @@ export default function Flashcard({ words, updateWordLevel }) {
   //
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
+    if (advanceTimerRef.current) {
+      clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = null;
+    }
+    isTransitioningRef.current = false;
     // Reset session state
     recentArrRef.current = [];
     setSessionCount(0);
     setFinished(false);
     // Use the current filteredWords (captured via closure; stale-safe because
-    // filteredWords updates synchronously with levelFilter/typeFilter changes)
+    // filteredWords updates synchronously with levelFilter/typeFilter/hardOnly changes)
     advanceToNext(filteredWords, []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [levelFilter, typeFilter, mode]);
+  }, [levelFilter, typeFilter, hardOnly, mode]);
+
+  useEffect(() => () => {
+    if (advanceTimerRef.current) {
+      clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = null;
+    }
+  }, []);
 
   // ── Handlers ─────────────────────────────────────────────────────────────
   function handleLevelFilter(val) {
@@ -143,7 +172,17 @@ export default function Flashcard({ words, updateWordLevel }) {
     setFinished(false);
   }
 
+  function handleHardFilter() {
+    setHardOnly(v => !v);
+    setFinished(false);
+  }
+
   function restartSession() {
+    if (advanceTimerRef.current) {
+      clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = null;
+    }
+    isTransitioningRef.current = false;
     recentArrRef.current = [];
     setSessionCount(0);
     setFinished(false);
@@ -155,7 +194,8 @@ export default function Flashcard({ words, updateWordLevel }) {
    * `remembered` — true = user marked as remembered; false = needs review.
    */
   const handleNext = (remembered) => {
-    if (!currentWord) return;
+    if (!currentWord || isTransitioningRef.current) return;
+    isTransitioningRef.current = true;
 
     // SRS update
     if (updateWordLevel) {
@@ -166,12 +206,11 @@ export default function Flashcard({ words, updateWordLevel }) {
     setIsFlipped(false);
 
     // Small delay to let the flip animation settle before switching words
-    setTimeout(() => {
-      // Use the CURRENT filteredWords (via closure captured at render time).
-      // After updateWordLevel → setWords → re-render, `filteredWords` will have
-      // refreshed word objects. We read it here (post-render) to get the latest
-      // levels/streaks so pickNextWord can prioritise correctly.
-      advanceToNext(filteredWords, recentArrRef.current);
+    if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+    advanceTimerRef.current = setTimeout(() => {
+      advanceTimerRef.current = null;
+      isTransitioningRef.current = false;
+      advanceToNext(filteredWordsRef.current, recentArrRef.current);
     }, 200);
   };
 
@@ -184,16 +223,21 @@ export default function Flashcard({ words, updateWordLevel }) {
   // ── Filter bar (always rendered) ─────────────────────────────────────────
   const filterBar = (
     <div className="w-full space-y-3 mb-6">
-      {/* Level filter pills */}
+      {/* Level filter pills + difficult-word toggle */}
       <div className="flex items-center gap-2 flex-wrap">
         <Filter size={13} className="text-slate-500 shrink-0" />
         {LEVEL_OPTS.map(opt => {
+          const base = words.filter(w =>
+            (!hardOnly || Boolean(w.hardMarked)) &&
+            (typeFilter === 'All' || (w.wordType || 'Word') === typeFilter),
+          );
           const count = opt.value === null
-            ? words.length
-            : words.filter(w => w.level === opt.value).length;
+            ? base.length
+            : base.filter(w => w.level === opt.value).length;
           return (
             <button
               key={String(opt.value)}
+              id={`flashcard-level-${opt.value ?? 'all'}`}
               onClick={() => handleLevelFilter(opt.value)}
               className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
                 levelFilter === opt.value
@@ -206,18 +250,38 @@ export default function Flashcard({ words, updateWordLevel }) {
             </button>
           );
         })}
+        <button
+          id="flashcard-hard-toggle"
+          type="button"
+          onClick={handleHardFilter}
+          aria-pressed={hardOnly}
+          title={hardOnly ? 'Hiện tất cả từ' : 'Chỉ luyện các từ đã đánh dấu sao khó'}
+          className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 border ${
+            hardOnly
+              ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-md shadow-amber-500/10'
+              : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-amber-300 border-slate-700'
+          }`}
+        >
+          <Star size={12} className={hardOnly ? 'fill-amber-400 text-amber-400' : 'text-amber-400'} />
+          <span>Chỉ từ khó ⭐</span>
+          <span className="opacity-70">({hardCount})</span>
+        </button>
       </div>
 
       {/* Type filter tab bar */}
-      <div className="flex items-center gap-1 bg-slate-800/40 border border-slate-700/40 rounded-xl p-1 w-fit">
+      <div className="flex items-center gap-1 bg-slate-800/40 border border-slate-700/40 rounded-xl p-1 w-fit max-w-full flex-wrap">
         {TYPE_OPTS.map(opt => {
-          const pool = levelFilter === null ? words : words.filter(w => w.level === levelFilter);
+          const pool = words.filter(w =>
+            (!hardOnly || Boolean(w.hardMarked)) &&
+            (levelFilter === null || w.level === levelFilter),
+          );
           const count = opt.value === 'All'
             ? pool.length
             : pool.filter(w => (w.wordType || 'Word') === opt.value).length;
           return (
             <button
               key={opt.value}
+              id={`flashcard-type-${opt.value.toLowerCase()}`}
               onClick={() => handleTypeFilter(opt.value)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
                 typeFilter === opt.value
@@ -256,8 +320,14 @@ export default function Flashcard({ words, updateWordLevel }) {
           <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4">
             <Filter size={28} className="text-slate-600" />
           </div>
-          <h3 className="text-slate-400 font-medium mb-2">Không có từ nào khớp bộ lọc này</h3>
-          <p className="text-slate-600 text-sm">Thử bộ lọc khác hoặc thêm từ mới trong tab Vocabulary.</p>
+          <h3 className="text-slate-400 font-medium mb-2">
+            {hardOnly ? 'Không có từ khó ⭐ nào khớp bộ lọc này' : 'Không có từ nào khớp bộ lọc này'}
+          </h3>
+          <p className="text-slate-600 text-sm">
+            {hardOnly
+              ? 'Hãy đánh dấu ⭐ cho từ khó trong tab Vocabulary hoặc tắt bộ lọc "Chỉ từ khó ⭐".'
+              : 'Thử bộ lọc khác hoặc thêm từ mới trong tab Vocabulary.'}
+          </p>
         </div>
       </div>
     );

@@ -82,18 +82,18 @@ Bố cục từ mã: nền slate tối, thanh nav cố định phía trên, nộ
 ### Dashboard và Vocabulary
 
 - `Dashboard`: tổng từ, từ L5, độ chính xác và số câu Smart Quiz Vocabulary; thanh L1–L5 có thể bấm để sang Vocabulary kèm bộ lọc. Không tổng hợp tiến độ Grammar hoặc Structures.
-- `Vocabulary`: thêm tiếng Anh, nghĩa Việt, annotation, URL ảnh, loại Word/Phrase/Family/Preposition; sửa/xóa từng thẻ, phát âm, tìm theo tiếng Anh/nghĩa/annotation, lọc loại và cấp. Phân trang 24 mục. Chọn tất cả áp dụng toàn bộ tập đang lọc, không chỉ trang hiện tại; đổi cấp hàng loạt reset streak (`Vocabulary::toggleSelectAll`, `handleBulkChangeLevel`; `useVocabStore::bulkUpdateLevel`).
-- JSON: xuất toàn bộ `words`; nhập thêm từ chưa có theo tiếng Anh, không thay cả kho. Import UI đi qua `addWord`, có giới hạn phục hồi metadata nêu ở mục 9 (`Vocabulary::handleExport/handleImport`). Hàm hook `importWords` thay toàn bộ kho tồn tại nhưng App không nối nó với UI import.
+- `Vocabulary`: thêm tiếng Anh, nghĩa Việt, annotation, URL ảnh, loại Word/Phrase/Family/Preposition; đánh dấu/bỏ đánh dấu sao từ khó (`hardMarked`, nút `#star-<id>`), sửa/xóa từng thẻ, phát âm, tìm theo tiếng Anh/nghĩa/annotation, lọc loại, cấp và `Khó ⭐` (`#filter-hard-only`) theo phép giao chặt. Phân trang 24 mục. Chọn tất cả áp dụng toàn bộ tập đang lọc, không chỉ trang hiện tại; đổi cấp hàng loạt reset streak nhưng giữ nguyên dấu sao (`Vocabulary::toggleSelectAll`, `handleBulkChangeLevel`; `useVocabStore::bulkUpdateLevel/toggleWordHard`).
+- JSON: xuất toàn bộ `words` (kèm `hardMarked`); nhập thêm từ chưa có theo tiếng Anh, không thay cả kho. Import UI đi qua `addWord` (giữ `hardMarked`, sinh UUID mới).
 
 ### Flashcard và Listening
 
-- `Flashcard`: chọn Anh → Việt hoặc Việt → Anh, lọc cấp/loại, lật thẻ rồi đánh dấu nhớ/cần ôn; mỗi đánh giá cập nhật Vocabulary. Ưu tiên cấp thấp rồi streak thấp, né tối đa 8 ID gần nhất nếu có thể. Không chọn trực tiếp bằng ngày đến hạn (`Flashcard::advanceToNext/handleNext`; `wordSelection.js::pickNextWord`).
-- `ListeningReview`: cần ít nhất 4 từ trong tập lọc, tự phát âm từ mục tiêu, chọn một trong 4 thẻ ảnh hoặc gõ đúng từ; có nghe lại, gợi ý và bật/tắt nghĩa, bỏ qua. Gõ khớp sau trim/lowercase tự chấm đúng; chọn sai làm giảm cấp từ mục tiêu ngay. Nút tiếp/bỏ qua không chấm. Chỉ dùng tập đến hạn nếu còn đủ 4 từ; thiếu thì dùng tập lọc rộng hơn. Điểm phiên ở component, không cộng `stats` Dashboard (`handleTypingChange`, `handleCardClick`, `handleNext`, `filteredPool`).
+- `Flashcard`: chọn Anh → Việt hoặc Việt → Anh, lọc cấp/loại và `Chỉ từ khó ⭐` (`#flashcard-hard-toggle`, giao chặt), lật thẻ rồi đánh dấu nhớ/cần ôn; mỗi đánh giá cập nhật Vocabulary nhưng giữ nguyên `hardMarked`. Ưu tiên cấp thấp rồi streak thấp, né tối đa 8 ID gần nhất nếu có thể. Không chọn trực tiếp bằng ngày đến hạn (`Flashcard::advanceToNext/handleNext`; `wordSelection.js::pickNextWord`).
+- `ListeningReview`: cần ít nhất 4 từ trong tập lọc (giao chặt giữa Level, Type, `Chỉ từ khó ⭐` `#lr-hard-toggle` và `Due for Review` `#lr-due-toggle`, không tự lùi về tập rộng hơn khi `< 4` từ khớp), tự phát âm từ mục tiêu, chọn một trong 4 thẻ ảnh hoặc gõ đúng từ; có nghe lại, gợi ý và bật/tắt nghĩa, bỏ qua. Gõ khớp sau trim/lowercase tự chấm đúng; chọn sai làm giảm cấp từ mục tiêu ngay. Nút tiếp/bỏ qua hoặc đổi bộ lọc giữa chừng không chấm câu đang dở. Điểm phiên ở component, không cộng `stats` Dashboard (`handleTypingChange`, `handleCardClick`, `handleNext`, `filteredPool`).
 - Audio: `audio.js::playAudio` ưu tiên giọng Web Speech en-US/en-GB, rate 0.9; dự phòng Google TTS. `ListeningReview::getImageUrl` và `QuizGame` dùng ảnh theo URL hoặc dịch vụ ảnh bên ngoài. Khả năng phát âm/tải ảnh thật chưa xác minh.
 
 ### Smart Quiz
 
-`QuizConfig` chọn 5/10/15/20 câu, Easy/Medium/Hard, chế độ `vn`/`toeic`/`structure`. Với Vocabulary, chọn loại/cấp ưu tiên và trắc nghiệm hoặc nghe-gõ; cần ít nhất 4 từ. Structures chọn mẫu đã lưu, không cần bốn từ Vocabulary; UI dùng trắc nghiệm cho nhánh này. Copy prompt sang AI → dán JSON → `parseResponse` → `QuizGame` → `QuizResults`.
+`QuizConfig` chọn 5/10/15/20 câu, Easy/Medium/Hard, chế độ `vn`/`toeic`/`structure`. Với Vocabulary, chọn loại, cấp ưu tiên và tùy chọn `Chỉ từ khó ⭐` (`#quiz-hard-toggle`) theo phép giao chặt (không fallback về từ ngoài bộ lọc khi `< 4` từ), cùng chế độ trả lời trắc nghiệm hoặc nghe-gõ; cần ít nhất 4 từ khớp bộ lọc để copy prompt và bắt đầu. Khi `Chỉ từ khó ⭐` bật, `handleStart` kiểm tra các từ `wordEnglish` trong JSON dán vào phải thuộc tập từ khớp bộ lọc. Structures chọn mẫu đã lưu, không cần bốn từ Vocabulary; UI dùng trắc nghiệm cho nhánh này. Copy prompt sang AI → dán JSON → `parseResponse` → `QuizGame` → `QuizResults`.
 
 Vocabulary chọn đáp án/gõ từ rồi chấm. Lần sai đầu chỉ gắn cảnh báo và chèn câu kiểm tra lại; chưa giảm cấp. Kiểm tra lại đúng tăng streak và sửa lượt sai trong tally; sai lần nữa mới giảm một cấp. Vì có kiểm tra lại, tally không nhất thiết tương ứng số câu ban đầu. Khi kết thúc, `handleFinish` cộng thống kê Vocabulary; bỏ phiên giữa chừng không tổng kết. Nhánh Structures ghi một sự kiện đúng/sai vào store Structures ngay mỗi đáp án, không dùng cơ chế tha lỗi này và không cộng stats Vocabulary (`QuizGame::grade`, `Quiz::handleFinish`).
 
@@ -118,7 +118,7 @@ Từ 2026-11-04, Practice/Saved/Review dùng chung `GrammarTopicBadge` ngay phí
 
 | Kho | Key LocalStorage | Bản ghi chính |
 | --- | --- | --- |
-| Vocabulary | `vocabmaster_words` | `id`, `english`, `annotation`, `vietnamese`, `imageUrl`, `wordType`, `level`, `currentStreak`, `createdAt`, tùy chọn `lastReviewedDate` |
+| Vocabulary | `vocabmaster_words` | `id`, `english`, `annotation`, `vietnamese`, `imageUrl`, `wordType`, `level`, `currentStreak`, `createdAt`, tùy chọn `lastReviewedDate`, tùy chọn `hardMarked` (`true` khi đánh dấu sao từ khó) |
 | Stats Vocabulary | `vocabmaster_stats` | `totalQuestions`, `correctAnswers` |
 | Câu Grammar | `vocabmaster_grammar_saved` | câu v2 hoặc legacy + `savedId`, `savedAt`, `hardMarked`, `userNotes`; mới lưu có thể có `analysisTopic` |
 | Tiến độ câu | `vocabmaster_grammar_review` | map `savedId` → `level`, `wrongCount`, `totalReviews`, `lastReviewAt`, `nextReviewAt` |
@@ -228,6 +228,7 @@ Scripts thực tế (`package.json`): `npm run dev`, `npm run build`, `npm run l
 | `node test/sentence-notes-browser.test.js` | App/Edge thật, typing/autosave/ẩn-hiện, geometry viewport 1100/375/320px, giữ underline/progress, chuyển key và reopen/reload; thiết lập Playwright như underline-rendering |
 | `node test/grammar-export.test.js` | XLSX thật, 2 sheet/1 cột/literal text/no private fields, Unicode/legacy/frequency/snapshot/empty/error; cần Python 3 standard library trong PATH cho reader ZIP/XML độc lập |
 | `node test/grammar-export-browser.test.js` | App/Edge tải XLSX thật, clipboard/manual fallback, stale/config/import/save/GET, cache trống/hỏng/không đọc được và viewport 1280/375/320px; cần Playwright/Edge + Python 3, network/storage cô lập |
+| `node test/vocab-star-browser.test.js` | App/Edge kiểm tra đánh dấu sao từ khó (`hardMarked`), bộ lọc `Khó ⭐` và `Chỉ từ khó ⭐` (giao chặt, trạng thái trống, bảo toàn sao sau sửa/chấm/export/import, chặn đề JSON không khớp) trên Vocabulary, Flashcard, Listening, Smart Quiz và viewport 1280/375/320px |
 
 Lần khảo sát: **cả 11 file exit 0**. `npm.cmd run lint` exit 0 nhưng còn cảnh báo unused, hook deps, set-state-in-effect, purity/refs…; không sửa vì chỉ bàn giao. Build exit 0 bằng `npm.cmd run build -- --outDir <thư-mục-tạm-mới>` để giữ `dist` hiện có; Vite báo outDir ngoài project không tự dọn và thông tin thời gian plugin. Không chạy dev server/browser.
 

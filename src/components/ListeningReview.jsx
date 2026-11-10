@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Headphones, RotateCcw, Eye, EyeOff, Volume2,
-  ChevronRight, Trophy, AlertCircle, CheckCircle2, XCircle, Clock,
+  ChevronRight, Trophy, AlertCircle, CheckCircle2, XCircle, Clock, Star,
 } from 'lucide-react';
 import { playAudio } from '../utils/audio';
 import { isDueForReview } from '../hooks/useVocabStore';
@@ -197,7 +197,7 @@ function ImageCard({ word, state, onClick, showMeaning, onToggleMeaning, index, 
 function StatsBar({ score, total }) {
   const pct = total === 0 ? 0 : Math.round((score / total) * 100);
   return (
-    <div className="flex items-center gap-4 text-sm">
+    <div className="flex items-center gap-4 text-sm flex-wrap">
       <div className="flex items-center gap-1.5">
         <CheckCircle2 size={14} className="text-emerald-400" />
         <span className="text-white font-semibold">{score}</span>
@@ -223,6 +223,7 @@ export default function ListeningReview({ words, updateWordLevel }) {
   const [levelFilter, setLevelFilter] = useState(null);    // null = All Levels
   const [typeFilter,  setTypeFilter]  = useState('All');   // 'All' | 'Word' | 'Phrase' | 'Family' | 'Preposition'
   const [dueOnly,     setDueOnly]     = useState(false);   // spaced-repetition "due today" filter
+  const [hardOnly,    setHardOnly]    = useState(false);   // difficult-word star filter
 
   /* ── Game state ── */
   const [round,         setRound]         = useState(null);
@@ -236,33 +237,58 @@ export default function ListeningReview({ words, updateWordLevel }) {
   const [listenCount,   setListenCount]   = useState(0);   // how many times Replay was clicked
   const [typingInput,   setTypingInput]   = useState('');  // user's typed answer
 
-  const audioRef   = useRef(null);
-  const inputRef   = useRef(null); // ref for the typing input — keeps focus between rounds
+  const audioRef        = useRef(null);
+  const inputRef        = useRef(null); // ref for the typing input — keeps focus between rounds
+  const advanceTimerRef = useRef(null);
+  const answeredRef     = useRef(false);
+  const filteredPoolRef = useRef([]);
 
-  /* ── Derived: filtered vocabulary pool ── */
+  /* ── Derived: filtered vocabulary pool (strict intersection, no silent fallback) ── */
   const filteredPool = (() => {
-    let pool = levelFilter !== null
-      ? words.filter(w => w.level === levelFilter)
-      : words;
-    if (typeFilter !== 'All') {
-      pool = pool.filter(w => (w.wordType || 'Word') === typeFilter);
-    }
-    if (dueOnly) {
-      const due = pool.filter(isDueForReview);
-      // Only apply the "due" filter when it leaves enough words to play
-      if (due.length >= 4) pool = due;
-    }
+    let pool = words;
+    if (hardOnly) pool = pool.filter(w => Boolean(w.hardMarked));
+    if (levelFilter !== null) pool = pool.filter(w => w.level === levelFilter);
+    if (typeFilter !== 'All') pool = pool.filter(w => (w.wordType || 'Word') === typeFilter);
+    if (dueOnly) pool = pool.filter(isDueForReview);
     return pool;
   })();
 
+  useEffect(() => {
+    filteredPoolRef.current = filteredPool;
+  });
+
   const hasEnoughWords = filteredPool.length >= 4;
+
+  function clearAdvanceTimer() {
+    if (advanceTimerRef.current) {
+      clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = null;
+    }
+  }
+
+  function stopCurrentAudio() {
+    if (audioRef.current) {
+      try { audioRef.current.cancel(); } catch { /* ignore */ }
+      audioRef.current = null;
+    }
+    setIsPlaying(false);
+  }
 
   /* ── Build a new round from the current filteredPool ── */
   const startNewRound = useCallback((pool, prevId) => {
-    if (pool.length < 4) return;
+    clearAdvanceTimer();
+    if (pool.length < 4) {
+      answeredRef.current = false;
+      setRound(null);
+      setAnswered(false);
+      setSelectedWord(null);
+      setTypingInput('');
+      return;
+    }
     const r = buildListeningRound(pool, prevId);
     if (!r) return;
 
+    answeredRef.current = false;
     setRound(r);
     setAnswered(false);
     setSelectedWord(null);
@@ -274,16 +300,27 @@ export default function ListeningReview({ words, updateWordLevel }) {
   /* ── Start first round when component mounts or filter changes ── */
   // Reset game state and build a fresh round whenever the pool changes.
   useEffect(() => {
+    clearAdvanceTimer();
+    stopCurrentAudio();
     if (hasEnoughWords) {
       // Reset previousId when the pool changes so we don't carry over stale IDs
       setPreviousId(null);
       startNewRound(filteredPool, null);
     } else {
+      answeredRef.current = false;
+      setAnswered(false);
+      setSelectedWord(null);
+      setTypingInput('');
       setRound(null);
     }
     // We deliberately only react to pool identity (length + filters), not every words update.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [levelFilter, typeFilter, dueOnly, hasEnoughWords]);
+  }, [levelFilter, typeFilter, dueOnly, hardOnly, hasEnoughWords]);
+
+  useEffect(() => () => {
+    clearAdvanceTimer();
+    stopCurrentAudio();
+  }, []);
 
   /* ── Auto-play audio when a new round's correct word changes ── */
   useEffect(() => {
@@ -335,7 +372,8 @@ export default function ListeningReview({ words, updateWordLevel }) {
 
   /* ── Handle card click ── */
   function handleCardClick(word) {
-    if (answered || !round) return;
+    if (answeredRef.current || answered || !round) return;
+    answeredRef.current = true;
 
     const isCorrect = word.id === round.correct.id;
     setSelectedWord(word);
@@ -351,14 +389,20 @@ export default function ListeningReview({ words, updateWordLevel }) {
     setPreviousId(justPlayedId);
 
     // Auto-advance after 1.5 s
-    setTimeout(() => startNewRound(filteredPool, justPlayedId), 1500);
+    clearAdvanceTimer();
+    advanceTimerRef.current = setTimeout(() => {
+      advanceTimerRef.current = null;
+      startNewRound(filteredPoolRef.current, justPlayedId);
+    }, 1500);
   }
 
   /* ── Skip / Next handler ── */
   function handleNext() {
+    clearAdvanceTimer();
+    stopCurrentAudio();
     const justPlayedId = round?.correct?.id ?? null;
     setPreviousId(justPlayedId);
-    startNewRound(filteredPool, justPlayedId);
+    startNewRound(filteredPoolRef.current, justPlayedId);
   }
 
   /* ── Card state classifier ── */
@@ -374,29 +418,40 @@ export default function ListeningReview({ words, updateWordLevel }) {
     setIsMeaningRevealed(v => !v);
   }
 
-  /* ── Count helpers for pills ── */
+  /* ── Count helpers for pills (strict intersection with active filters) ── */
   function levelCount(val) {
-    const base = val !== null ? words.filter(w => w.level === val) : words;
-    return typeFilter === 'All'
-      ? base.length
-      : base.filter(w => (w.wordType || 'Word') === typeFilter).length;
+    return words.filter(w =>
+      (!hardOnly || Boolean(w.hardMarked)) &&
+      (typeFilter === 'All' || (w.wordType || 'Word') === typeFilter) &&
+      (!dueOnly || isDueForReview(w)) &&
+      (val === null || w.level === val)
+    ).length;
   }
 
   function typeCount(val) {
-    const base = levelFilter !== null
-      ? words.filter(w => w.level === levelFilter)
-      : words;
-    return val === 'All'
-      ? base.length
-      : base.filter(w => (w.wordType || 'Word') === val).length;
+    return words.filter(w =>
+      (!hardOnly || Boolean(w.hardMarked)) &&
+      (levelFilter === null || w.level === levelFilter) &&
+      (!dueOnly || isDueForReview(w)) &&
+      (val === 'All' || (w.wordType || 'Word') === val)
+    ).length;
   }
 
-  /** How many words in the current level+type pool are due for review */
-  const dueCount = (() => {
-    let base = levelFilter !== null ? words.filter(w => w.level === levelFilter) : words;
-    if (typeFilter !== 'All') base = base.filter(w => (w.wordType || 'Word') === typeFilter);
-    return base.filter(isDueForReview).length;
-  })();
+  /** How many words in the current level+type(+hard) pool are due for review */
+  const dueCount = words.filter(w =>
+    (!hardOnly || Boolean(w.hardMarked)) &&
+    (levelFilter === null || w.level === levelFilter) &&
+    (typeFilter === 'All' || (w.wordType || 'Word') === typeFilter) &&
+    isDueForReview(w)
+  ).length;
+
+  /** How many words in the current level+type(+due) pool are starred as difficult */
+  const hardCount = words.filter(w =>
+    Boolean(w.hardMarked) &&
+    (levelFilter === null || w.level === levelFilter) &&
+    (typeFilter === 'All' || (w.wordType || 'Word') === typeFilter) &&
+    (!dueOnly || isDueForReview(w))
+  ).length;
 
   /* ── Derived answer state ── */
   const isCorrectAnswer = answered && selectedWord?.id === round?.correct?.id;
@@ -445,7 +500,7 @@ export default function ListeningReview({ words, updateWordLevel }) {
             Type
           </p>
           {/* Segmented tab style matching Vocabulary.jsx */}
-          <div className="flex items-center gap-1 bg-slate-800/60 border border-slate-700/40 rounded-xl p-1 w-fit">
+          <div className="flex items-center gap-1 bg-slate-800/60 border border-slate-700/40 rounded-xl p-1 w-fit max-w-full flex-wrap">
             {TYPE_FILTER_OPTIONS.map(opt => (
               <button
                 key={opt.value}
@@ -468,21 +523,48 @@ export default function ListeningReview({ words, updateWordLevel }) {
           </div>
         </div>
 
+        {/* Difficult Words only toggle */}
+        <div className="flex items-center justify-between pt-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Star size={14} className={hardOnly ? 'fill-amber-400 text-amber-400' : 'text-amber-400'} />
+            <span className="text-slate-300 text-xs font-semibold">Chỉ từ khó ⭐</span>
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+              {hardCount} từ khó
+            </span>
+          </div>
+          <button
+            id="lr-hard-toggle"
+            type="button"
+            onClick={() => setHardOnly(v => !v)}
+            className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none ${
+              hardOnly ? 'bg-amber-500' : 'bg-slate-600'
+            }`}
+            title={hardOnly ? 'Hiện tất cả từ' : 'Chỉ luyện các từ đã đánh dấu sao khó'}
+            aria-label="Chỉ từ khó ⭐"
+            aria-pressed={hardOnly}
+          >
+            <span
+              className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-200 ${
+                hardOnly ? 'translate-x-4' : 'translate-x-0.5'
+              }`}
+            />
+          </button>
+        </div>
+
         {/* Due Today toggle */}
         <div className="flex items-center justify-between pt-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Clock size={14} className="text-amber-400" />
             <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Due for Review</span>
-            {dueCount > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                {dueCount} due
-              </span>
-            )}
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+              {dueCount} due
+            </span>
           </div>
           <button
             id="lr-due-toggle"
+            type="button"
             onClick={() => setDueOnly(v => !v)}
-            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none ${
+            className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none ${
               dueOnly ? 'bg-amber-500' : 'bg-slate-600'
             }`}
             title={dueOnly ? 'Show all words' : 'Show only words due for review'}
@@ -495,11 +577,6 @@ export default function ListeningReview({ words, updateWordLevel }) {
             />
           </button>
         </div>
-        {dueOnly && dueCount < 4 && (
-          <p className="text-amber-400/70 text-xs">
-            ⚠ Fewer than 4 words are due — showing full pool instead.
-          </p>
-        )}
       </div>
 
       {/* ── Not enough words for current filters ── */}
@@ -507,10 +584,15 @@ export default function ListeningReview({ words, updateWordLevel }) {
         <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5">
           <AlertCircle size={20} className="text-amber-400 shrink-0 mt-0.5" />
           <div>
-            <p className="text-amber-300 font-semibold mb-1">Not enough words match these filters</p>
+            <p className="text-amber-300 font-semibold mb-1">
+              {hardOnly
+                ? 'Chưa đủ từ khó ⭐ khớp bộ lọc hiện tại'
+                : 'Not enough words match these filters'}
+            </p>
             <p className="text-amber-400/70 text-sm">
+              Cần ít nhất <strong>4 từ</strong> khớp bộ lọc để tạo câu hỏi nghe 4 lựa chọn.
+              Hiện có <strong>{filteredPool.length}</strong> từ khớp{hardOnly ? ' (đang bật "Chỉ từ khó ⭐")' : ''}.
               Please select a category with at least <strong>4 words</strong> to play.
-              Currently <strong>{filteredPool.length}</strong> word{filteredPool.length !== 1 ? 's' : ''} match.
             </p>
           </div>
         </div>
@@ -584,7 +666,7 @@ export default function ListeningReview({ words, updateWordLevel }) {
 
             {/* ── Typing input ── */}
             {!answered && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <input
                   id="listening-type-answer"
                   ref={inputRef}
@@ -595,12 +677,12 @@ export default function ListeningReview({ words, updateWordLevel }) {
                   autoComplete="off"
                   spellCheck={false}
                   className="
-                    flex-1 bg-slate-900/60 border border-slate-600 rounded-xl
+                    flex-1 min-w-0 bg-slate-900/60 border border-slate-600 rounded-xl
                     px-4 py-2.5 text-white text-sm placeholder-slate-600
                     focus:outline-none focus:border-indigo-500 transition-colors
                   "
                 />
-                <span className="text-slate-600 text-xs whitespace-nowrap">auto-submits</span>
+                <span className="text-slate-600 text-xs whitespace-nowrap shrink-0">auto-submits</span>
               </div>
             )}
           </div>
@@ -648,7 +730,7 @@ export default function ListeningReview({ words, updateWordLevel }) {
           </div>
 
           {/* ── Action bar ── */}
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <button
               id="listening-next-btn"
               onClick={handleNext}
