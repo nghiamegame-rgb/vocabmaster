@@ -15,6 +15,7 @@ export default function App() {
 
   const {
     words,
+    hasReadableWords,
     dataLoadError: vocabDataLoadError,
     cloudReadStatus: vocabCloudReadStatus,
     stats,
@@ -55,9 +56,11 @@ export default function App() {
           <button className="underline" onClick={exportSyncBackup}>Xuất bản sao Vocabulary</button>
           {syncNotice && <p className="w-full text-amber-300">{syncNotice}</p>}
         </div>
+        {vocabDataLoadError && <p role="alert" className="mb-4 text-amber-300">{vocabDataLoadError}</p>}
         {activeTab === 'dashboard' && (
           <Dashboard
             words={words}
+            hasReadableWords={hasReadableWords}
             stats={stats}
             setActiveTab={handleSetActiveTab}
             setVocabFilter={(level) => {

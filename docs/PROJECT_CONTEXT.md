@@ -4,6 +4,8 @@
 
 Khảo sát ngày **2026-11-02** (Asia/Saigon), commit tham chiếu `4a4aff095591629029e9a2deb75ef7fd7cc8ccc6`. Tài liệu mô tả **working tree đang có thay đổi chưa commit**, không chỉ commit này. Danh sách thay đổi và kết quả kiểm tra nằm trong [HANDOFF.md](HANDOFF.md). Điểm vào bảo trì là [AGENTS.md](../AGENTS.md).
 
+**Cập nhật quota Vocabulary 2026-11-11:** constructor chỉ đọc, không ghi backup trong render/StrictMode. Backup mới dùng IndexedDB `vocabmaster_vocabulary_backups` / store `backups`, bất biến và khử trùng theo SHA-256 nội dung; backup LocalStorage cũ giữ nguyên và được xuất cùng bản mới. Cache chuẩn vẫn là `vocabmaster_vocab_sync_v1`; sửa từ chờ backup commit rồi cập nhật cache/UI. Lỗi backup không làm mất kho đọc được; cache không hợp lệ chặn sửa/sync. Xem HANDOFF mục 15 và phần quota trong VOCABULARY-RECOVERY. Không thay protocol/proxy/Apps Script; chưa triển khai production.
+
 ## 1. Mức độ xác minh
 
 - **Mã nguồn:** các mô tả chức năng, giao diện, dữ liệu và sync bên dưới được đối chiếu với mã hiện có. Đường dẫn kèm component/hàm là nơi tra cứu.

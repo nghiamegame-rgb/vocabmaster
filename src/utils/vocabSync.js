@@ -1,3 +1,4 @@
+import { createVocabBackupStore, storageMessage } from './vocabBackup.js';
 // Vocabulary protocol 1. Legacy caches never become an authoritative base.
 export const STATE_KEY = 'vocabmaster_vocab_sync_v1';
 export const PAUSE_KEY = 'vocabmaster_vocab_sync_paused';
@@ -81,48 +82,108 @@ export function reconcile(base, local, remote) {
   return { words: [...result.values()], tombstones: [...deleted].sort(), conflicts };
 }
 export class VocabSync {
-  constructor({ storage, transport, changed = () => {}, uuid = () => crypto.randomUUID(), delay = 2000 }) {
-    Object.assign(this, { storage, transport, changed, uuid, delay });
+  constructor({ storage, transport, changed = () => {}, uuid = () => crypto.randomUUID(), delay = 2000, backups = createVocabBackupStore() }) {
+    Object.assign(this, { storage, transport, changed, uuid, delay, backups });
     this.status = 'idle'; this.readStatus = 'syncing'; this.notice = ''; this.active = false;
     this.serial = 0; this.timer = null; this.running = false;
-    const raw = storage.getItem(STATE_KEY), legacy = storage.getItem('vocabmaster_words');
-    this.state = raw ? JSON.parse(raw) : { base: null, words: JSON.parse(legacy || '[]') };
-    if (!Array.isArray(this.state.words)) throw new Error('invalid_local_cache');
-    validateSnapshot({ protocol: 1, generation: 'local', revision: 0, words: this.state.words, tombstones: [] });
-    if (this.state.base) validateSnapshot(this.state.base);
-    this.notice = this.state.notice || '';
-    this.backupKey = BACKUP_PREFIX + uuid();
-    this.storage.setItem(BACKUP_PREFIX + uuid(), JSON.stringify({ reason: 'session-start', raw, legacy, state: this.state }));
-    this.storage.setItem(this.backupKey, JSON.stringify({ state: this.state }));
+    this.queue = Promise.resolve(); this.storageError = ''; this.networkError = '';
+    this.pauseError = ''; this.pauseTarget = null;
+    this.load(); // Read only: a backup failure must never hide readable words.
   }
+  load() {
+    this.loadError = ''; this.hasReadableWords = false;
+    let raw, legacy;
+    try {
+      raw = this.storage.getItem(STATE_KEY);
+      legacy = this.storage.getItem('vocabmaster_words');
+      const state = raw ? JSON.parse(raw) : { base: null, words: JSON.parse(legacy || '[]') };
+      validateSnapshot({ protocol: 1, generation: 'local', revision: 0, words: state.words, tombstones: [] });
+      this.state = state; this.hasReadableWords = true;
+      if (state.base) validateSnapshot(state.base);
+      this.notice = state.notice && !state.notice.startsWith('Vocabulary chưa đồng bộ:') ? state.notice : '';
+      this.startup = { raw, legacy };
+    } catch {
+      // A mirror is display-only when the authoritative state cannot be read.
+      if (!this.hasReadableWords) {
+        try {
+          const words = JSON.parse(legacy);
+          validateSnapshot({ protocol: 1, generation: 'local', revision: 0, words, tombstones: [] });
+          this.state = { base: null, words }; this.hasReadableWords = true;
+        } catch { this.state = null; }
+      }
+      this.loadError = 'Không đọc được kho Vocabulary chuẩn trên thiết bị. ' +
+        (this.hasReadableWords ? 'Đang hiển thị bản local đọc được, chỉ để xem. ' : 'Chưa xác định được số từ; không coi đây là kho trống. ') +
+        'Đã chặn sửa và đồng bộ; hãy xuất bản sao để kiểm tra rồi thử lại.';
+      this.status = 'error'; this.readStatus = 'error';
+    }
+  }
+  get message() { return [this.loadError, this.storageError, this.pauseError, this.networkError, this.notice].filter(Boolean).join(' '); }
   emit() { this.changed(this); }
   subscribe(listener) { this.changed = listener; }
-  reportError(error) { this.notice = 'Không lưu được thay đổi: ' + error.message; this.status = 'error'; this.emit(); }
+  reportError(error) { this.storageError = storageMessage(error); this.status = 'error'; this.emit(); }
+  enqueue(operation) {
+    const result = this.queue.then(operation);
+    this.queue = result.catch(() => {});
+    return result;
+  }
+  async backup(data) {
+    try { await this.backups.put(canonical(data)); }
+    catch (error) { this.reportError(error); throw error; }
+  }
+  async protectStartup() {
+    if (this.startup) {
+      await this.backup(this.startup);
+      this.startup = null;
+    }
+  }
   storageChanged(key) {
     if (key === PAUSE_KEY) { this.cancel(); this.status = this.paused() ? 'paused' : 'idle'; this.emit(); }
     if (key === PAUSE_KEY || key === STATE_KEY) this.schedule(0);
   }
-  persist(next) {
+  async persist(next, valid = () => true) {
     next = { ...next, notice: this.notice };
-    // Per-session copy preserves pending edits even when another tab writes the shared cache.
-    this.storage.setItem(this.backupKey, JSON.stringify({ state: next }));
-    this.storage.setItem(STATE_KEY, JSON.stringify(next));
-    this.state = next;
-    this.storage.setItem('vocabmaster_words', JSON.stringify(next.words));
-    this.emit();
+    // Each distinct state is immutable and deduplicated across tabs/reloads.
+    // This also protects another tab's pending state before it can be overwritten.
+    await this.protectStartup();
+    await this.backup({ raw: this.storage.getItem(STATE_KEY), legacy: this.storage.getItem('vocabmaster_words') });
+    await this.backup({ state: next });
+    if (!valid()) return false;
+    try {
+      const serialized = JSON.stringify(next);
+      if (this.storage.getItem(STATE_KEY) !== serialized) this.storage.setItem(STATE_KEY, serialized);
+      this.state = next; // The authoritative write succeeded, even if the legacy mirror fails.
+      const words = JSON.stringify(next.words);
+      if (this.storage.getItem('vocabmaster_words') !== words) this.storage.setItem('vocabmaster_words', words);
+    } catch (error) { this.reportError(error); throw error; }
+    this.storageError = ''; this.emit();
+    return true;
   }
-  archive(reason, data) {
-    this.storage.setItem(BACKUP_PREFIX + this.uuid(), JSON.stringify({ reason, data }));
+  async archive(reason, data) {
+    await this.backup({ reason, data });
     this.notice = 'Có bản sao Vocabulary cũ/xung đột cần xem lại. Xuất bản sao trước khi chọn nhập lại từng mục.';
   }
   edit(update) {
-    const words = clone(typeof update === 'function' ? update(this.state.words) : update);
-    validateSnapshot({ protocol: 1, generation: 'local', revision: 0, words, tombstones: [] });
-    this.persist({ ...this.state, words }); this.schedule();
+    return this.enqueue(async () => {
+      if (this.loadError) throw new Error('invalid_local_cache');
+      const current = this.pendingEdit || this.state;
+      const words = clone(typeof update === 'function' ? update(current.words) : update);
+      validateSnapshot({ protocol: 1, generation: 'local', revision: 0, words, tombstones: [] });
+      this.pendingEdit = { ...current, words };
+      await this.persist(this.pendingEdit);
+      this.pendingEdit = null;
+      this.status = this.networkError ? 'error' : 'idle'; this.emit(); this.schedule();
+    });
   }
-  paused() { return this.storage.getItem(PAUSE_KEY) !== 'false'; }
+  paused() {
+    if (this.pauseTarget === true) return true;
+    try { return this.storage.getItem(PAUSE_KEY) !== 'false'; }
+    catch { return true; }
+  }
   pause(value = true) {
-    this.storage.setItem(PAUSE_KEY, String(value)); this.cancel();
+    this.cancel(); this.pauseTarget = value;
+    try { this.storage.setItem(PAUSE_KEY, String(value)); }
+    catch (error) { this.pauseError = storageMessage(error); this.status = 'error'; this.emit(); return; }
+    this.pauseTarget = null; this.pauseError = '';
     this.status = value ? 'paused' : 'idle'; this.emit();
     if (!value) this.schedule(0);
   }
@@ -135,26 +196,55 @@ export class VocabSync {
   }
   async sync() {
     if (!this.active || this.running) return;
+    if (this.pauseTarget !== null) {
+      this.pause(this.pauseTarget);
+      if (this.pauseTarget !== null) return;
+    }
     clearTimeout(this.timer); this.running = true;
     const serial = this.serial;
     this.controller = new AbortController();
     const valid = () => this.active && serial === this.serial;
-    let retry = false;
+    let retry = false, phase = 'storage';
     try {
-      this.notice = this.state.notice && !this.state.notice.startsWith('Vocabulary chưa đồng bộ:') ? this.state.notice : '';
-      this.status = 'syncing'; this.emit();
+      this.status = 'syncing'; this.emit(); // Keep errors visible until their operation recovers.
+      if (this.loadError) this.load();
+      if (this.loadError) return;
+      await this.enqueue(async () => {
+        await this.protectStartup();
+        if (this.pendingEdit && await this.persist(this.pendingEdit, valid)) this.pendingEdit = null;
+      });
+      if (!valid()) return;
+      phase = 'network';
       const remote = validateSnapshot(await this.transport.read(this.controller.signal));
       if (!valid()) return;
-      const merged = reconcile(this.state.base, this.state.words, remote);
-      if (!this.state.base || this.state.base.generation !== remote.generation) this.archive('generation-or-legacy', this.state);
-      else if (merged.conflicts.length) this.archive('concurrent-edit-or-deletion', merged.conflicts);
-      this.persist({ base: clone(remote), words: merged.words }); this.readStatus = 'ok';
-      if (this.paused() || remote.paused) { this.status = 'paused'; return; }
-      if (equal(merged.words, remote.words) && equal(merged.tombstones, remote.tombstones)) { this.status = 'ok'; return; }
+      phase = 'storage';
+      const merged = await this.enqueue(async () => {
+        if (!valid()) return null;
+        // A local edit may have failed while GET was in flight. Never merge an
+        // older state over that pending edit or clear its error with unrelated work.
+        if (this.pendingEdit) {
+          if (!await this.persist(this.pendingEdit, valid)) return null;
+          this.pendingEdit = null;
+        }
+        const result = reconcile(this.state.base, this.state.words, remote);
+        if (!this.state.base || this.state.base.generation !== remote.generation) await this.archive('generation-or-legacy', this.state);
+        else if (result.conflicts.length) await this.archive('concurrent-edit-or-deletion', result.conflicts);
+        if (!await this.persist({ base: clone(remote), words: result.words }, valid)) return null;
+        return result;
+      });
+      if (!merged || !valid()) return;
+      this.readStatus = 'ok';
+      if (this.paused() || remote.paused) {
+        if (this.networkOperation !== 'write') this.networkError = '';
+        this.status = 'paused'; return;
+      }
+      if (equal(merged.words, remote.words) && equal(merged.tombstones, remote.tombstones)) { this.networkError = ''; this.status = 'ok'; return; }
       const sent = clone(merged.words);
       const payload = { protocol: 1, generation: remote.generation, expectedRevision: remote.revision,
         requestId: this.uuid(), words: sent, tombstones: merged.tombstones, confirmEmpty: sent.length === 0 };
       if (!valid() || this.paused()) return;
+      phase = 'network';
+      this.networkOperation = 'write';
       this.status = 'pushing'; this.emit();
       const ack = await this.transport.write(payload, this.controller.signal);
       if (!valid()) return;
@@ -162,12 +252,25 @@ export class VocabSync {
       if (ack.requestId !== payload.requestId || ack.generation !== payload.generation
           || ack.revision !== payload.expectedRevision + 1 || !equal(ack.words, sent)
           || !equal(ack.tombstones, payload.tombstones)) throw new Error('invalid_ack');
-      this.persist({ base: clone(ack), words: this.state.words });
+      phase = 'storage';
+      await this.enqueue(async () => {
+        if (!valid()) return;
+        // An edit that failed to persist must also advance its base after this ACK.
+        if (this.pendingEdit) this.pendingEdit = { ...this.pendingEdit, base: clone(ack) };
+        await this.persist({ base: clone(ack), words: (this.pendingEdit || this.state).words }, valid);
+        if (valid()) this.pendingEdit = null;
+      });
+      if (!valid()) return;
+      this.networkError = '';
+      this.networkOperation = null;
       retry = !equal(this.state.words, sent); this.status = retry ? 'idle' : 'ok';
     } catch (error) {
       if (valid()) {
         this.status = 'error'; this.readStatus = 'error';
-        this.notice = 'Vocabulary chưa đồng bộ: ' + error.message + '. Dữ liệu chờ gửi được giữ; bấm Sync để thử lại.';
+        if (phase === 'storage') this.reportError(error);
+        else {
+          this.networkError = 'Vocabulary chưa đồng bộ: ' + error.message + '. Dữ liệu chờ gửi được giữ; bấm Sync để thử lại.';
+        }
       }
     } finally {
       this.running = false;

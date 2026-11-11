@@ -18,6 +18,7 @@
 
 ## Dữ liệu và đồng bộ
 - Vocabulary: `storage.js`, khóa `vocabmaster_words` và `vocabmaster_stats`.
+- Quota Vocabulary: constructor `VocabSync` chỉ đọc; backup mới dùng IndexedDB `vocabmaster_vocabulary_backups`/`backups` bất biến, khử trùng theo nội dung. Backup LocalStorage cũ giữ nguyên, xuất chung. Sửa từ bất đồng bộ, chờ backup transaction commit trước ghi cache; lỗi backup vẫn hiển thị kho đọc được và chặn thao tác cần backup. Cache chuẩn hỏng chỉ cho xem mirror, không sync; xem HANDOFF mục 15.
 - Word: `id`, `english`, `annotation`, `vietnamese`, `imageUrl`, `wordType`, `level`, `currentStreak`, `createdAt`, tùy chọn `lastReviewedDate`, tùy chọn `hardMarked` (`true` khi đánh dấu sao từ khó, lược bỏ khi không đánh dấu).
 - Vocabulary lên cấp theo streak 2/4/8/15; sai giảm một cấp. Smart Quiz kiểm tra lại trước khi giảm cấp vì sai. Cờ `hardMarked` là tùy chọn đánh dấu cá nhân trên thẻ từ (kèm bộ lọc `Khó ⭐` trong Vocabulary và `Chỉ từ khó ⭐` giao chặt với các bộ lọc khác ở Flashcard, Listening, Smart Quiz Vocabulary), hoàn toàn độc lập với L1–L5, streak, ngày ôn và thống kê.
 - Vocabulary protocol 1: `vocabSync.js` giữ base/words, tombstone, generation, revision; `cloud.js` gọi `/api/vocab-sync`. Backend `google-apps-script.js` dùng ScriptLock, snapshot JSON bất biến trên Drive + `VOCAB_HEAD`; sheet đầu tiên là mirror. Xem [quy trình phục hồi](docs/VOCABULARY-RECOVERY.md), chưa triển khai production.

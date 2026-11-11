@@ -76,7 +76,7 @@ function PushIndicator({ pushStatus }) {
       `}
       title={
         pushStatus === 'error'
-          ? 'Your changes could not be saved to Google Sheets. Check your connection and try the Sync button.'
+          ? 'Vocabulary chưa lưu/đồng bộ xong. Xem thông báo lỗi cụ thể bên dưới.'
           : pushStatus === 'verifying'
           ? 'Verifying that Google Sheets was updated…'
           : pushStatus === 'ok'
@@ -100,8 +100,8 @@ function SyncToast({ syncStatus, syncMode, pushStatus, show }) {
     clearing:   { text: '🗑 Clearing local cache…',                   cls: 'bg-amber-500/90  text-white' },
     syncing:    { text: '☁️ Fetching fresh data from Google Sheets…', cls: 'bg-indigo-600/90 text-white' },
     ok:         { text: '✅ Vocabulary synced successfully!',          cls: 'bg-emerald-600/90 text-white' },
-    error:      { text: '❌ Sync failed — check your webhook URL.',    cls: 'bg-rose-600/90   text-white' },
-    push_error: { text: '⚠️ Could not save to cloud — changes are local only.', cls: 'bg-rose-600/90 text-white' },
+    error:      { text: '❌ Vocabulary gặp lỗi — xem chi tiết bên dưới.', cls: 'bg-rose-600/90 text-white' },
+    push_error: { text: '⚠️ Vocabulary chưa lưu/đồng bộ xong — xem chi tiết bên dưới.', cls: 'bg-rose-600/90 text-white' },
   };
 
   // Derive the display key

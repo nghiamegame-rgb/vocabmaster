@@ -97,16 +97,16 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard
     playAudio(word.english);
   }
 
-  function saveEdit() {
+  async function saveEdit() {
     if (!editFields.english.trim() || !editFields.vietnamese.trim()) return;
-    onUpdate(word.id, {
+    const saved = await onUpdate(word.id, {
       english:    editFields.english.trim(),
       annotation: editFields.annotation.trim(),
       vietnamese: editFields.vietnamese.trim(),
       imageUrl:   editFields.imageUrl.trim(),
       wordType:   editFields.wordType,
     });
-    setEditing(false);
+    if (saved !== false) setEditing(false);
     setImgError(false);
   }
 
@@ -419,9 +419,9 @@ export default memo(function Vocabulary({
     }
   }
 
-  function handleBulkChangeLevel(level) {
+  async function handleBulkChangeLevel(level) {
     if (!level) return;
-    bulkUpdateLevel(selected, Number(level));
+    if (!await bulkUpdateLevel(selected, Number(level))) return;
     setSelected(new Set());
     setBulkLevel('');
     setShowBulkDd(false);
@@ -430,16 +430,16 @@ export default memo(function Vocabulary({
   }
 
   /* ── Add word ── */
-  function handleAdd(e) {
+  async function handleAdd(e) {
     e.preventDefault();
     setError(''); setSuccess('');
     if (!english.trim() || !vietnamese.trim()) {
       setError('English word and Vietnamese meaning are required.');
       return;
     }
-    const ok = addWord({ english, annotation, vietnamese, imageUrl, wordType });
+    const ok = await addWord({ english, annotation, vietnamese, imageUrl, wordType });
     if (!ok) {
-      setError(`"${english.trim()}" already exists in your vocabulary.`);
+      setError('Chưa thêm được từ: từ đã có hoặc chưa lưu được. Xem thông báo Vocabulary và thử Sync; nội dung nhập vẫn được giữ.');
       return;
     }
     setEnglish(''); setAnnotation(''); setVietnamese(''); setImageUrl(''); setWordType('Word');
@@ -463,7 +463,7 @@ export default memo(function Vocabulary({
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = ev => {
+    reader.onload = async ev => {
       try {
         const data = JSON.parse(ev.target.result);
         if (!Array.isArray(data)) throw new Error('Invalid format');
@@ -476,8 +476,10 @@ export default memo(function Vocabulary({
         });
         const existingEnglish = new Set(words.map(w => w.english.toLowerCase()));
         const newWords = data.filter(w => !existingEnglish.has(w.english.toLowerCase()));
-        newWords.forEach(w => addWord(w));
-        setSuccess(`Imported ${newWords.length} new word(s)!`);
+        let added = 0;
+        for (const word of newWords) if (await addWord(word)) added++;
+        if (added !== newWords.length) setError('Một số từ chưa lưu được. Xem thông báo Vocabulary và thử lại.');
+        setSuccess(`Imported ${added} new word(s)!`);
         setTimeout(() => setSuccess(''), 3000);
       } catch {
         setError('Invalid JSON file. Make sure you are importing a VocabMaster export.');

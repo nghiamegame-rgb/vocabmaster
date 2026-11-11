@@ -13,6 +13,11 @@ class Storage {
   getItem(k) { return this.data.get(k) ?? null; }
   setItem(k, v) { this.data.set(k, v); }
 }
+class Backups {
+  constructor() { this.data = new Map(); }
+  async put(content) { this.data.set(content, content); }
+  async entries() { return Object.fromEntries(this.data); }
+}
 function backend() {
   const props = new Map(), files = new Map(); let index = 0, mirror = [], failMirror = false;
   const properties = { getProperty: k => props.get(k) ?? null, setProperty: (k, v) => props.set(k, v), deleteProperty: k => props.delete(k) };
@@ -35,7 +40,7 @@ function backend() {
 }
 function client(b, base, words = base?.words || [], extra = {}) {
   const storage = new Storage({ [STATE_KEY]: JSON.stringify({ base, words }), [PAUSE_KEY]: 'false', vocabmaster_grammar_saved: 'KEEP', vocabmaster_stats: 'KEEP' });
-  const c = new VocabSync({ storage, transport: b.transport, ...extra }); c.active = true;
+  const c = new VocabSync({ storage, transport: b.transport, backups: new Backups(), ...extra }); c.active = true;
   return c;
 }
 function payload(s, words, tombstones = []) { return { protocol: 1, generation: s.generation, expectedRevision: s.revision, requestId: crypto.randomUUID(), words, tombstones, confirmEmpty: !words.length }; }
@@ -45,7 +50,7 @@ test('legacy phone adopts clean snapshot, archives all 614 entries, never upload
   const b = enabled([w('VSTEP')]); let writes = 0;
   const c = client(b, null, Array.from({ length: 614 }, (_, n) => w('old' + n)), { transport: { read: b.transport.read, write: async () => { writes++; } } });
   await c.sync(); assert.equal(writes, 0); assert.deepEqual(c.state.words, [w('VSTEP')]);
-  assert.ok([...c.storage.data.entries()].some(([k, v]) => k.startsWith(BACKUP_PREFIX) && v.includes('old613')));
+  assert.ok([...c.backups.data.values()].some(v => v.includes('old613')));
   assert.equal(c.storage.getItem('vocabmaster_grammar_saved'), 'KEEP'); assert.equal(c.storage.getItem('vocabmaster_stats'), 'KEEP'); c.stop();
 });
 test('old generation with pending additions is quarantined after replacement', async () => {
@@ -97,15 +102,15 @@ test('edits during POST remain pending and are sent on next sync', async () => {
   const b = enabled(); let release;
   const c = client(b, snap(), [w('a')], { transport: { read: b.transport.read, write: p => new Promise(resolve => { release = () => resolve(b.post(p)); }) } });
   const running = c.sync(); await new Promise(resolve => setImmediate(resolve));
-  c.edit(words => [...words, w('b')]); release(); await running;
+  await c.edit(words => [...words, w('b')]); release(); await running;
   assert.equal(c.state.words.length, 2); assert.equal(c.state.base.words.length, 1);
   c.transport = b.transport; await c.sync(); assert.equal(b.read().words.length, 2); c.stop();
 });
 test('pause cancels queued writes; pause during GET prevents POST; default is paused', async () => {
   const b = enabled(); let release;
   const c = client(b, snap(), [w('a')], { delay: 5, transport: { read: () => new Promise(resolve => { release = () => resolve(b.read()); }), write: async () => assert.fail('POST after pause') } });
-  const running = c.sync(); c.pause(); release(); await running;
-  assert.equal(b.read().words.length, 0); c.edit(words => [...words, w('b')]); c.stop();
+  const running = c.sync(); await new Promise(resolve => setImmediate(resolve)); c.pause(); release(); await running;
+  assert.equal(b.read().words.length, 0); await c.edit(words => [...words, w('b')]); c.stop();
   await new Promise(resolve => setTimeout(resolve, 15)); assert.equal(b.read().revision, 0);
   const d = new VocabSync({ storage: new Storage(), transport: b.transport }); assert.equal(d.paused(), true);
 });
@@ -163,7 +168,8 @@ test('accepted POST with lost response recovers by GET without duplicate revisio
 });
 test('corrupt local cache is not overwritten or treated as empty', () => {
   const storage = new Storage({ vocabmaster_words: '{broken', vocabmaster_grammar_underlines: 'KEEP' });
-  assert.throws(() => new VocabSync({ storage, transport: {} }));
+  const c = new VocabSync({ storage, transport: {} });
+  assert.ok(c.loadError); assert.equal(c.hasReadableWords, false); assert.equal(c.state, null);
   assert.equal(storage.getItem('vocabmaster_words'), '{broken'); assert.equal(storage.getItem('vocabmaster_grammar_underlines'), 'KEEP');
 });
 test('actual cloud adapter rejects failed HTTP/opaque responses and sends readable same-origin protocol', async () => {
@@ -233,10 +239,10 @@ test('transient sync error notice persisted during offline edit clears after sub
     },
   });
   await c.sync();
-  assert.match(c.notice, /Vocabulary chưa đồng bộ: Failed to fetch/);
+  assert.match(c.message, /Vocabulary chưa đồng bộ: Failed to fetch/);
   // Editing while offline persists state (including notice) to storage
-  c.edit(words => words.map(x => ({ ...x, hardMarked: true })));
-  assert.match(JSON.parse(c.storage.getItem(STATE_KEY)).notice, /Failed to fetch/);
+  await c.edit(words => words.map(x => ({ ...x, hardMarked: true })));
+  assert.match(c.message, /Failed to fetch/);
   // Reconnect and sync: transient error notice must clear
   failRead = false;
   await c.sync();
@@ -245,4 +251,139 @@ test('transient sync error notice persisted during offline edit clears after sub
   assert.equal(JSON.parse(c.storage.getItem(STATE_KEY)).notice, '');
   assert.equal(b.read().words[0].hardMarked, true);
   c.stop();
+});
+
+test('backup quota at startup keeps valid pending words, retries without duplicates and recovers', async () => {
+  const b = enabled([w('a')]);
+  const pending = [w('a', { hardMarked: true, level: 4, lastReviewedDate: 123 }), w('offline')];
+  const c = client(b, snap([w('a')]), pending);
+  const original = c.storage.getItem(STATE_KEY);
+  c.storage.setItem(BACKUP_PREFIX + 'old', 'OLD BACKUP');
+  const put = c.backups.put.bind(c.backups);
+  let fail = true;
+  c.backups.put = async content => { if (fail) throw new DOMException('full', 'QuotaExceededError'); return put(content); };
+  let posts = 0;
+  c.transport.write = async p => { posts++; assert.ok(p.words.length); return b.post(p); };
+  for (let i = 0; i < 3; i++) {
+    await c.sync();
+    assert.deepEqual(c.state.words, pending);
+    assert.equal(c.storage.getItem(STATE_KEY), original);
+    assert.match(c.message, /Không đủ dung lượng/);
+    assert.equal(posts, 0);
+  }
+  const reloaded = new VocabSync({ storage: c.storage, transport: c.transport, backups: c.backups });
+  assert.deepEqual(reloaded.state.words, pending);
+  reloaded.active = true; await reloaded.sync(); assert.equal(posts, 0);
+  fail = false; await reloaded.sync();
+  assert.equal(reloaded.status, 'ok'); assert.equal(reloaded.storageError, '');
+  assert.deepEqual(b.read().words, pending);
+  await reloaded.sync();
+  const count = c.backups.data.size;
+  const again = new VocabSync({ storage: c.storage, transport: c.transport, backups: c.backups });
+  again.active = true;
+  await again.sync(); await again.sync();
+  assert.equal(c.backups.data.size, count);
+  assert.equal(c.storage.getItem(BACKUP_PREFIX + 'old'), 'OLD BACKUP');
+  c.stop(); reloaded.stop(); again.stop();
+});
+
+test('generation/conflict backup failure blocks adoption and POST; partial success deduplicates on retry', async () => {
+  for (const generation of ['g1', 'replacement']) {
+    const b = enabled([w('a', { annotation: 'remote' })]);
+    if (generation !== 'g1') b.init(snap([w('a')], { generation }));
+    const local = [w('a', { annotation: 'local', hardMarked: true })];
+    const c = client(b, snap([w('a')]), local);
+    const put = c.backups.put.bind(c.backups);
+    let fail = true;
+    c.backups.put = async content => {
+      if (fail && JSON.parse(content).reason) throw new DOMException('full', 'QuotaExceededError');
+      return put(content);
+    };
+    await c.sync(); const count = c.backups.data.size;
+    await c.sync(); assert.equal(c.backups.data.size, count);
+    assert.deepEqual(c.state.words, local); assert.equal(b.read().revision, 0);
+    fail = false; await c.sync(); assert.notEqual(c.status, 'error');
+    assert.ok([...c.backups.data.values()].some(v => v.includes('local') && v.includes('hardMarked')));
+    c.stop();
+  }
+});
+
+test('failed state write preserves an edit in memory/backup and Sync retries it before reconciliation', async () => {
+  const b = enabled([w('a')]); const c = client(b, snap([w('a')]));
+  const set = c.storage.setItem.bind(c.storage); let fail = true;
+  c.storage.setItem = (key, value) => { if (fail && key === STATE_KEY) throw new DOMException('full', 'QuotaExceededError'); set(key, value); };
+  await assert.rejects(c.edit(words => words.map(x => ({ ...x, hardMarked: true }))));
+  assert.equal(c.state.words[0].hardMarked, undefined);
+  assert.equal(c.pendingEdit.words[0].hardMarked, true);
+  assert.ok([...c.backups.data.values()].some(v => v.includes('hardMarked')));
+  await c.sync(); assert.equal(b.read().revision, 0);
+  fail = false; await c.sync();
+  assert.equal(c.pendingEdit, null); assert.equal(c.storageError, '');
+  assert.equal(b.read().words[0].hardMarked, true); c.stop();
+});
+
+test('unreadable authoritative cache allows display-only mirror, never uploads synthetic empty words', async () => {
+  for (const legacy of [JSON.stringify([w('readable', { hardMarked: true })]), '{bad']) {
+    const storage = new Storage({ [STATE_KEY]: '{bad', vocabmaster_words: legacy });
+    const c = new VocabSync({ storage, backups: new Backups(), transport: { read: () => assert.fail('no GET'), write: () => assert.fail('no POST') } });
+    const original = [...storage.data];
+    c.active = true; await c.sync();
+    assert.ok(c.loadError); assert.equal(c.status, 'error');
+    assert.equal(c.hasReadableWords, legacy.startsWith('['));
+    await assert.rejects(c.edit(() => []));
+    assert.deepEqual([...storage.data], original); c.stop();
+  }
+});
+
+test('network/storage messages remain visible during retry and clear only after success', async () => {
+  const b = enabled([w('a')]); const c = client(b, snap([w('a')]));
+  c.networkError = 'network failed'; c.storageError = 'storage failed';
+  let release;
+  c.transport.read = () => new Promise(resolve => { release = () => resolve(b.read()); });
+  const run = c.sync(); await new Promise(resolve => setImmediate(resolve));
+  assert.match(c.message, /network failed/); assert.match(c.message, /storage failed/);
+  release(); await run;
+  assert.equal(c.message, ''); c.stop();
+});
+
+test('a failed edit during GET must recover before merge or upload, including its star and progress', async () => {
+  const b = enabled([w('a')]); const c = client(b, snap([w('a')]));
+  let release, fail = true;
+  const put = c.backups.put.bind(c.backups);
+  c.backups.put = async content => {
+    if (fail && content.includes('hardMarked')) throw new DOMException('full', 'QuotaExceededError');
+    return put(content);
+  };
+  c.transport.read = () => new Promise(resolve => { release = () => resolve(b.read()); });
+  const run = c.sync(); await new Promise(resolve => setImmediate(resolve));
+  await assert.rejects(c.edit(words => words.map(x => ({ ...x, hardMarked: true, level: 4 }))));
+  release(); await run;
+  assert.equal(c.status, 'error'); assert.equal(b.read().revision, 0);
+  assert.equal(c.pendingEdit.words[0].hardMarked, true);
+  fail = false; c.transport.read = async () => b.read();
+  await c.sync(); assert.equal(b.read().words[0].hardMarked, true);
+  assert.equal(b.read().words[0].level, 4); assert.equal(c.pendingEdit, null); c.stop();
+});
+
+test('legacy mirror failure preserves committed authoritative state, blocks POST, retries without losing pending', async () => {
+  const b = enabled([w('a')]); const c = client(b, snap([w('a')]));
+  const set = c.storage.setItem.bind(c.storage); let fail = true;
+  c.storage.setItem = (key, value) => { if (fail && key === 'vocabmaster_words') throw new DOMException('full', 'QuotaExceededError'); set(key, value); };
+  await assert.rejects(c.edit(words => words.map(x => ({ ...x, hardMarked: true }))));
+  assert.equal(JSON.parse(c.storage.getItem(STATE_KEY)).words[0].hardMarked, true);
+  const reload = new VocabSync({ storage: c.storage, transport: b.transport, backups: c.backups });
+  assert.equal(reload.state.words[0].hardMarked, true);
+  await c.sync(); assert.equal(b.read().revision, 0);
+  fail = false; await c.sync();
+  assert.equal(c.storageError, ''); assert.equal(b.read().words[0].hardMarked, true); c.stop();
+});
+
+test('failed pause write cancels upload and keeps its own error until that setting is saved', async () => {
+  const b = enabled([w('a')]); const c = client(b, snap([w('a')]), [w('a'), w('offline')]);
+  const set = c.storage.setItem.bind(c.storage); let fail = true;
+  c.storage.setItem = (key, value) => { if (fail && key === PAUSE_KEY) throw new DOMException('full', 'QuotaExceededError'); set(key, value); };
+  c.pause(); assert.equal(c.paused(), true); assert.ok(c.pauseError);
+  await c.sync(); assert.equal(b.read().revision, 0); assert.ok(c.pauseError);
+  fail = false; await c.sync(); assert.equal(c.pauseError, '');
+  assert.equal(c.status, 'paused'); assert.equal(b.read().revision, 0); c.stop();
 });

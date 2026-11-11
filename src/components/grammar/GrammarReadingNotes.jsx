@@ -15,10 +15,10 @@ function ReadingItem({ item, question, onQuickAdd }) {
     setForm(prev => ({ ...prev, draft: { ...prev.draft, [key]: value } }));
     setError('');
   }
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
     try {
-      const result = onQuickAdd(form.destination, form.draft);
+      const result = await onQuickAdd(form.destination, form.draft);
       if (!result?.ok) { setError(result?.error || 'Chưa thêm được. Vui lòng thử lại.'); return; }
       setNotice(form.destination === 'vocab' ? 'Đã thêm vào Vocabulary.' : 'Đã thêm vào Grammar Structures.');
       setForm(null); setError('');

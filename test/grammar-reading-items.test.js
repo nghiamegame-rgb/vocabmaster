@@ -6,6 +6,12 @@ import {
 import { validateGrammarJSON, buildGrammarPrompt } from '../src/utils/grammarPrompt.js';
 import { validateQuestion, mergeSavedQuestions } from '../src/utils/grammarSyncMerge.js';
 
+test('quick-add awaits Vocabulary durable persistence and reports storage failure', async () => {
+  const draft = { english: 'community', vietnamese: 'cộng đồng' };
+  assert.equal((await saveReadingDraft('vocab', draft, { addWord: async () => false })).ok, false);
+  assert.equal((await saveReadingDraft('vocab', draft, { addWord: async () => true })).ok, true);
+});
+
 const question = {
   schemaVersion: 2, type: 'sentence-analysis', savedId: 's1',
   sentence: 'Despite the rain, the students continued to work together.',

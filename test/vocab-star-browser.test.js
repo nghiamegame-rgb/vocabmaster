@@ -82,8 +82,9 @@ try {
   assert.equal(await page.locator('#star-w1').getAttribute('aria-pressed'), 'false');
   assert.equal(await page.locator('#star-w1').getAttribute('aria-label'), 'Đánh dấu từ khó');
 
-  // Click star on w1: must toggle immediately without opening editor or selecting card
+  // The star becomes visible after its asynchronous durable backup commits.
   await page.locator('#star-w1').click();
+  await page.locator('#star-w1[aria-pressed="true"]').waitFor();
   assert.equal(await page.locator('#star-w1').getAttribute('aria-pressed'), 'true');
   assert.equal(await page.locator('#star-w1').getAttribute('aria-label'), 'Bỏ đánh dấu từ khó');
   assert.equal(await page.locator('#edit-english-w1').count(), 0);
@@ -99,6 +100,7 @@ try {
   await page.locator('#edit-w1').click();
   await page.locator('#edit-vietnamese-w1').fill('kiên cường, bền bỉ');
   await page.locator('#save-edit-w1').click();
+  await page.locator('#save-edit-w1').waitFor({ state: 'hidden' });
   const w1AfterEdit = await page.evaluate(() => JSON.parse(localStorage.getItem('vocabmaster_words')).find(w => w.id === 'w1'));
   assert.equal(w1AfterEdit.hardMarked, true);
   assert.equal(w1AfterEdit.vietnamese, 'kiên cường, bền bỉ');
@@ -107,6 +109,7 @@ try {
   await page.locator('#star-w2').click();
   await page.locator('#star-w3').click();
   await page.locator('#star-w5').click();
+  await page.locator('#star-w5[aria-pressed="true"]').waitFor();
 
   assert.match(await page.locator('#filter-hard-only').textContent(), /\(4\)/);
   await page.locator('#filter-hard-only').click();

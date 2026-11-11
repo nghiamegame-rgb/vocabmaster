@@ -69,5 +69,6 @@ export function saveReadingDraft(destination, draft, { words = [], structures = 
     : { ok: false, error: 'Chưa thể thêm cấu trúc.' };
   if (!addWord) return { ok: false, error: 'Chưa thể thêm từ vựng.' };
   const added = addWord({ english, vietnamese, annotation: draft.annotation || '', wordType: draft.wordType || 'Word' });
-  return added ? { ok: true } : { ok: false, error: 'Từ / cụm từ này đã có trong Vocabulary.' };
+  const result = ok => ok ? { ok: true } : { ok: false, error: 'Chưa thêm được từ: từ đã có hoặc chưa lưu được. Xem thông báo Vocabulary và thử lại.' };
+  return added?.then ? added.then(result) : result(added);
 }

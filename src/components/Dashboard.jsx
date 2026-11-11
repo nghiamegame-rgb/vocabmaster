@@ -60,7 +60,7 @@ function MasteryBar({ level, label, count, total, color, onClick }) {
   );
 }
 
-export default function Dashboard({ words, stats, setActiveTab, setVocabFilter }) {
+export default function Dashboard({ words, hasReadableWords = true, stats, setActiveTab, setVocabFilter }) {
   const totalWords = words.length;
   const accuracy   = stats.totalQuestions > 0
     ? Math.round((stats.correctAnswers / stats.totalQuestions) * 100)
@@ -90,13 +90,13 @@ export default function Dashboard({ words, stats, setActiveTab, setVocabFilter }
         <StatCard
           icon={BookOpen}
           label="Total Words"
-          value={totalWords}
+          value={hasReadableWords ? totalWords : '—'}
           gradient="bg-gradient-to-br from-indigo-600 to-purple-700"
         />
         <StatCard
           icon={Star}
           label="Mastered (L5)"
-          value={masteredCount}
+          value={hasReadableWords ? masteredCount : '—'}
           gradient="bg-gradient-to-br from-emerald-600 to-teal-700"
         />
         <StatCard

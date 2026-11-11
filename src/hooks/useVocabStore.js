@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getStats, saveStats } from '../utils/storage';
 import { pushToCloud, fetchFromCloud } from '../utils/cloud';
+import { createVocabBackupStore, storageMessage } from '../utils/vocabBackup';
 import { VocabSync, BACKUP_PREFIX, STATE_KEY, PAUSE_KEY } from '../utils/vocabSync';
 
 const LEVEL_UP_THRESHOLD = { 1: 2, 2: 4, 3: 8, 4: 15 };
@@ -16,12 +17,15 @@ export function useVocabStore() {
       transport: { read: fetchFromCloud, write: pushToCloud } }), error: '' }; }
     catch (error) { return { engine: null, error: 'Không đọc/lưu được Vocabulary: ' + error.message }; }
   });
-  const engine = initial.engine, loadError = initial.error;
+  const engine = initial.engine, loadError = engine?.loadError || initial.error;
+  const [exportError, setExportError] = useState('');
   const [stats, setStats] = useState(getStats);
-  const words = engine?.state.words || [];
-  const setWords = useCallback(update => {
+  const statsRef = useRef(stats);
+  const [statsError, setStatsError] = useState('');
+  const words = engine?.state?.words || [];
+  const setWords = useCallback(async update => {
     if (!engine) return false;
-    try { engine.edit(update); return true; }
+    try { await engine.edit(update); return true; }
     catch (error) { engine.reportError(error); return false; }
   }, [engine]);
   useEffect(() => {
@@ -35,27 +39,44 @@ export function useVocabStore() {
     window.addEventListener('storage', storage);
     return () => { engine.stop(); engine.subscribe(() => {}); window.removeEventListener('online', online); window.removeEventListener('focus', online); window.removeEventListener('storage', storage); };
   }, [engine]);
-  useEffect(() => saveStats(stats), [stats]);
-  const syncFromCloud = useCallback(() => engine?.schedule(0), [engine]);
+  const syncFromCloud = useCallback(() => {
+    if (statsError) {
+      try { saveStats(stats); setStatsError(''); }
+      catch (error) { setStatsError('Thống kê: ' + storageMessage(error)); }
+    }
+    engine?.schedule(0);
+  }, [engine, stats, statsError]);
   const syncStatus = engine?.status === 'pushing' ? 'syncing' : engine?.status || 'error';
   const pushStatus = ['pushing', 'error'].includes(engine?.status) ? engine.status : 'idle';
   const cloudReadStatus = engine?.readStatus || 'error';
   const syncMode = 'soft';
-  function exportSyncBackup() {
+  async function exportSyncBackup() {
     const data = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key.startsWith(BACKUP_PREFIX) || [STATE_KEY, PAUSE_KEY, 'vocabmaster_words', 'vocabmaster_stats'].includes(key)) data[key] = localStorage.getItem(key);
+    try {
+      data.indexedDBBackups = await (engine?.backups || createVocabBackupStore()).entries();
+    } catch (error) {
+      data.backupReadError = error.message;
+      setExportError(storageMessage(error) + ' Tệp tải xuống chỉ là bản sao một phần; chưa xuất được IndexedDB.');
     }
-    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
-    const a = document.createElement('a'); a.href = url; a.download = 'vocabulary-recovery-backup-' + Date.now() + '.json'; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith(BACKUP_PREFIX) || [STATE_KEY, PAUSE_KEY, 'vocabmaster_words', 'vocabmaster_stats'].includes(key)) data[key] = localStorage.getItem(key);
+      }
+      if (engine?.pendingEdit) data.pendingEdit = engine.pendingEdit;
+      if (engine?.state) data.displayedState = engine.state;
+      if (statsError) data.pendingStats = statsRef.current;
+      const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+      const a = document.createElement('a'); a.href = url; a.download = 'vocabulary-recovery-backup-' + Date.now() + '.json'; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      if (!data.backupReadError) setExportError('');
+    } catch (error) { setExportError(storageMessage(error)); }
   }
 
   /** Add a new word (returns false if duplicate) */
-  const addWord = useCallback((wordObj) => {
-    if (!engine) return false;
-    const exists = engine.state.words.some(
+  const addWord = useCallback(async (wordObj) => {
+    if (!engine || loadError) return false;
+    const exists = (engine.pendingEdit || engine.state).words.some(
       w => w.english.toLowerCase() === wordObj.english.toLowerCase()
     );
     if (exists) return false;
@@ -72,17 +93,20 @@ export function useVocabStore() {
       ...(wordObj.lastReviewedDate != null ? { lastReviewedDate: wordObj.lastReviewedDate } : {}),
       ...(wordObj.hardMarked ? { hardMarked: true } : {}),
     };
-    return setWords(prev => [newWord, ...prev]);
-  }, [engine, setWords]);
+    return setWords(prev => {
+      if (prev.some(w => w.english.toLowerCase() === newWord.english.toLowerCase())) throw new Error('duplicate_word');
+      return [newWord, ...prev];
+    });
+  }, [engine, loadError, setWords]);
 
   /** Delete a word by id */
   const deleteWord = useCallback((id) => {
-    setWords(prev => prev.filter(w => w.id !== id));
+    return setWords(prev => prev.filter(w => w.id !== id));
   }, [setWords]);
 
   /** Update word fields (annotation and hardMarked are preserved across updates) */
   const updateWord = useCallback((id, fields) => {
-    setWords(prev =>
+    return setWords(prev =>
       prev.map(w => {
         if (w.id !== id) return w;
         const updated = { ...w, ...fields };
@@ -99,7 +123,7 @@ export function useVocabStore() {
 
   /** Toggle independent difficult-word star flag without affecting progress/stats */
   const toggleWordHard = useCallback((id) => {
-    setWords(prev =>
+    return setWords(prev =>
       prev.map(w => {
         if (w.id !== id) return w;
         const next = { ...w };
@@ -116,7 +140,7 @@ export function useVocabStore() {
    * - Wrong:   reset streak to 0 and drop back one level (capped at L1)
    */
   function updateWordLevel(wordEnglish, isCorrect) {
-    setWords(prev =>
+    return setWords(prev =>
       prev.map(w => {
         if (w.english.toLowerCase() !== wordEnglish.toLowerCase()) return w;
         const currentStreak = w.currentStreak ?? 0;
@@ -141,7 +165,7 @@ export function useVocabStore() {
 
   /** Bulk update level for a set of word IDs */
   const bulkUpdateLevel = useCallback((ids, newLevel) => {
-    setWords(prev =>
+    return setWords(prev =>
       prev.map(w =>
         ids.has(w.id)
           ? { ...w, level: newLevel, currentStreak: 0 }
@@ -152,21 +176,25 @@ export function useVocabStore() {
 
   /** Record quiz results */
   function recordQuizResult(correct, total) {
-    setStats(prev => ({
-      totalQuestions: prev.totalQuestions + total,
-      correctAnswers: prev.correctAnswers + correct,
-    }));
+    const next = {
+      totalQuestions: statsRef.current.totalQuestions + total,
+      correctAnswers: statsRef.current.correctAnswers + correct,
+    };
+    statsRef.current = next; setStats(next);
+    try { saveStats(next); setStatsError(''); }
+    catch (error) { setStatsError('Thống kê: ' + storageMessage(error)); }
   }
 
   /** Additive import only. Whole-library replacement requires server generation change. */
-  function importWords(wordList) {
-    wordList.forEach(addWord);
+  async function importWords(wordList) {
+    for (const word of wordList) await addWord(word);
   }
 
   return {
     words,
     dataLoadError: loadError,
-    syncNotice: engine?.notice || loadError,
+    syncNotice: [engine?.message || loadError, statsError, exportError].filter(Boolean).join(' '),
+    hasReadableWords: engine?.hasReadableWords || false,
     syncPaused: !engine || engine.paused(),
     pauseSync: () => engine?.pause(true),
     resumeSync: () => engine?.pause(false),
