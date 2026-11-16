@@ -1,4 +1,4 @@
-import { createVocabBackupStore, storageMessage } from './vocabBackup.js';
+import { createVocabBackupStore, storageMessage, migrateLocalStorageBackups } from './vocabBackup.js';
 // Vocabulary protocol 1. Legacy caches never become an authoritative base.
 export const STATE_KEY = 'vocabmaster_vocab_sync_v1';
 export const PAUSE_KEY = 'vocabmaster_vocab_sync_paused';
@@ -89,6 +89,9 @@ export class VocabSync {
     this.queue = Promise.resolve(); this.storageError = ''; this.networkError = '';
     this.pauseError = ''; this.pauseTarget = null;
     this.load(); // Read only: a backup failure must never hide readable words.
+    // Migrate old LocalStorage backup keys to IndexedDB in the background.
+    // Fire-and-forget: never blocks constructor or hides readable words.
+    migrateLocalStorageBackups(this.storage, BACKUP_PREFIX, this.backups).catch(() => {});
   }
   load() {
     this.loadError = ''; this.hasReadableWords = false;
