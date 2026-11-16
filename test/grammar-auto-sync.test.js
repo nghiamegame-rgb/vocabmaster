@@ -28,7 +28,7 @@ const load = (context, file, names) => vm.runInContext(
 
 // Execute the application hook with a small deterministic hook lifecycle and
 // deferred network/timers. No copied sync logic, renderer dependency or real IO.
-function harness({ questions = [], review = {}, pending = false, revision = 0, endpoint = '', fetchCloud, pushCloud } = {}) {
+function harness({ questions = [], review = {}, pending = false, revision = 0, endpoint = '', fetchCloud, pushCloud, failWrite = () => false } = {}) {
   const storage = new Map([
     ['vocabmaster_grammar_saved', JSON.stringify(questions)],
     ['vocabmaster_grammar_review', JSON.stringify(review)],
@@ -44,7 +44,11 @@ function harness({ questions = [], review = {}, pending = false, revision = 0, e
     ...merge, applyUnderline, textKey, toCodepoints, editSentenceNote, moveSentenceNotes, getGrammarSentence, console,
     localStorage: {
       getItem: key => storage.get(key) ?? null,
-      setItem: (key, value) => storage.set(key, String(value)),
+      setItem: (key, value) => {
+        if (failWrite(key)) throw new Error('Storage unavailable');
+        storage.set(key, String(value));
+      },
+      removeItem: key => storage.delete(key),
     },
     window: {
       addEventListener: (name, fn) => listeners.set(name, fn),
@@ -141,13 +145,46 @@ test('sentence activity preserves legacy stats and uses existing L1–L5 schedul
 });
 
 test('review retains extra legacy progress fields and handles missing counters', async () => {
-  const h = harness({ review: { q1: { level: 5, legacyNote: 'keep' } }, fetchCloud: () => cloud([], 0) });
+  const h = harness({ questions: [question()], review: { q1: { level: 5, legacyNote: 'keep' } }, fetchCloud: () => cloud([], 0) });
   await h.settle();
   h.state.recordReview('q1', true);
   assert.equal(h.state.reviewProgress.q1.level, 5);
   assert.equal(h.state.reviewProgress.q1.totalReviews, 1);
   assert.equal(h.state.reviewProgress.q1.wrongCount, 0);
   assert.equal(h.state.reviewProgress.q1.legacyNote, 'keep');
+  h.unmount();
+});
+
+test('review only acknowledges persisted progress/stats/pending; failures retry once without changing refs or replay', async () => {
+  for (const key of ['vocabmaster_grammar_pending', 'vocabmaster_grammar_stats', 'vocabmaster_grammar_review']) {
+    let failing = '';
+    const get = deferred();
+    const h = harness({ questions: [question()], fetchCloud: () => get.promise, failWrite: key => key === failing });
+    const before = new Map(h.storage);
+    failing = key;
+    assert.equal(h.state.recordReview('q1', false).ok, false);
+    assert.deepEqual(h.storage, before);
+    assert.equal(h.state.reviewProgress.q1, undefined);
+    assert.equal(h.state.hasPending, false);
+    failing = '';
+    get.resolve(cloud([question()], 2)); await h.settle();
+    assert.equal(h.state.reviewProgress.q1, undefined, 'failed review must not replay into cloud merge');
+    assert.equal(h.state.recordReview('q1', false).ok, true);
+    assert.equal(h.state.reviewProgress.q1.level, 1);
+    assert.equal(h.state.reviewProgress.q1.totalReviews, 1);
+    assert.equal(h.state.reviewProgress.q1.wrongCount, 1);
+    assert.equal(h.state.grammarStats.sentenceActivity.reviewed, 1);
+    await h.tick();
+    assert.equal(h.posts.at(-1).reviewProgress.q1.totalReviews, 1);
+    h.unmount();
+  }
+});
+
+test('review rejects a removed question without creating orphan progress', async () => {
+  const h = harness(); await h.settle();
+  const before = new Map(h.storage);
+  assert.equal(h.state.recordReview('removed', true).ok, false);
+  assert.deepEqual(h.storage, before);
   h.unmount();
 });
 

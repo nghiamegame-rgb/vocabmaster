@@ -1,5 +1,7 @@
 # VocabMaster — ngữ cảnh dự án
 
+**Cập nhật Ôn tập Grammar 2026-11-16:** hai nút tự đánh giá đổi sang xám và `disabled` sau khi lưu local thành công. `GrammarReview` khóa bấm trùng bằng ref; `recordReview` trả `{ ok }`, ghi tiến độ + thống kê + pending trước khi công bố React state/replay sync. Lỗi ghi trả lại các khóa đã ghi trong thao tác, báo lỗi và mở thử lại; không coi màu xám là ACK cloud. Đã kiểm tra app thật trên Edge bằng dữ liệu thử cô lập, gồm quota/retry/reload. Chi tiết và giới hạn ở HANDOFF mục 16.
+
 **Cập nhật Vocabulary 2026-11-04:** giao thức cũ mô tả trong ảnh chụp bên dưới đã được thay ở working tree bởi protocol 1 (generation/revision/tombstone, snapshot Drive, proxy ACK đầy đủ, mặc định pause). [Quy trình phục hồi hiện tại](VOCABULARY-RECOVERY.md) và HANDOFF mục 13 là nguồn trạng thái mới; chưa triển khai production. Không áp dụng merge legacy/hard-sync/count verification trong các đoạn lịch sử cho code hiện tại.
 
 Khảo sát ngày **2026-11-02** (Asia/Saigon), commit tham chiếu `4a4aff095591629029e9a2deb75ef7fd7cc8ccc6`. Tài liệu mô tả **working tree đang có thay đổi chưa commit**, không chỉ commit này. Danh sách thay đổi và kết quả kiểm tra nằm trong [HANDOFF.md](HANDOFF.md). Điểm vào bảo trì là [AGENTS.md](../AGENTS.md).

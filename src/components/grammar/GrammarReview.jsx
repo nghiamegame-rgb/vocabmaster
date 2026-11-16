@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { isGrammarDueForReview } from '../../utils/grammarStorage';
 import { getAvailableTopics } from '../../utils/grammarPrompt';
 import { getSentenceTopicLabel } from '../../utils/grammarTopic';
@@ -13,6 +13,8 @@ export default function GrammarReview({ savedQuestions, reviewProgress, onRecord
   const [current, setCurrent] = useState(0);
   const [assessments, setAssessments] = useState({});
   const [stars, setStars] = useState({});
+  const assessedIds = useRef(new Set());
+  const [reviewError, setReviewError] = useState('');
   const filtered = savedQuestions.filter(q => (topic === 'All' || q.topic === topic) && (!starredOnly || q.hardMarked));
   const subsets = {
     due: filtered.filter(q => isGrammarDueForReview(reviewProgress[q.savedId])),
@@ -21,14 +23,24 @@ export default function GrammarReview({ savedQuestions, reviewProgress, onRecord
   };
   const understood = Object.values(assessments).filter(Boolean).length;
   function start() {
+    assessedIds.current = new Set(); setReviewError('');
     setQueue([...subsets[reviewMode]].sort(() => Math.random() - 0.5));
     setCurrent(0); setAssessments({}); setStars({}); setMode('session');
   }
   function assess(value) {
-    if (assessments[current] !== undefined) return;
     const q = queue[current];
-    onRecordReview(q.savedId, value);
-    setAssessments(prev => ({ ...prev, [current]: value }));
+    if (assessedIds.current.has(q.savedId)) return;
+    // Lock synchronously, including multiple events before React renders.
+    assessedIds.current.add(q.savedId);
+    setReviewError('');
+    try {
+      const result = onRecordReview(q.savedId, value);
+      if (!result?.ok) throw new Error('Review was not persisted');
+      setAssessments(prev => ({ ...prev, [current]: value }));
+    } catch {
+      assessedIds.current.delete(q.savedId);
+      setReviewError('Chưa lưu được đánh giá trên thiết bị. Vui lòng kiểm tra dung lượng lưu trữ rồi thử lại.');
+    }
   }
   function finish() {
     setMode('done');
@@ -64,13 +76,18 @@ export default function GrammarReview({ savedQuestions, reviewProgress, onRecord
     </div>
     <GrammarSentenceCard key={current} question={q} onAssess={assess} assessed={assessments[current]} onQuickAdd={onQuickAdd}
       analysisTopic={topic === 'All' ? undefined : topic}
-      onNext={() => current + 1 < queue.length ? setCurrent(c => c + 1) : finish()}
+      onNext={() => {
+        setReviewError('');
+        if (current + 1 < queue.length) setCurrent(c => c + 1);
+        else finish();
+      }}
       nextLabel={current + 1 < queue.length ? 'Câu tiếp' : 'Hoàn tất'}
       underlineKey={q.savedId}
       onUnderlineChange={onUnderlineChange}
       underlines={underlines}
       sentenceNotes={sentenceNotes} onNoteChange={onNoteChange} hideNotesInitially
     />
+    {reviewError && <p role="alert" className="text-rose-300 text-sm">{reviewError}</p>}
     <div className="flex justify-between gap-3">
       <button onClick={finish} className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl">Kết thúc phiên</button>
     </div>

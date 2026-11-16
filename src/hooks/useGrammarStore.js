@@ -2,7 +2,7 @@
 import {
   getSavedQuestions, saveSavedQuestions,
   getGrammarStats, saveGrammarStats,
-  getReviewProgress, saveReviewProgress,
+  getReviewProgress, saveReviewProgress, saveGrammarReviewResult,
   getGrammarRevision, saveGrammarRevision,
   getGrammarCloudUrl, hasGrammarPending, setGrammarPending,
   isGrammarDueForReview, calcNextReviewAt, GRAMMAR_REVIEW_INTERVALS,
@@ -276,6 +276,8 @@ export function useGrammarStore() {
   }
 
   function recordReview(savedId, isCorrect) {
+    const question = savedQuestionsRef.current.find(q => q.savedId === savedId);
+    if (!question || typeof isCorrect !== 'boolean') return { ok: false };
     const rec = reviewProgressRef.current[savedId] ?? { level: 1, wrongCount: 0, totalReviews: 0 };
     const previousLevel = Math.min(5, Math.max(1, Number(rec.level) || 1));
     const level = isCorrect ? Math.min(5, previousLevel + 1) : Math.max(1, previousLevel - 1);
@@ -284,12 +286,39 @@ export function useGrammarStore() {
       level, wrongCount: (Number(rec.wrongCount) || 0) + (isCorrect ? 0 : 1),
       totalReviews: (Number(rec.totalReviews) || 0) + 1, lastReviewAt: Date.now(), nextReviewAt: calcNextReviewAt(level),
     };
-    commitEdit(data => ({ ...data, review: { ...data.review, [savedId]: next } }));
-    recordGrammarSession({
+    const result = {
       mode: 'sentence-analysis', activity: 'review', total: 1,
       understood: isCorrect ? 1 : 0,
-      topic: savedQuestionsRef.current.find(q => q.savedId === savedId)?.topic || 'Mixed',
-    });
+      topic: question.topic || 'Mixed',
+    };
+    const previousStats = getGrammarStats();
+    const activity = previousStats.sentenceActivity || {};
+    const oldTopic = activity.byTopic?.[result.topic] || {};
+    const stats = { ...previousStats, sentenceActivity: {
+      ...activity,
+      analyzed: activity.analyzed || 0,
+      reviewed: (activity.reviewed || 0) + 1,
+      understood: (activity.understood || 0) + result.understood,
+      byTopic: { ...activity.byTopic, [result.topic]: {
+        analyzed: oldTopic.analyzed || 0,
+        reviewed: (oldTopic.reviewed || 0) + 1,
+        understood: (oldTopic.understood || 0) + result.understood,
+      } },
+      sessions: [{ ...result, date: Date.now() }, ...(activity.sessions || []).slice(0, 19)],
+    } };
+    const edit = data => ({ ...data, review: { ...data.review, [savedId]: next } });
+    const review = edit({ review: reviewProgressRef.current }).review;
+    // Publish state/replay/sync only after local progress, stats and pending save.
+    try { saveGrammarReviewResult(review, stats); } catch { return { ok: false }; }
+    reviewProgressRef.current = review;
+    pendingRef.current = true;
+    changeVersionRef.current++;
+    if (isSyncingRef.current) editsDuringSyncRef.current.push(edit);
+    setReviewProgress(review);
+    setGrammarStats(stats);
+    setHasPending(true);
+    queuePush();
+    return { ok: true };
   }
 
   function recordGrammarSession(result) {

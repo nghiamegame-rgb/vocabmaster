@@ -93,6 +93,30 @@ export function saveReviewProgress(progress) {
   localStorage.setItem(LS_GRAMMAR_REVIEW, JSON.stringify(progress));
 }
 
+// Review acknowledgement covers all local writes, not the later cloud push.
+// Restore completed writes if a subsequent setItem fails (e.g. quota).
+export function saveGrammarReviewResult(review, stats) {
+  const writes = [
+    [LS_GRAMMAR_PENDING, 'true'],
+    [LS_GRAMMAR_STATS, JSON.stringify(stats)],
+    [LS_GRAMMAR_REVIEW, JSON.stringify(review)],
+  ];
+  const previous = writes.map(([key]) => localStorage.getItem(key));
+  let completed = 0;
+  try {
+    for (const [key, value] of writes) {
+      localStorage.setItem(key, value);
+      completed++;
+    }
+  } catch (error) {
+    for (let i = completed - 1; i >= 0; i--) {
+      if (previous[i] === null) localStorage.removeItem(writes[i][0]);
+      else localStorage.setItem(writes[i][0], previous[i]);
+    }
+    throw error;
+  }
+}
+
 // ── Grammar Cloud URL (separate from vocabulary webhook) ───────────────────
 
 export function getGrammarCloudUrl() {
