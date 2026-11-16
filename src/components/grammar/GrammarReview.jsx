@@ -35,11 +35,17 @@ export default function GrammarReview({ savedQuestions, reviewProgress, onRecord
     setReviewError('');
     try {
       const result = onRecordReview(q.savedId, value);
-      if (!result?.ok) throw new Error('Review was not persisted');
+      if (!result?.ok) {
+        assessedIds.current.delete(q.savedId);
+        const details = result?.diagnostics || [];
+        const quota = ['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED'].includes(details[0]?.errorType);
+        setReviewError(result?.message || `Chưa lưu được đánh giá trên thiết bị. ${quota ? 'LocalStorage đã hết dung lượng.' : 'Thao tác lưu thất bại; chưa xác định là lỗi dung lượng.'} ${details.map(d => `${d.operation} · ${d.key} · ${d.errorType}`).join('; ')}${details.length > 1 ? ' Hoàn nguyên chưa hoàn tất. Giữ trang này mở và thử lại để tránh cộng trùng thống kê.' : ' Vui lòng thử lại.'}`);
+        return;
+      }
       setAssessments(prev => ({ ...prev, [current]: value }));
     } catch {
       assessedIds.current.delete(q.savedId);
-      setReviewError('Chưa lưu được đánh giá trên thiết bị. Vui lòng kiểm tra dung lượng lưu trữ rồi thử lại.');
+      setReviewError('Chưa lưu được đánh giá: lỗi xử lý không xác định. Vui lòng thử lại.');
     }
   }
   function finish() {

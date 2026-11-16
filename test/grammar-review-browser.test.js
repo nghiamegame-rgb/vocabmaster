@@ -42,10 +42,16 @@ try {
       }))));
       localStorage.setItem('vocabmaster_grammar_review', JSON.stringify(Object.fromEntries(['a', 'b', 'c'].map(id => [id, { level: 3, totalReviews: 4, wrongCount: 1, nextReviewAt: 0 }]))));
       sessionStorage.setItem('seeded', '1');
+      localStorage.setItem('vocabmaster_grammar_underlines', '{"a":[{"start":0,"end":7,"color":"blue"}]}');
+      localStorage.setItem('vocabmaster_grammar_sentence_notes', '{"a":[]}');
     }
     const original = Storage.prototype.setItem;
     Storage.prototype.setItem = function (key, value) {
-      if (key === window.failReviewKey) throw new DOMException('Test quota', 'QuotaExceededError');
+      if (window.failRollback && key === 'vocabmaster_grammar_stats') {
+        if (window.statsWritten) throw new DOMException('PRIVATE rollback data', 'SecurityError');
+        window.statsWritten = true;
+      }
+      if (key === window.failReviewKey) throw new DOMException('PRIVATE write message', window.failErrorType || 'QuotaExceededError');
       return original.call(this, key, value);
     };
   });
@@ -54,6 +60,8 @@ try {
     stats: JSON.parse(localStorage.getItem('vocabmaster_grammar_stats')),
     pending: localStorage.getItem('vocabmaster_grammar_pending'),
     saved: localStorage.getItem('vocabmaster_grammar_saved'),
+    underlines: localStorage.getItem('vocabmaster_grammar_underlines'),
+    notes: localStorage.getItem('vocabmaster_grammar_sentence_notes'),
   }));
   async function openReview() {
     await page.getByRole('button', { name: 'Grammar', exact: true }).click();
@@ -106,13 +114,37 @@ try {
       await page.evaluate(key => { window.failReviewKey = key; }, key);
       await yes().click();
       await page.getByRole('alert').filter({ hasText: 'Chưa lưu' }).waitFor();
+      assert.match(await page.getByRole('alert').innerText(), new RegExp(`setItem · ${key} · QuotaExceededError`));
       assert.equal(await yes().isEnabled(), true); assert.equal(await no().isEnabled(), true);
       assert.deepEqual(await read(), before);
       await page.evaluate(() => { window.failReviewKey = ''; });
     }
+    await page.evaluate(() => { window.failReviewKey = 'vocabmaster_grammar_stats'; window.failErrorType = 'SecurityError'; });
+    await no().click();
+    assert.match(await page.getByRole('alert').innerText(), /setItem · vocabmaster_grammar_stats · SecurityError/);
+    assert.ok(!(await page.getByRole('alert').innerText()).includes('LocalStorage đã hết dung lượng'));
+    await page.evaluate(() => { window.failReviewKey = ''; window.failErrorType = ''; });
+    const beforePartial = await read();
+    await page.evaluate(() => {
+      window.failRollback = true; window.statsWritten = false;
+      window.failReviewKey = 'vocabmaster_grammar_review';
+    });
     await yes().click();
+    const alert = await page.getByRole('alert').innerText();
+    assert.match(alert, /setItem · vocabmaster_grammar_review · QuotaExceededError/);
+    assert.match(alert, /rollback.setItem · vocabmaster_grammar_stats · SecurityError/);
+    assert.ok(!alert.includes('PRIVATE'));
+    assert.equal(await yes().isEnabled(), true);
+    assert.equal(await no().isEnabled(), true);
+    assert.equal((await read()).stats.sentenceActivity.reviewed, 3, 'stats partially written');
+    assert.deepEqual((await read()).review, beforePartial.review);
+    await page.evaluate(() => { window.failRollback = false; window.failReviewKey = ''; });
+    await yes().click();
+    assert.equal(await yes().isDisabled(), true); assert.equal(await no().isDisabled(), true);
+    assert.equal(await color(yes()), await color(no()));
     assert.equal((await read()).review.c.totalReviews, 5);
     assert.equal((await read()).stats.sentenceActivity.reviewed, 3);
+    for (const key of ['saved', 'notes', 'underlines']) assert.equal((await read())[key], initial[key]);
     await page.getByRole('button', { name: 'Hoàn tất', exact: true }).click();
     await page.getByText('Đã hiểu: 2 · Cần ôn lại: 1 · Đã ôn: 3/3', { exact: true }).waitFor();
   }

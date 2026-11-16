@@ -1,5 +1,7 @@
 # VocabMaster — ngữ cảnh dự án
 
+**Chẩn đoán lỗi Ôn tập (bổ sung 2026-11-16):** console `Grammar review storage` và UI trả metadata operation/key/errorType, giữ cả lỗi ghi và lỗi hoàn nguyên; không log nội dung. Chưa xác định exception production. Retry sau rollback stats lỗi dùng state đã xác nhận để không cộng trùng trong cùng phiên; nếu rollback cũng lỗi cần giữ trang mở đến khi retry thành công (chưa có journal chống crash). Chi tiết HANDOFF mục 16.
+
 **Cập nhật Ôn tập Grammar 2026-11-16:** hai nút tự đánh giá đổi sang xám và `disabled` sau khi lưu local thành công. `GrammarReview` khóa bấm trùng bằng ref; `recordReview` trả `{ ok }`, ghi tiến độ + thống kê + pending trước khi công bố React state/replay sync. Lỗi ghi trả lại các khóa đã ghi trong thao tác, báo lỗi và mở thử lại; không coi màu xám là ACK cloud. Đã kiểm tra app thật trên Edge bằng dữ liệu thử cô lập, gồm quota/retry/reload. Chi tiết và giới hạn ở HANDOFF mục 16.
 
 **Cập nhật Vocabulary 2026-11-04:** giao thức cũ mô tả trong ảnh chụp bên dưới đã được thay ở working tree bởi protocol 1 (generation/revision/tombstone, snapshot Drive, proxy ACK đầy đủ, mặc định pause). [Quy trình phục hồi hiện tại](VOCABULARY-RECOVERY.md) và HANDOFF mục 13 là nguồn trạng thái mới; chưa triển khai production. Không áp dụng merge legacy/hard-sync/count verification trong các đoạn lịch sử cho code hiện tại.

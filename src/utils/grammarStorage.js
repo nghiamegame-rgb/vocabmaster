@@ -96,24 +96,42 @@ export function saveReviewProgress(progress) {
 // Review acknowledgement covers all local writes, not the later cloud push.
 // Restore completed writes if a subsequent setItem fails (e.g. quota).
 export function saveGrammarReviewResult(review, stats) {
-  const writes = [
-    [LS_GRAMMAR_PENDING, 'true'],
-    [LS_GRAMMAR_STATS, JSON.stringify(stats)],
-    [LS_GRAMMAR_REVIEW, JSON.stringify(review)],
-  ];
-  const previous = writes.map(([key]) => localStorage.getItem(key));
-  let completed = 0;
+  const entries = [[LS_GRAMMAR_PENDING, true], [LS_GRAMMAR_STATS, stats], [LS_GRAMMAR_REVIEW, review]];
+  const previous = [];
+  const completed = [];
+  let operation = 'stringify', key = LS_GRAMMAR_PENDING;
+  // Never log exception messages/stacks or values: browser messages may embed data.
+  const describe = error => ({ operation, key, errorType:
+    ['QuotaExceededError', 'NS_ERROR_DOM_QUOTA_REACHED', 'SecurityError', 'TypeError', 'InvalidStateError', 'Error'].includes(error?.name) ? error.name : 'Error' });
   try {
-    for (const [key, value] of writes) {
+    const writes = entries.map(([entryKey, value]) => {
+      key = entryKey; operation = 'stringify';
+      return [key, JSON.stringify(value)];
+    });
+    for (const [entryKey] of writes) {
+      key = entryKey; operation = 'getItem';
+      previous.push(localStorage.getItem(key));
+    }
+    for (let i = 0; i < writes.length; i++) {
+      const [entryKey, value] = writes[i];
+      key = entryKey; operation = 'setItem';
       localStorage.setItem(key, value);
-      completed++;
+      completed.push(i);
     }
   } catch (error) {
-    for (let i = completed - 1; i >= 0; i--) {
-      if (previous[i] === null) localStorage.removeItem(writes[i][0]);
-      else localStorage.setItem(writes[i][0], previous[i]);
+    const diagnostics = [describe(error)];
+    for (const i of completed.reverse()) {
+      key = entries[i][0];
+      operation = previous[i] === null ? 'rollback.removeItem' : 'rollback.setItem';
+      try {
+        if (previous[i] === null) localStorage.removeItem(key);
+        else localStorage.setItem(key, previous[i]);
+      } catch (rollbackError) { diagnostics.push(describe(rollbackError)); }
     }
-    throw error;
+    console.error('Grammar review storage', diagnostics);
+    const failure = new Error('Grammar review storage failed');
+    failure.diagnostics = diagnostics;
+    throw failure;
   }
 }
 

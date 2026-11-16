@@ -277,7 +277,7 @@ export function useGrammarStore() {
 
   function recordReview(savedId, isCorrect) {
     const question = savedQuestionsRef.current.find(q => q.savedId === savedId);
-    if (!question || typeof isCorrect !== 'boolean') return { ok: false };
+    if (!question || typeof isCorrect !== 'boolean') return { ok: false, message: 'Không thể đánh giá: câu không còn trong kho hoặc lựa chọn không hợp lệ.' };
     const rec = reviewProgressRef.current[savedId] ?? { level: 1, wrongCount: 0, totalReviews: 0 };
     const previousLevel = Math.min(5, Math.max(1, Number(rec.level) || 1));
     const level = isCorrect ? Math.min(5, previousLevel + 1) : Math.max(1, previousLevel - 1);
@@ -291,7 +291,9 @@ export function useGrammarStore() {
       understood: isCorrect ? 1 : 0,
       topic: question.topic || 'Mixed',
     };
-    const previousStats = getGrammarStats();
+    // Use the last acknowledged state: disk stats may contain a partial write
+    // when both saving review and rolling back stats failed. Retry must not add twice.
+    const previousStats = grammarStats;
     const activity = previousStats.sentenceActivity || {};
     const oldTopic = activity.byTopic?.[result.topic] || {};
     const stats = { ...previousStats, sentenceActivity: {
@@ -309,7 +311,9 @@ export function useGrammarStore() {
     const edit = data => ({ ...data, review: { ...data.review, [savedId]: next } });
     const review = edit({ review: reviewProgressRef.current }).review;
     // Publish state/replay/sync only after local progress, stats and pending save.
-    try { saveGrammarReviewResult(review, stats); } catch { return { ok: false }; }
+    try { saveGrammarReviewResult(review, stats); } catch (error) {
+      return { ok: false, diagnostics: error.diagnostics };
+    }
     reviewProgressRef.current = review;
     pendingRef.current = true;
     changeVersionRef.current++;
