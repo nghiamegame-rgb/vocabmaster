@@ -20,12 +20,12 @@ export default class ErrorBoundary extends Component {
   render() {
     if (!this.state.hasError) return this.props.children;
     return (
-      <div role="alert" className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center gap-4 p-6 text-center">
-        <p className="text-lg">Có lỗi xảy ra, dữ liệu của bạn vẫn được giữ. Hãy tải lại trang</p>
+      <div role="alert" className="vm-app-shell flex flex-col items-center justify-center gap-4 p-6 text-center">
+        <p className="text-lg text-slate-100">Có lỗi xảy ra, dữ liệu của bạn vẫn được giữ. Hãy tải lại trang</p>
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold"
+          className="vm-btn vm-btn-primary px-5 py-2.5 rounded-xl font-semibold"
         >Tải lại trang</button>
       </div>
     );

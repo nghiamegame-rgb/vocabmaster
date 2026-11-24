@@ -41,7 +41,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
+    <div className="vm-app-shell">
       <Navbar
         activeTab={activeTab}
         setActiveTab={handleSetActiveTab}
@@ -51,13 +51,13 @@ export default function App() {
       />
 
       <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
-        <div data-testid="vocab-sync-controls" className="mb-4 p-3 rounded-lg bg-slate-900 text-sm flex flex-wrap gap-3 items-center" role="status">
+        <div data-testid="vocab-sync-controls" className="vm-panel mb-5 px-4 py-3 rounded-2xl text-sm text-slate-200 flex flex-wrap gap-x-4 gap-y-2 items-center" role="status">
           <span>Vocabulary: {syncPaused || syncStatus === 'paused' ? 'đang tạm dừng ghi cloud' : 'đồng bộ đã bật trên thiết bị'}</span>
-          <button className="underline" onClick={syncPaused ? resumeSync : pauseSync}>{syncPaused ? 'Bật đồng bộ thiết bị' : 'Tạm dừng đồng bộ'}</button>
-          <button className="underline" onClick={exportSyncBackup}>Xuất bản sao Vocabulary</button>
-          {syncNotice && <p className="w-full text-amber-300">{syncNotice}</p>}
+          <button className="vm-btn text-indigo-300 hover:text-indigo-200 underline underline-offset-4 font-medium" onClick={syncPaused ? resumeSync : pauseSync}>{syncPaused ? 'Bật đồng bộ thiết bị' : 'Tạm dừng đồng bộ'}</button>
+          <button className="vm-btn text-indigo-300 hover:text-indigo-200 underline underline-offset-4 font-medium" onClick={exportSyncBackup}>Xuất bản sao Vocabulary</button>
+          {syncNotice && <p className="w-full text-amber-300 text-xs sm:text-sm leading-relaxed">{syncNotice}</p>}
         </div>
-        {vocabDataLoadError && <p role="alert" className="mb-4 text-amber-300">{vocabDataLoadError}</p>}
+        {vocabDataLoadError && <p role="alert" className="mb-4 px-4 py-3 rounded-xl bg-amber-500/12 border border-amber-400/30 text-amber-200 text-sm animate-fade-in">{vocabDataLoadError}</p>}
         {activeTab === 'dashboard' && (
           <Dashboard
             words={words}

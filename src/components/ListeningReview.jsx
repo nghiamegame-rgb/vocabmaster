@@ -53,17 +53,16 @@ function FilterPills({ options, active, onSelect, countFn, idPrefix }) {
             id={`${idPrefix}-${opt.value ?? 'all'}`}
             onClick={() => onSelect(opt.value)}
             className={`
-              flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium
-              transition-all duration-200
+              vm-btn flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium border
               ${isActive
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
-                : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700'
+                ? 'vm-btn-primary border-indigo-400/40'
+                : 'bg-slate-900/75 text-slate-300 hover:bg-slate-800 hover:text-white border-slate-400/20'
               }
             `}
           >
             {opt.icon && <span className="text-xs">{opt.icon}</span>}
             <span>{opt.label}</span>
-            <span className="ml-0.5 text-xs opacity-60">({count})</span>
+            <span className="ml-0.5 text-xs opacity-75">({count})</span>
           </button>
         );
       })}
@@ -81,21 +80,21 @@ function ImageCard({ word, state, onClick, showMeaning, onToggleMeaning, index, 
   const imageUrl = word.imageUrl?.trim() || '';
 
   const borderClass =
-    state === 'correct'  ? 'border-emerald-400 shadow-emerald-500/40 shadow-xl' :
-    state === 'wrong'    ? 'border-rose-400    shadow-rose-500/40    shadow-xl'  :
-    state === 'idle'     ? 'border-slate-700/60 hover:border-indigo-400/70 hover:shadow-indigo-500/20 hover:shadow-lg' :
-    /* disabled */         'border-slate-700/40 opacity-50';
+    state === 'correct'  ? 'border-emerald-400 shadow-emerald-500/35 shadow-xl' :
+    state === 'wrong'    ? 'border-rose-400    shadow-rose-500/35    shadow-xl'  :
+    state === 'idle'     ? 'border-slate-400/20 hover:border-indigo-400/75' :
+    /* disabled */         'border-slate-400/15 opacity-50';
 
   const ringOverlay =
-    state === 'correct' ? 'ring-4 ring-emerald-400/40' :
-    state === 'wrong'   ? 'ring-4 ring-rose-400/40'    : '';
+    state === 'correct' ? 'ring-4 ring-emerald-400/35' :
+    state === 'wrong'   ? 'ring-4 ring-rose-400/35'    : '';
 
   return (
     <div
       className={`
-        relative rounded-2xl overflow-hidden border-2 transition-all duration-300
+        vm-card relative rounded-2xl overflow-hidden border-2
         ${borderClass} ${ringOverlay}
-        ${state === 'idle' ? 'cursor-pointer active:scale-95' : 'cursor-default'}
+        ${state === 'idle' ? 'vm-card-interactive cursor-pointer active:scale-95' : 'cursor-default'}
       `}
       onClick={() => state === 'idle' && onClick(word)}
       id={`listening-card-${index}`}
@@ -105,19 +104,19 @@ function ImageCard({ word, state, onClick, showMeaning, onToggleMeaning, index, 
       aria-label={`Choose ${word.english}`}
     >
       {/* Image area */}
-      <div className="relative w-full aspect-[4/3] bg-slate-800">
+      <div className="relative w-full aspect-[4/3] bg-slate-900">
         {!imageUrl ? (
           <WordInitialTile word={word.english} className="absolute inset-0" />
         ) : !imgError ? (
           <img
             src={imageUrl}
             alt={word.english}
-            className={`w-full h-full object-cover transition-opacity duration-500 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+            className={`w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
             onLoad={() => setImgLoaded(true)}
             onError={() => { setImgError(true); setImgLoaded(true); }}
           />
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-800/80 text-slate-500">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90 text-slate-300">
             <span className="text-4xl mb-2">📷</span>
             <span className="text-xs text-center px-2">
               {word.english}
@@ -130,15 +129,15 @@ function ImageCard({ word, state, onClick, showMeaning, onToggleMeaning, index, 
 
         {/* Skeleton shimmer */}
         {imageUrl && !imgLoaded && !imgError && (
-          <div className="absolute inset-0 bg-slate-700 animate-pulse" />
+          <div className="absolute inset-0 vm-skeleton" />
         )}
 
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/10 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#070b14]/85 via-[#070b14]/15 to-transparent" />
 
         {/* Level badge */}
         <span className={`
-          absolute top-2 right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white
+          absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full text-white backdrop-blur-sm ring-1 ring-white/20
           ${LEVEL_BG[word.level] ?? 'bg-slate-600/80'}
         `}>
           L{word.level}
@@ -146,34 +145,34 @@ function ImageCard({ word, state, onClick, showMeaning, onToggleMeaning, index, 
 
         {/* Result overlay icon */}
         {state === 'correct' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-emerald-500/20">
-            <CheckCircle2 size={56} className="text-emerald-400 drop-shadow-lg" />
+          <div className="absolute inset-0 flex items-center justify-center bg-emerald-500/20 vm-scale-in">
+            <CheckCircle2 size={56} className="text-emerald-300 drop-shadow-lg" />
           </div>
         )}
         {state === 'wrong' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-rose-500/20">
-            <XCircle size={56} className="text-rose-400 drop-shadow-lg" />
+          <div className="absolute inset-0 flex items-center justify-center bg-rose-500/20 vm-scale-in">
+            <XCircle size={56} className="text-rose-300 drop-shadow-lg" />
           </div>
         )}
       </div>
 
       {/* Bottom bar: meaning toggle */}
-      <div className="bg-slate-900/95 px-3 py-2 flex items-center justify-between gap-2">
+      <div className="bg-[#0b1222]/95 px-3 py-2 flex items-center justify-between gap-2 border-t border-slate-400/10">
         <div className="flex-1 min-w-0">
           {showMeaning ? (
-            <p className="text-indigo-300 text-xs font-medium truncate animate-fade-in">
+            <p className="text-indigo-200 text-xs font-medium truncate animate-fade-in">
               {word.vietnamese}
             </p>
           ) : (
-            <p className="text-slate-600 text-xs select-none">• • • • •</p>
+            <p className="text-slate-400 text-xs select-none">• • • • •</p>
           )}
         </div>
         <button
           id={`toggle-meaning-${index}`}
           className={`shrink-0 p-1 rounded-lg transition-colors ${
             showMeaning
-              ? 'text-indigo-400 hover:text-indigo-300'
-              : 'text-slate-500 hover:text-indigo-400'
+              ? 'text-indigo-300 hover:text-indigo-200'
+              : 'text-slate-400 hover:text-indigo-300'
           }`}
           onClick={e => { e.stopPropagation(); onToggleMeaning(); }}
           aria-label={showMeaning ? 'Hide all meanings' : 'Show all Vietnamese meanings'}
@@ -192,19 +191,19 @@ function ImageCard({ word, state, onClick, showMeaning, onToggleMeaning, index, 
 function StatsBar({ score, total }) {
   const pct = total === 0 ? 0 : Math.round((score / total) * 100);
   return (
-    <div className="flex items-center gap-4 text-sm flex-wrap">
+    <div className="vm-panel inline-flex items-center gap-4 text-sm flex-wrap px-4 py-2.5 rounded-2xl">
       <div className="flex items-center gap-1.5">
         <CheckCircle2 size={14} className="text-emerald-400" />
-        <span className="text-white font-semibold">{score}</span>
-        <span className="text-slate-500">correct</span>
+        <span className="text-white font-semibold tabular-nums">{score}</span>
+        <span className="text-slate-300">correct</span>
       </div>
-      <div className="h-4 w-px bg-slate-700" />
+      <div className="h-4 w-px bg-slate-400/20" />
       <div className="flex items-center gap-1.5">
         <Trophy size={14} className="text-indigo-400" />
-        <span className="text-indigo-400 font-semibold">{pct}%</span>
+        <span className="text-indigo-300 font-semibold tabular-nums">{pct}%</span>
       </div>
-      <div className="h-4 w-px bg-slate-700" />
-      <span className="text-slate-500">{total} played</span>
+      <div className="h-4 w-px bg-slate-400/20" />
+      <span className="text-slate-300">{total} played</span>
     </div>
   );
 }
@@ -455,15 +454,15 @@ export default function ListeningReview({ words, updateWordLevel }) {
   /* Render                                                             */
   /* ---------------------------------------------------------------- */
   return (
-    <div className="animate-fade-in max-w-2xl mx-auto">
+    <div className="vm-page-enter max-w-2xl mx-auto">
 
       {/* ── Page header ── */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-white mb-1 flex items-center gap-3">
+        <h1 className="text-3xl font-extrabold tracking-tight text-white mb-1 flex items-center gap-3">
           <Headphones size={28} className="text-indigo-400" />
           Listening Review
         </h1>
-        <p className="text-slate-400 text-sm">
+        <p className="text-slate-300 text-sm">
           Listen to the word and tap the matching image.
         </p>
       </div>
@@ -474,10 +473,10 @@ export default function ListeningReview({ words, updateWordLevel }) {
       </div>
 
       {/* ── Filter panel ── */}
-      <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-4 mb-6 space-y-3">
+      <div className="vm-panel rounded-2xl p-4 sm:p-5 mb-6 space-y-3.5">
         {/* Level filter */}
         <div>
-          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-2">
+          <p className="text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">
             Level
           </p>
           <FilterPills
@@ -491,28 +490,27 @@ export default function ListeningReview({ words, updateWordLevel }) {
 
         {/* Type filter */}
         <div>
-          <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-2">
+          <p className="text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">
             Type
           </p>
           {/* Segmented tab style matching Vocabulary.jsx */}
-          <div className="flex items-center gap-1 bg-slate-800/60 border border-slate-700/40 rounded-xl p-1 w-fit max-w-full flex-wrap">
+          <div className="flex items-center gap-1 bg-slate-950/60 border border-slate-400/15 rounded-xl p-1 w-fit max-w-full flex-wrap">
             {TYPE_FILTER_OPTIONS.map(opt => (
               <button
                 key={opt.value}
                 id={`lr-type-${opt.value.toLowerCase()}`}
                 onClick={() => setTypeFilter(opt.value)}
                 className={`
-                  flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
-                  transition-all duration-200
+                  vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
                   ${typeFilter === opt.value
-                    ? 'bg-slate-700 text-white shadow'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-slate-700/90 text-white shadow-sm ring-1 ring-white/10'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
                   }
                 `}
               >
                 <span>{opt.icon}</span>
                 <span className="hidden sm:inline">{opt.label.split('(')[0].trim()}</span>
-                <span className="text-xs opacity-60">({typeCount(opt.value)})</span>
+                <span className="text-xs opacity-70">({typeCount(opt.value)})</span>
               </button>
             ))}
           </div>
@@ -522,8 +520,8 @@ export default function ListeningReview({ words, updateWordLevel }) {
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-2 flex-wrap">
             <Star size={14} className={hardOnly ? 'fill-amber-400 text-amber-400' : 'text-amber-400'} />
-            <span className="text-slate-300 text-xs font-semibold">Chỉ từ khó ⭐</span>
-            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+            <span className="text-slate-200 text-xs font-semibold">Chỉ từ khó ⭐</span>
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/35">
               {hardCount} từ khó
             </span>
           </div>
@@ -531,8 +529,8 @@ export default function ListeningReview({ words, updateWordLevel }) {
             id="lr-hard-toggle"
             type="button"
             onClick={() => setHardOnly(v => !v)}
-            className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none ${
-              hardOnly ? 'bg-amber-500' : 'bg-slate-600'
+            className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${
+              hardOnly ? 'bg-amber-500 shadow-sm shadow-amber-500/40' : 'bg-slate-600'
             }`}
             title={hardOnly ? 'Hiện tất cả từ' : 'Chỉ luyện các từ đã đánh dấu sao khó'}
             aria-label="Chỉ từ khó ⭐"
@@ -550,8 +548,8 @@ export default function ListeningReview({ words, updateWordLevel }) {
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-2 flex-wrap">
             <Clock size={14} className="text-amber-400" />
-            <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Due for Review</span>
-            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+            <span className="text-slate-300 text-xs font-semibold uppercase tracking-wider">Due for Review</span>
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/35">
               {dueCount} due
             </span>
           </div>
@@ -559,8 +557,8 @@ export default function ListeningReview({ words, updateWordLevel }) {
             id="lr-due-toggle"
             type="button"
             onClick={() => setDueOnly(v => !v)}
-            className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none ${
-              dueOnly ? 'bg-amber-500' : 'bg-slate-600'
+            className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${
+              dueOnly ? 'bg-amber-500 shadow-sm shadow-amber-500/40' : 'bg-slate-600'
             }`}
             title={dueOnly ? 'Show all words' : 'Show only words due for review'}
             aria-pressed={dueOnly}
@@ -576,15 +574,15 @@ export default function ListeningReview({ words, updateWordLevel }) {
 
       {/* ── Not enough words for current filters ── */}
       {!hasEnoughWords ? (
-        <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5">
-          <AlertCircle size={20} className="text-amber-400 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 bg-amber-500/12 border border-amber-400/35 rounded-2xl p-5 animate-fade-in">
+          <AlertCircle size={20} className="text-amber-300 shrink-0 mt-0.5" />
           <div>
-            <p className="text-amber-300 font-semibold mb-1">
+            <p className="text-amber-200 font-semibold mb-1">
               {hardOnly
                 ? 'Chưa đủ từ khó ⭐ khớp bộ lọc hiện tại'
                 : 'Not enough words match these filters'}
             </p>
-            <p className="text-amber-400/70 text-sm">
+            <p className="text-amber-200/85 text-sm leading-relaxed">
               Cần ít nhất <strong>4 từ</strong> khớp bộ lọc để tạo câu hỏi nghe 4 lựa chọn.
               Hiện có <strong>{filteredPool.length}</strong> từ khớp{hardOnly ? ' (đang bật "Chỉ từ khó ⭐")' : ''}.
               Please select a category with at least <strong>4 words</strong> to play.
@@ -593,34 +591,34 @@ export default function ListeningReview({ words, updateWordLevel }) {
         </div>
       ) : !round ? (
         /* ── Loading spinner ── */
-        <div className="flex items-center justify-center py-20 text-slate-500">
-          <div className="animate-spin mr-3 w-5 h-5 border-2 border-slate-600 border-t-indigo-500 rounded-full" />
+        <div className="flex items-center justify-center py-20 text-slate-300">
+          <div className="animate-spin mr-3 w-5 h-5 border-2 border-slate-600 border-t-indigo-400 rounded-full" />
           Loading…
         </div>
       ) : (
         <>
           {/* ── Audio control card ── */}
-          <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-5 mb-5 flex flex-col gap-4">
+          <div className="vm-card rounded-2xl p-5 mb-5 flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row items-center gap-4">
 
               {/* Animated speaker */}
               <div className={`
                 relative w-16 h-16 rounded-2xl flex items-center justify-center shrink-0
-                bg-gradient-to-br from-indigo-600 to-purple-700 shadow-lg shadow-indigo-500/30
-                transition-transform duration-150
-                ${isPlaying ? 'scale-110 shadow-indigo-500/60' : ''}
+                bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-700 shadow-lg shadow-indigo-500/30 ring-1 ring-white/15
+                transition-transform duration-200
+                ${isPlaying ? 'scale-105 shadow-indigo-500/55' : ''}
               `}>
                 <Volume2
                   size={28}
-                  className={`text-white transition-all duration-300 ${isPlaying ? 'opacity-100' : 'opacity-70'}`}
+                  className={`text-white transition-opacity duration-200 ${isPlaying ? 'opacity-100' : 'opacity-80'}`}
                 />
                 {isPlaying && (
-                  <span className="absolute w-16 h-16 rounded-2xl border-2 border-indigo-400/40 animate-ping" />
+                  <span className="absolute w-16 h-16 rounded-2xl border-2 border-indigo-300/45 animate-ping" />
                 )}
               </div>
 
               <div className="flex-1 text-center sm:text-left">
-                <p className="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-1">
+                <p className="text-slate-300 text-xs uppercase tracking-wider font-semibold mb-1">
                   Which image matches…
                 </p>
                 {/* Show the word as a hint after 4 listens */}
@@ -629,15 +627,15 @@ export default function ListeningReview({ words, updateWordLevel }) {
                     💡 Hint: <span className="underline underline-offset-4">
                       {round.correct.english}
                       {round.correct.annotation?.trim() && (
-                        <span className="ml-1 text-xs font-normal text-slate-400">({round.correct.annotation.trim()})</span>
+                        <span className="ml-1 text-xs font-normal text-slate-300">({round.correct.annotation.trim()})</span>
                       )}
                     </span>
                   </p>
                 ) : (
                   <p className="text-white text-lg font-bold">
                     {isPlaying
-                      ? <span className="text-indigo-400 animate-pulse">♫ Playing audio…</span>
-                      : <span className="text-slate-400 italic text-base">Tap Replay to hear again{listenCount > 0 ? ` (×${listenCount})` : ''}</span>
+                      ? <span className="text-indigo-300 vm-pulse-soft">♫ Playing audio…</span>
+                      : <span className="text-slate-300 italic text-base">Tap Replay to hear again{listenCount > 0 ? ` (×${listenCount})` : ''}</span>
                     }
                   </p>
                 )}
@@ -649,9 +647,8 @@ export default function ListeningReview({ words, updateWordLevel }) {
                 onClick={handleReplay}
                 disabled={answered}
                 className="
-                  flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm
-                  bg-indigo-600 hover:bg-indigo-500 active:scale-95 disabled:opacity-50
-                  text-white transition-all duration-200 shadow-md shadow-indigo-500/30 shrink-0
+                  vm-btn vm-btn-primary flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm
+                  disabled:opacity-50 shrink-0
                 "
               >
                 <Volume2 size={16} />
@@ -671,13 +668,9 @@ export default function ListeningReview({ words, updateWordLevel }) {
                   placeholder="Or type the word here…"
                   autoComplete="off"
                   spellCheck={false}
-                  className="
-                    flex-1 min-w-0 bg-slate-900/60 border border-slate-600 rounded-xl
-                    px-4 py-2.5 text-white text-sm placeholder-slate-600
-                    focus:outline-none focus:border-indigo-500 transition-colors
-                  "
+                  className="flex-1 min-w-0 vm-input rounded-xl px-4 py-2.5 text-sm"
                 />
-                <span className="text-slate-600 text-xs whitespace-nowrap shrink-0">auto-submits</span>
+                <span className="text-slate-400 text-xs whitespace-nowrap shrink-0">auto-submits</span>
               </div>
             )}
           </div>
@@ -688,21 +681,21 @@ export default function ListeningReview({ words, updateWordLevel }) {
               animate-fade-in mb-5 flex items-center gap-3 px-5 py-3.5 rounded-2xl
               font-semibold text-sm
               ${isCorrectAnswer
-                ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-300'
-                : 'bg-rose-500/15    border border-rose-500/40    text-rose-300'
+                ? 'bg-emerald-500/15 border border-emerald-400/40 text-emerald-200'
+                : 'bg-rose-500/15    border border-rose-400/40    text-rose-200'
               }
             `}>
               {isCorrectAnswer
                 ? <><CheckCircle2 size={18} className="shrink-0" /> Excellent! +1 streak for <span className="underline underline-offset-2 ml-1">
                     {round.correct.english}
                     {round.correct.annotation?.trim() && (
-                      <span className="ml-1 text-xs font-normal text-slate-400">({round.correct.annotation.trim()})</span>
+                      <span className="ml-1 text-xs font-normal text-slate-300">({round.correct.annotation.trim()})</span>
                     )}
                   </span></>
                 : <><XCircle size={18} className="shrink-0" /> Wrong — streak reset. The answer was <span className="font-bold ml-1">
                     {round.correct.english}
                     {round.correct.annotation?.trim() && (
-                      <span className="ml-1 text-xs font-normal text-slate-400">({round.correct.annotation.trim()})</span>
+                      <span className="ml-1 text-xs font-normal text-slate-300">({round.correct.annotation.trim()})</span>
                     )}
                   </span></>
               }
@@ -730,9 +723,9 @@ export default function ListeningReview({ words, updateWordLevel }) {
               id="listening-next-btn"
               onClick={handleNext}
               className="
-                flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold
-                bg-slate-700 hover:bg-slate-600 active:scale-95
-                text-white transition-all duration-200
+                vm-btn flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold
+                bg-slate-800 hover:bg-slate-700 border border-slate-400/20
+                text-white
               "
             >
               {answered
@@ -747,12 +740,11 @@ export default function ListeningReview({ words, updateWordLevel }) {
               onClick={toggleMeaning}
               title={isMeaningRevealed ? 'Hide Vietnamese meanings' : 'Show Vietnamese meanings for all cards'}
               className={`
-                flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold
-                border transition-all duration-200 active:scale-95
+                vm-btn flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold border
                 ${
                   isMeaningRevealed
-                    ? 'bg-indigo-600/20 border-indigo-500/50 text-indigo-300 hover:bg-indigo-600/30'
-                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
+                    ? 'bg-indigo-500/20 border-indigo-400/50 text-indigo-200 hover:bg-indigo-500/30'
+                    : 'bg-slate-900/75 border-slate-400/20 text-slate-300 hover:text-white hover:border-slate-400/35'
                 }
               `}
             >
@@ -761,13 +753,13 @@ export default function ListeningReview({ words, updateWordLevel }) {
             </button>
 
             {/* Target level hint */}
-            <div className="flex items-center gap-2 text-xs text-slate-500">
+            <div className="flex items-center gap-2 text-xs text-slate-300">
               <span>Target:</span>
               <span className={`px-2 py-0.5 rounded-full font-bold text-white text-[11px] ${LEVEL_BG[round.correct.level] ?? 'bg-slate-600'}`}>
                 L{round.correct.level}
               </span>
-              <span className="text-slate-600">·</span>
-              <span className="text-slate-500">{filteredPool.length} in pool</span>
+              <span className="text-slate-500">·</span>
+              <span className="text-slate-300">{filteredPool.length} in pool</span>
             </div>
           </div>
         </>

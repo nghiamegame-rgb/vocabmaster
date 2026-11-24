@@ -1,83 +1,320 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   VocabMaster Design System — Midnight Indigo & Glass Slate
+   Dark mode tokens, elevation hierarchy, WCAG AA contrast, GPU-only motion.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@theme {
+  --color-vm-canvas: #070b14;
+  --color-vm-surface-1: #0d1424;
+  --color-vm-surface-2: #131d33;
+  --color-vm-surface-3: #1b2844;
+  --color-vm-accent: #6366f1;
+  --color-vm-accent-soft: #818cf8;
+  --color-vm-violet: #8b5cf6;
+  --color-vm-teal: #2dd4bf;
+  --color-vm-success: #34d399;
+  --color-vm-warning: #fbbf24;
+  --color-vm-danger: #fb7185;
+  --color-vm-info: #38bdf8;
+}
+
+:root {
+  color-scheme: dark;
+
+  /* Core palette (Midnight Indigo & Glass Slate) */
+  --bg-canvas: #070b14;
+  --bg-surface-1: #0d1424;
+  --bg-surface-2: #131d33;
+  --bg-surface-3: #1b2844;
+  --bg-glass: rgba(11, 17, 32, 0.84);
+  --bg-glass-card: rgba(15, 23, 42, 0.72);
+  --bg-input: rgba(11, 18, 34, 0.82);
+
+  /* Text hierarchy (WCAG AA compliant on --bg-canvas and --bg-surface-2) */
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+
+  /* Borders */
+  --border-subtle: rgba(148, 163, 184, 0.14);
+  --border-default: rgba(148, 163, 184, 0.22);
+  --border-strong: rgba(148, 163, 184, 0.34);
+  --border-accent: rgba(129, 140, 248, 0.48);
+
+  /* Semantic accents */
+  --primary: #6366f1;
+  --primary-hover: #7578f6;
+  --primary-dark: #4f46e5;
+  --violet: #8b5cf6;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #f43f5e;
+  --accent-ring: rgba(129, 140, 248, 0.78);
+
+  /* Elevation shadows */
+  --shadow-card: 0 8px 24px -8px rgba(2, 6, 23, 0.65), inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+  --shadow-card-hover: 0 14px 32px -10px rgba(2, 6, 23, 0.8), 0 0 0 1px rgba(129, 140, 248, 0.22), inset 0 1px 0 0 rgba(255, 255, 255, 0.07);
+  --shadow-accent: 0 8px 20px -6px rgba(99, 102, 241, 0.42);
+  --shadow-violet: 0 8px 20px -6px rgba(139, 92, 246, 0.42);
+  --shadow-floating: 0 18px 42px -10px rgba(2, 6, 23, 0.88);
+
+  /* Radii & Motion (prefixed so Tailwind v4's built-in --radius-* scale stays intact) */
+  --vm-radius-sm: 0.625rem;
+  --vm-radius-md: 0.75rem;
+  --vm-radius-lg: 1rem;
+  --vm-radius-xl: 1.5rem;
+  --ease-out-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 160ms;
+  --duration-normal: 220ms;
+  --duration-slow: 280ms;
+}
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  background-color: var(--bg-canvas);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   margin: 0;
   padding: 0;
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  overflow-x: clip;
 }
 
+/* Ambient app backdrop (pseudo-element avoids layout impact and stays crisp) */
+.vm-app-shell {
+  position: relative;
+  min-height: 100vh;
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  isolation: isolate;
+}
+
+.vm-app-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(62rem 36rem at 12% -6%, rgba(99, 102, 241, 0.14), transparent 62%),
+    radial-gradient(50rem 32rem at 88% 2%, rgba(139, 92, 246, 0.10), transparent 60%),
+    radial-gradient(44rem 28rem at 50% 104%, rgba(45, 212, 191, 0.06), transparent 65%);
+}
+
+/* Accessible keyboard focus ring across all interactive elements */
+:is(button, a, input, select, textarea, summary, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+/* Shared form input surface */
 .field {
   width: 100%;
-  background: rgb(15 23 42 / 0.7);
-  border: 1px solid rgb(71 85 105 / 0.9);
-  color: white;
-  border-radius: 0.75rem;
-  padding: 0.65rem 0.85rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  border-radius: var(--vm-radius-md);
+  padding: 0.65rem 0.875rem;
   font-size: 0.875rem;
-  outline: none;
-  transition: border-color 0.2s;
+  transition: border-color var(--duration-fast) var(--ease-out-smooth),
+              background-color var(--duration-fast) var(--ease-out-smooth),
+              box-shadow var(--duration-fast) var(--ease-out-smooth);
 }
-.field::placeholder { color: rgb(100 116 139); }
-.field:focus { border-color: rgb(99 102 241); }
+.field::placeholder {
+  color: var(--text-muted);
+}
+.field:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+.field:focus {
+  border-color: var(--primary);
+  background: rgba(15, 23, 42, 0.94);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+}
+.field:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 1px;
+}
 
-:root {
-  --primary: #6366f1;
-  --primary-dark: #4f46e5;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+/* Shared surface & control utilities */
+.vm-panel {
+  background: linear-gradient(180deg, rgba(19, 29, 51, 0.78) 0%, rgba(13, 20, 36, 0.86) 100%);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-card);
+}
+
+.vm-card {
+  background: linear-gradient(180deg, rgba(21, 32, 56, 0.82) 0%, rgba(14, 22, 40, 0.9) 100%);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-card);
+  transition: transform var(--duration-normal) var(--ease-out-smooth),
+              border-color var(--duration-normal) var(--ease-out-smooth),
+              box-shadow var(--duration-normal) var(--ease-out-smooth),
+              background-color var(--duration-normal) var(--ease-out-smooth);
+}
+
+.vm-card-interactive:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.vm-btn {
+  transition: transform var(--duration-fast) var(--ease-out-smooth),
+              background-color var(--duration-fast) var(--ease-out-smooth),
+              border-color var(--duration-fast) var(--ease-out-smooth),
+              color var(--duration-fast) var(--ease-out-smooth),
+              box-shadow var(--duration-fast) var(--ease-out-smooth),
+              opacity var(--duration-fast) var(--ease-out-smooth);
+}
+.vm-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.vm-btn:active:not(:disabled) {
+  transform: scale(0.975);
+}
+
+.vm-btn-primary {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: #ffffff;
+  box-shadow: var(--shadow-accent), inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
+}
+.vm-btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #7477f7 0%, #5b52f0 100%);
+  box-shadow: 0 10px 24px -6px rgba(99, 102, 241, 0.55), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+}
+
+.vm-btn-violet {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  color: #ffffff;
+  box-shadow: var(--shadow-violet), inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
+}
+.vm-btn-violet:hover:not(:disabled) {
+  background: linear-gradient(135deg, #9b70f8 0%, #7477f7 100%);
+  box-shadow: 0 10px 24px -6px rgba(139, 92, 246, 0.52), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+}
+
+.vm-input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  transition: border-color var(--duration-fast) var(--ease-out-smooth),
+              background-color var(--duration-fast) var(--ease-out-smooth),
+              box-shadow var(--duration-fast) var(--ease-out-smooth);
+}
+.vm-input::placeholder {
+  color: var(--text-muted);
+}
+.vm-input:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+.vm-input:focus {
+  border-color: var(--primary);
+  background: rgba(15, 23, 42, 0.94);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 7px;
+  height: 7px;
 }
 ::-webkit-scrollbar-track {
-  background: #1e1e2e;
+  background: #0a101d;
 }
 ::-webkit-scrollbar-thumb {
-  background: #3b3b5c;
-  border-radius: 3px;
+  background: #273452;
+  border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #6366f1;
 }
 
-/* Animations */
+/* ── GPU-composited Keyframes (transform & opacity only) ────────────────── */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
 }
+
 @keyframes slideIn {
-  from { opacity: 0; transform: translateX(-10px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-@keyframes pulse-ring {
-  0%   { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99,102,241,0.7); }
-  70%  { transform: scale(1);    box-shadow: 0 0 0 10px rgba(99,102,241,0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99,102,241,0); }
-}
-@keyframes shimmer {
-  0%   { background-position: -200px 0; }
-  100% { background-position: calc(200px + 100%) 0; }
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: none; }
 }
 
-.animate-fade-in  { animation: fadeIn 0.3s ease forwards; }
-.animate-slide-in { animation: slideIn 0.3s ease forwards; }
+@keyframes vmToastIn {
+  from { opacity: 0; transform: translate(-50%, -10px) scale(0.97); }
+  to   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
 
-/* Progress bar transition */
+@keyframes vmScaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes vmFeedbackIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.95); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes vmSheen {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(220%); }
+}
+
+@keyframes vmPulseSoft {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.06); }
+}
+
+@keyframes vmBarReveal {
+  from { transform: scaleX(0); opacity: 0.7; }
+  to   { transform: scaleX(1); opacity: 1; }
+}
+
+/* Skeleton shimmer using pseudo-element transform (no background-position repaint) */
+.vm-skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: #16223a;
+}
+.vm-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(148, 163, 184, 0.14) 50%, transparent 100%);
+  transform: translateX(-100%);
+  animation: vmSheen 1.4s var(--ease-out-smooth) infinite;
+}
+
+/* Progress bar fill (GPU-only transform reveal + sheen, no width transition) */
 .progress-fill {
-  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  transform-origin: left center;
+}
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.22) 50%, transparent 100%);
+  transform: translateX(-100%);
+  animation: vmSheen 2.4s var(--ease-out-smooth) infinite;
 }
 
 /* Flashcard 3D flip */
 .perspective-1000 {
-  perspective: 1000px;
+  perspective: 1100px;
 }
 .preserve-3d {
   transform-style: preserve-3d;
@@ -88,4 +325,33 @@ body {
 }
 .rotate-y-180 {
   transform: rotateY(180deg);
+}
+.vm-flip-inner {
+  transition: transform 280ms var(--ease-out-smooth);
+  will-change: transform;
+}
+
+/* Respect user reduced-motion preference */
+@media (prefers-reduced-motion: no-preference) {
+  .animate-fade-in  { animation: fadeIn var(--duration-normal) var(--ease-out-smooth) both; }
+  .animate-slide-in { animation: slideIn var(--duration-normal) var(--ease-out-smooth) both; }
+  .vm-page-enter    { animation: fadeIn 240ms var(--ease-out-smooth) both; }
+  .vm-toast-enter   { animation: vmToastIn 220ms var(--ease-out-smooth) both; }
+  .vm-scale-in      { animation: vmScaleIn 200ms var(--ease-out-smooth) both; }
+  .vm-feedback-in   { animation: vmFeedbackIn 220ms var(--ease-out-smooth) both; }
+  .vm-pulse-soft    { animation: vmPulseSoft 1.8s ease-in-out infinite; }
+  .progress-fill    { animation: vmBarReveal 280ms var(--ease-out-smooth) both; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .progress-fill::after,
+  .vm-skeleton::after {
+    display: none;
+  }
 }

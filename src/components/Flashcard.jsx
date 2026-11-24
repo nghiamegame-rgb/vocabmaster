@@ -225,7 +225,7 @@ export default function Flashcard({ words, updateWordLevel }) {
     <div className="w-full space-y-3 mb-6">
       {/* Level filter pills + difficult-word toggle */}
       <div className="flex items-center gap-2 flex-wrap">
-        <Filter size={13} className="text-slate-500 shrink-0" />
+        <Filter size={13} className="text-slate-400 shrink-0" />
         {LEVEL_OPTS.map(opt => {
           const base = words.filter(w =>
             (!hardOnly || Boolean(w.hardMarked)) &&
@@ -239,14 +239,14 @@ export default function Flashcard({ words, updateWordLevel }) {
               key={String(opt.value)}
               id={`flashcard-level-${opt.value ?? 'all'}`}
               onClick={() => handleLevelFilter(opt.value)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+              className={`vm-btn px-3 py-1.5 rounded-full text-xs font-medium border ${
                 levelFilter === opt.value
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700'
+                  ? 'vm-btn-primary border-indigo-400/40'
+                  : 'bg-slate-900/75 text-slate-300 hover:bg-slate-800 hover:text-white border-slate-400/20'
               }`}
             >
               {opt.label}
-              <span className="ml-1 opacity-60">({count})</span>
+              <span className="ml-1 opacity-75">({count})</span>
             </button>
           );
         })}
@@ -256,20 +256,20 @@ export default function Flashcard({ words, updateWordLevel }) {
           onClick={handleHardFilter}
           aria-pressed={hardOnly}
           title={hardOnly ? 'Hiện tất cả từ' : 'Chỉ luyện các từ đã đánh dấu sao khó'}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 border ${
+          className={`vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${
             hardOnly
-              ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-md shadow-amber-500/10'
-              : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-amber-300 border-slate-700'
+              ? 'bg-amber-500/20 text-amber-200 border-amber-400/50 shadow-md shadow-amber-500/15'
+              : 'bg-slate-900/75 text-slate-300 hover:bg-slate-800 hover:text-amber-300 border-slate-400/20'
           }`}
         >
           <Star size={12} className={hardOnly ? 'fill-amber-400 text-amber-400' : 'text-amber-400'} />
           <span>Chỉ từ khó ⭐</span>
-          <span className="opacity-70">({hardCount})</span>
+          <span className="opacity-75">({hardCount})</span>
         </button>
       </div>
 
       {/* Type filter tab bar */}
-      <div className="flex items-center gap-1 bg-slate-800/40 border border-slate-700/40 rounded-xl p-1 w-fit max-w-full flex-wrap">
+      <div className="vm-panel flex items-center gap-1 rounded-xl p-1 w-fit max-w-full flex-wrap">
         {TYPE_OPTS.map(opt => {
           const pool = words.filter(w =>
             (!hardOnly || Boolean(w.hardMarked)) &&
@@ -283,15 +283,15 @@ export default function Flashcard({ words, updateWordLevel }) {
               key={opt.value}
               id={`flashcard-type-${opt.value.toLowerCase()}`}
               onClick={() => handleTypeFilter(opt.value)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+              className={`vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium ${
                 typeFilter === opt.value
-                  ? 'bg-slate-700 text-white shadow'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-slate-700/90 text-white shadow-sm ring-1 ring-white/10'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
               }`}
             >
               <span>{opt.icon}</span>
               <span>{opt.label}</span>
-              <span className="opacity-60">({count})</span>
+              <span className="opacity-70">({count})</span>
             </button>
           );
         })}
@@ -302,28 +302,28 @@ export default function Flashcard({ words, updateWordLevel }) {
   // ── Empty state ───────────────────────────────────────────────────────────
   if (words.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20">
-        <p className="text-slate-400 mb-4">No vocabulary words available. Add some in the Vocabulary tab.</p>
+      <div className="vm-page-enter flex flex-col items-center justify-center py-20">
+        <p className="text-slate-300 mb-4">No vocabulary words available. Add some in the Vocabulary tab.</p>
       </div>
     );
   }
 
   if (filteredWords.length === 0) {
     return (
-      <div className="max-w-2xl mx-auto animate-fade-in flex flex-col items-center">
+      <div className="max-w-2xl mx-auto vm-page-enter flex flex-col items-center">
         <div className="w-full mb-6">
-          <h1 className="text-3xl font-bold text-white mb-1">Flashcard Mode</h1>
-          <p className="text-slate-400 text-sm">Filter by mastery level and vocabulary type.</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white mb-1">Flashcard Mode</h1>
+          <p className="text-slate-300 text-sm">Filter by mastery level and vocabulary type.</p>
         </div>
         {filterBar}
         <div className="text-center py-16">
-          <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4">
-            <Filter size={28} className="text-slate-600" />
+          <div className="w-16 h-16 rounded-2xl vm-panel flex items-center justify-center mx-auto mb-4">
+            <Filter size={28} className="text-slate-400" />
           </div>
-          <h3 className="text-slate-400 font-medium mb-2">
+          <h3 className="text-slate-200 font-semibold mb-2">
             {hardOnly ? 'Không có từ khó ⭐ nào khớp bộ lọc này' : 'Không có từ nào khớp bộ lọc này'}
           </h3>
-          <p className="text-slate-600 text-sm">
+          <p className="text-slate-400 text-sm">
             {hardOnly
               ? 'Hãy đánh dấu ⭐ cho từ khó trong tab Vocabulary hoặc tắt bộ lọc "Chỉ từ khó ⭐".'
               : 'Thử bộ lọc khác hoặc thêm từ mới trong tab Vocabulary.'}
@@ -336,21 +336,21 @@ export default function Flashcard({ words, updateWordLevel }) {
   // ── Finished / no word selected yet ──────────────────────────────────────
   if (finished || !currentWord) {
     return (
-      <div className="max-w-2xl mx-auto animate-fade-in flex flex-col items-center">
+      <div className="max-w-2xl mx-auto vm-page-enter flex flex-col items-center">
         <div className="w-full mb-6">
-          <h1 className="text-3xl font-bold text-white mb-1">Flashcard Mode</h1>
-          <p className="text-slate-400 text-sm">Filter by mastery level and vocabulary type.</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white mb-1">Flashcard Mode</h1>
+          <p className="text-slate-300 text-sm">Filter by mastery level and vocabulary type.</p>
         </div>
         {filterBar}
-        <div className="flex flex-col items-center space-y-6 py-10 animate-fade-in">
-          <div className="w-24 h-24 rounded-full bg-emerald-500/20 flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-6 py-10 vm-scale-in">
+          <div className="w-24 h-24 rounded-full bg-emerald-500/15 ring-1 ring-emerald-400/30 flex items-center justify-center shadow-lg shadow-emerald-500/15">
             <CheckCircle size={48} className="text-emerald-400" />
           </div>
           <h2 className="text-2xl font-bold text-white">Session Complete!</h2>
-          <p className="text-slate-400 text-sm">{sessionCount} card{sessionCount !== 1 ? 's' : ''} reviewed</p>
+          <p className="text-slate-300 text-sm">{sessionCount} card{sessionCount !== 1 ? 's' : ''} reviewed</p>
           <button
             onClick={restartSession}
-            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold flex items-center gap-2 transition-colors shadow-lg shadow-indigo-500/20"
+            className="vm-btn vm-btn-primary px-6 py-3 rounded-xl font-semibold flex items-center gap-2"
           >
             <RefreshCw size={20} /> Review Again
           </button>
@@ -362,25 +362,25 @@ export default function Flashcard({ words, updateWordLevel }) {
   // ── Card content ──────────────────────────────────────────────────────────
   const frontContent = mode === 'eng-vie' ? (
     <div className="flex flex-col items-center justify-center h-full p-8">
-      <h2 className="text-4xl md:text-5xl font-bold text-white mb-2 text-center">
+      <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-2 text-center">
         {currentWord.english}
         {currentWord.annotation?.trim() && (
-          <span className="ml-2 text-sm md:text-base font-normal text-slate-400">({currentWord.annotation.trim()})</span>
+          <span className="ml-2 text-sm md:text-base font-normal text-slate-300">({currentWord.annotation.trim()})</span>
         )}
       </h2>
       <button
         onClick={playPronunciation}
-        className="mt-6 p-4 rounded-full bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white transition-colors border border-indigo-500/30 shadow-lg"
+        className="vm-btn mt-6 p-4 rounded-full bg-indigo-500/20 text-indigo-300 hover:bg-indigo-600 hover:text-white border border-indigo-400/35 shadow-lg shadow-indigo-500/20"
       >
         <Volume2 size={32} />
       </button>
     </div>
   ) : (
     <div className="flex flex-col items-center justify-center h-full p-8">
-      <h2 className="text-3xl md:text-4xl font-bold text-white mb-8 text-center">{currentWord.vietnamese}</h2>
+      <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white mb-8 text-center">{currentWord.vietnamese}</h2>
       <button
         onClick={playPronunciation}
-        className="p-4 rounded-full bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white transition-colors border border-indigo-500/30 shadow-lg"
+        className="vm-btn p-4 rounded-full bg-indigo-500/20 text-indigo-300 hover:bg-indigo-600 hover:text-white border border-indigo-400/35 shadow-lg shadow-indigo-500/20"
       >
         <Volume2 size={32} />
       </button>
@@ -393,11 +393,11 @@ export default function Flashcard({ words, updateWordLevel }) {
         <img
           src={currentWord.imageUrl}
           alt={currentWord.english}
-          className="w-full max-h-56 object-cover rounded-xl mb-6 shadow-lg border border-slate-700"
+          className="w-full max-h-56 object-cover rounded-2xl mb-6 shadow-lg border border-slate-400/20"
         />
       )}
-      <h2 className="text-3xl md:text-4xl font-bold text-emerald-400 text-center mb-3">{currentWord.vietnamese}</h2>
-      <p className="text-slate-400 text-sm font-medium px-3 py-1 bg-slate-900/50 rounded-lg border border-slate-700">{currentWord.wordType}</p>
+      <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-emerald-300 text-center mb-3">{currentWord.vietnamese}</h2>
+      <p className="text-slate-200 text-sm font-medium px-3.5 py-1 bg-slate-900/70 rounded-full border border-slate-400/20">{currentWord.wordType}</p>
     </div>
   ) : (
     <div className="flex flex-col items-center justify-center h-full p-6">
@@ -405,27 +405,27 @@ export default function Flashcard({ words, updateWordLevel }) {
         <img
           src={currentWord.imageUrl}
           alt={currentWord.english}
-          className="w-full max-h-56 object-cover rounded-xl mb-6 shadow-lg border border-slate-700"
+          className="w-full max-h-56 object-cover rounded-2xl mb-6 shadow-lg border border-slate-400/20"
         />
       )}
       {/* Show english + annotation on the back in vie-eng mode */}
-      <h2 className="text-4xl md:text-5xl font-bold text-indigo-400 text-center mb-1">
+      <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-indigo-300 text-center mb-1">
         {currentWord.english}
         {currentWord.annotation?.trim() && (
-          <span className="ml-2 text-sm md:text-base font-normal text-slate-400">({currentWord.annotation.trim()})</span>
+          <span className="ml-2 text-sm md:text-base font-normal text-slate-300">({currentWord.annotation.trim()})</span>
         )}
       </h2>
-      <p className="text-slate-400 text-sm font-medium px-3 py-1 bg-slate-900/50 rounded-lg border border-slate-700">{currentWord.wordType}</p>
+      <p className="text-slate-200 text-sm font-medium px-3.5 py-1 bg-slate-900/70 rounded-full border border-slate-400/20">{currentWord.wordType}</p>
     </div>
   );
 
   // ── Main render ───────────────────────────────────────────────────────────
   return (
-    <div className="max-w-2xl mx-auto animate-fade-in flex flex-col items-center">
+    <div className="max-w-2xl mx-auto vm-page-enter flex flex-col items-center">
 
       <div className="w-full mb-4">
-        <h1 className="text-3xl font-bold text-white mb-1">Flashcard Mode</h1>
-        <p className="text-slate-400 text-sm">
+        <h1 className="text-3xl font-extrabold tracking-tight text-white mb-1">Flashcard Mode</h1>
+        <p className="text-slate-300 text-sm">
           Click the card to flip it. Review your vocabulary with active recall.
         </p>
       </div>
@@ -434,26 +434,26 @@ export default function Flashcard({ words, updateWordLevel }) {
       {filterBar}
 
       {/* Header controls — session counter + mode toggle */}
-      <div className="w-full flex justify-between items-center mb-6 bg-slate-800/40 p-3 rounded-2xl border border-slate-700/50">
-        <div className="text-slate-400 font-medium px-3">
-          <span className="text-white font-bold">{sessionCount + 1}</span>
-          <span className="text-slate-600 text-xs ml-2">({filteredWords.length} in pool)</span>
+      <div className="vm-panel w-full flex justify-between items-center mb-6 p-3 rounded-2xl">
+        <div className="text-slate-300 font-medium px-3">
+          <span className="text-white font-bold tabular-nums">{sessionCount + 1}</span>
+          <span className="text-slate-400 text-xs ml-2">({filteredWords.length} in pool)</span>
         </div>
 
         {/* Mode Toggle */}
-        <div className="flex bg-slate-900/80 rounded-xl p-1 border border-slate-700/50">
+        <div className="flex bg-slate-950/75 rounded-xl p-1 border border-slate-400/15">
           <button
             onClick={() => setMode('eng-vie')}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              mode === 'eng-vie' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'
+            className={`vm-btn px-4 py-2 rounded-lg text-sm font-semibold ${
+              mode === 'eng-vie' ? 'vm-btn-primary text-white' : 'text-slate-300 hover:text-white'
             }`}
           >
             Eng → Vie
           </button>
           <button
             onClick={() => setMode('vie-eng')}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              mode === 'vie-eng' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'
+            className={`vm-btn px-4 py-2 rounded-lg text-sm font-semibold ${
+              mode === 'vie-eng' ? 'vm-btn-primary text-white' : 'text-slate-300 hover:text-white'
             }`}
           >
             Vie → Eng
@@ -466,22 +466,22 @@ export default function Flashcard({ words, updateWordLevel }) {
         className="flashcard-container w-full h-[450px] md:h-[500px] mb-8 cursor-pointer perspective-1000"
         onClick={() => setIsFlipped(f => !f)}
       >
-        <div className={`flashcard-inner w-full h-full relative transition-transform duration-500 preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
+        <div className={`flashcard-inner vm-flip-inner w-full h-full relative preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
 
           {/* Front */}
-          <div className="flashcard-front absolute w-full h-full backface-hidden rounded-3xl bg-slate-800 border border-slate-700 shadow-xl overflow-hidden hover:border-indigo-500/50 transition-colors">
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900 pointer-events-none" />
+          <div className="flashcard-front absolute w-full h-full backface-hidden rounded-3xl bg-[#121c33] border border-slate-400/20 ring-1 ring-inset ring-white/10 shadow-[0_20px_50px_-15px_rgba(2,6,23,0.85)] overflow-hidden hover:border-indigo-400/55 transition-colors duration-200">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#192646]/90 via-[#111a30]/95 to-[#0b1222] pointer-events-none" />
             <div className="relative h-full flex items-center justify-center">
               {frontContent}
-              <div className="absolute bottom-6 w-full text-center text-slate-500 text-sm animate-pulse font-medium">
+              <div className="absolute bottom-6 w-full text-center text-slate-400 text-sm vm-pulse-soft font-medium">
                 Click to flip
               </div>
             </div>
           </div>
 
           {/* Back */}
-          <div className="flashcard-back absolute w-full h-full backface-hidden rounded-3xl bg-slate-800 border border-slate-700 shadow-xl rotate-y-180 overflow-hidden hover:border-indigo-500/50 transition-colors">
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900 pointer-events-none" />
+          <div className="flashcard-back absolute w-full h-full backface-hidden rounded-3xl bg-[#121c33] border border-indigo-400/30 ring-1 ring-inset ring-white/10 shadow-[0_20px_50px_-15px_rgba(2,6,23,0.85)] rotate-y-180 overflow-hidden hover:border-emerald-400/50 transition-colors duration-200">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#172540]/95 via-[#101a2f]/95 to-[#0b1222] pointer-events-none" />
             <div className="relative h-full flex items-center justify-center">
               {backContent}
             </div>
@@ -491,16 +491,16 @@ export default function Flashcard({ words, updateWordLevel }) {
       </div>
 
       {/* Navigation Controls */}
-      <div className={`w-full grid grid-cols-2 gap-4 transition-opacity duration-300 ${isFlipped ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
+      <div className={`w-full grid grid-cols-2 gap-4 transition-opacity duration-200 ${isFlipped ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
         <button
           onClick={(e) => { e.stopPropagation(); handleNext(false); }}
-          className="py-4 rounded-2xl font-bold flex items-center justify-center gap-2 bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 hover:border-rose-500/50 transition-colors shadow-lg shadow-rose-500/5"
+          className="vm-btn py-4 rounded-2xl font-bold flex items-center justify-center gap-2 bg-rose-500/12 text-rose-300 border border-rose-400/35 hover:bg-rose-500/22 hover:border-rose-400/60 shadow-lg shadow-rose-500/10"
         >
           <XCircle size={22} /> Need Review
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); handleNext(true); }}
-          className="py-4 rounded-2xl font-bold flex items-center justify-center gap-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 hover:border-emerald-500/50 transition-colors shadow-lg shadow-emerald-500/5"
+          className="vm-btn py-4 rounded-2xl font-bold flex items-center justify-center gap-2 bg-emerald-500/12 text-emerald-300 border border-emerald-400/35 hover:bg-emerald-500/22 hover:border-emerald-400/60 shadow-lg shadow-emerald-500/10"
         >
           <CheckCircle size={22} /> Remembered
         </button>

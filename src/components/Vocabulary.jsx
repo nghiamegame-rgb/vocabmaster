@@ -43,17 +43,17 @@ function Pagination({ page, pageCount, onChange, position }) {
         onClick={() => onChange(page - 1)}
         disabled={page === 1}
         aria-label="Previous page"
-        className="p-2 bg-slate-800 border border-slate-700 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700"
+        className="vm-btn p-2 bg-slate-900/80 border border-slate-400/20 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 hover:border-slate-400/35"
       >
         <ChevronLeft size={16} />
       </button>
-      <label className="flex items-center gap-2 text-slate-400">
+      <label className="flex items-center gap-2 text-slate-300">
         Page
         <select
           aria-label="Vocabulary page"
           value={page}
           onChange={e => onChange(Number(e.target.value))}
-          className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-white"
+          className="vm-input rounded-xl px-2.5 py-1.5 text-white"
         >
           {Array.from({ length: pageCount }, (_, i) => (
             <option key={i + 1} value={i + 1}>{i + 1}</option>
@@ -66,7 +66,7 @@ function Pagination({ page, pageCount, onChange, position }) {
         onClick={() => onChange(page + 1)}
         disabled={page === pageCount}
         aria-label="Next page"
-        className="p-2 bg-slate-800 border border-slate-700 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-700"
+        className="vm-btn p-2 bg-slate-900/80 border border-slate-400/20 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 hover:border-slate-400/35"
       >
         <ChevronRight size={16} />
       </button>
@@ -123,21 +123,21 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard
   }
 
   return (
-    <div className={`bg-slate-800/60 border rounded-2xl overflow-hidden shadow-lg hover:shadow-indigo-500/5 transition-all duration-200 group animate-fade-in ${
+    <div className={`vm-card vm-card-interactive rounded-2xl overflow-hidden group animate-fade-in ${
       selected
-        ? 'border-indigo-500 ring-2 ring-indigo-500/30'
+        ? 'border-indigo-400 ring-2 ring-indigo-500/35'
         : word.hardMarked
-          ? 'border-amber-500/40 hover:border-amber-500/60'
-          : 'border-slate-700/50 hover:border-slate-600'
+          ? 'border-amber-400/45 hover:border-amber-400/70'
+          : ''
     }`}>
       {/* Select checkbox + difficult-word star row */}
-      <div className="flex items-center justify-between px-4 pt-3 pb-1">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between px-4 pt-3.5 pb-1">
+        <div className="flex items-center gap-1.5">
           <button
             id={`select-${word.id}`}
             type="button"
             onClick={() => onToggleSelect(word.id)}
-            className="text-slate-500 hover:text-indigo-400 transition-colors"
+            className="vm-btn p-1 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-slate-800/70"
             title={selected ? 'Deselect' : 'Select'}
           >
             {selected ? <CheckSquare size={16} className="text-indigo-400" /> : <Square size={16} />}
@@ -152,23 +152,23 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard
             aria-label={word.hardMarked ? 'Bỏ đánh dấu từ khó' : 'Đánh dấu từ khó'}
             aria-pressed={Boolean(word.hardMarked)}
             title={word.hardMarked ? 'Bỏ đánh dấu từ khó' : 'Đánh dấu từ khó'}
-            className={`p-1 rounded-lg transition-colors ${
+            className={`vm-btn p-1 rounded-lg ${
               word.hardMarked
                 ? 'text-amber-400 hover:bg-amber-500/15'
-                : 'text-slate-500 hover:text-amber-300 hover:bg-slate-700/50'
+                : 'text-slate-400 hover:text-amber-300 hover:bg-slate-800/70'
             }`}
           >
             <Star size={15} className={word.hardMarked ? 'fill-amber-400 text-amber-400' : ''} />
           </button>
         </div>
-        <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${typeMeta.color}`}>
+        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${typeMeta.color}`}>
           {typeMeta.icon} {word.wordType || 'Word'}
         </span>
       </div>
 
       {/* Image */}
       {word.imageUrl && !imgError ? (
-        <div className="relative w-full h-32 bg-slate-900">
+        <div className="relative w-full h-32 bg-slate-950/80">
           <img
             src={word.imageUrl}
             alt={word.english}
@@ -177,13 +177,13 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard
             className="w-full h-full object-cover"
             onError={() => setImgError(true)}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-800/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0d1424]/75 to-transparent" />
         </div>
       ) : word.imageUrl && imgError ? (
-        <div className="w-full h-20 bg-slate-900/50 flex items-center justify-center">
+        <div className="w-full h-20 bg-slate-950/60 flex items-center justify-center">
           <div className="flex flex-col items-center gap-1">
-            <ImageIcon size={20} className="text-slate-600" />
-            <span className="text-slate-600 text-xs">Image unavailable</span>
+            <ImageIcon size={20} className="text-slate-400" />
+            <span className="text-slate-400 text-xs">Image unavailable</span>
           </div>
         </div>
       ) : null}
@@ -196,34 +196,34 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard
               value={editFields.english}
               onChange={e => setEditFields(f => ({ ...f, english: e.target.value }))}
               placeholder="English word"
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full vm-input rounded-lg px-3 py-2 text-white text-sm"
             />
             <input
               id={`edit-annotation-${word.id}`}
               value={editFields.annotation}
               onChange={e => setEditFields(f => ({ ...f, annotation: e.target.value }))}
               placeholder="Từ loại / Ghi chú (adj, v - n, adv…)"
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-slate-300 text-xs focus:outline-none focus:border-indigo-500"
+              className="w-full vm-input rounded-lg px-3 py-2 text-slate-200 text-xs"
             />
             <input
               id={`edit-vietnamese-${word.id}`}
               value={editFields.vietnamese}
               onChange={e => setEditFields(f => ({ ...f, vietnamese: e.target.value }))}
               placeholder="Vietnamese meaning"
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full vm-input rounded-lg px-3 py-2 text-white text-sm"
             />
             <input
               id={`edit-imageurl-${word.id}`}
               value={editFields.imageUrl}
               onChange={e => setEditFields(f => ({ ...f, imageUrl: e.target.value }))}
               placeholder="Image URL (optional)"
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full vm-input rounded-lg px-3 py-2 text-white text-sm"
             />
             <select
               id={`edit-type-${word.id}`}
               value={editFields.wordType}
               onChange={e => setEditFields(f => ({ ...f, wordType: e.target.value }))}
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
+              className="w-full vm-input rounded-lg px-3 py-2 text-white text-sm"
             >
               {WORD_TYPES.map(t => (
                 <option key={t.value} value={t.value}>{t.label}</option>
@@ -233,14 +233,14 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard
               <button
                 id={`save-edit-${word.id}`}
                 onClick={saveEdit}
-                className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition-colors"
+                className="vm-btn vm-btn-primary flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-medium"
               >
                 <Check size={12} /> Save
               </button>
               <button
                 id={`cancel-edit-${word.id}`}
                 onClick={cancelEdit}
-                className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs font-medium transition-colors"
+                className="vm-btn flex-1 flex items-center justify-center gap-1 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-400/20 text-white rounded-lg text-xs font-medium"
               >
                 <X size={12} /> Cancel
               </button>
@@ -248,34 +248,34 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard
           </div>
         ) : (
           <>
-            <div className="flex items-start justify-between gap-2 mb-1">
+            <div className="flex items-start justify-between gap-2 mb-1.5">
               <div className="flex-1 min-w-0">
-                <h3 className="text-white font-bold text-lg leading-tight">{word.english}</h3>
+                <h3 className="text-white font-bold text-lg leading-tight tracking-tight">{word.english}</h3>
                 {word.annotation && (
-                  <span className="text-slate-400 text-xs font-medium">({word.annotation})</span>
+                  <span className="text-slate-300 text-xs font-medium">({word.annotation})</span>
                 )}
               </div>
-              <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium border ${level.badge}`}>
+              <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium border ${level.badge}`}>
                 L{word.level} {level.label}
               </span>
             </div>
-            <p className="text-slate-400 text-sm mb-1">{word.vietnamese}</p>
+            <p className="text-slate-300 text-sm mb-1.5 leading-snug">{word.vietnamese}</p>
             {/* Streak + Due indicator */}
-            <p className="text-slate-600 text-xs mb-3 flex items-center gap-2 flex-wrap">
-              <span>🔥 Streak: <span className="text-slate-400 font-medium">{streak}</span></span>
+            <p className="text-slate-400 text-xs mb-3.5 flex items-center gap-2 flex-wrap">
+              <span>🔥 Streak: <span className="text-slate-200 font-semibold tabular-nums">{streak}</span></span>
               {isDue && (
-                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/35">
                   ⏰ Due
                 </span>
               )}
             </p>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <button
                 id={`speak-${word.id}`}
                 onClick={speak}
                 title="Pronounce"
-                className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 rounded-lg text-xs font-medium transition-colors"
+                className="vm-btn flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-indigo-500/15 hover:bg-indigo-500/30 border border-indigo-400/25 text-indigo-300 hover:text-indigo-200 rounded-xl text-xs font-semibold"
               >
                 <Volume2 size={13} /> Speak
               </button>
@@ -283,7 +283,7 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard
                 id={`edit-${word.id}`}
                 onClick={() => setEditing(true)}
                 title="Edit"
-                className="flex items-center justify-center p-1.5 bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white rounded-lg transition-colors"
+                className="vm-btn flex items-center justify-center p-2 bg-slate-800/80 hover:bg-slate-700 border border-slate-400/15 text-slate-300 hover:text-white rounded-xl"
               >
                 <Pencil size={13} />
               </button>
@@ -291,7 +291,7 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard
                 id={`delete-${word.id}`}
                 onClick={() => onDelete(word.id)}
                 title="Delete"
-                className="flex items-center justify-center p-1.5 bg-slate-700 hover:bg-rose-600 text-slate-400 hover:text-white rounded-lg transition-colors"
+                className="vm-btn flex items-center justify-center p-2 bg-slate-800/80 hover:bg-rose-600 border border-slate-400/15 hover:border-rose-500 text-slate-300 hover:text-white rounded-xl"
               >
                 <Trash2 size={13} />
               </button>
@@ -515,14 +515,14 @@ export default memo(function Vocabulary({
   ];
 
   return (
-    <div className="animate-fade-in">
+    <div className="vm-page-enter">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-1">Vocabulary</h1>
-          <p className="text-slate-400">{words.length} word{words.length !== 1 ? 's' : ''} in your collection</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white mb-1">Vocabulary</h1>
+          <p className="text-slate-300 text-sm sm:text-base">{words.length} word{words.length !== 1 ? 's' : ''} in your collection</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <input
             ref={fileInputRef}
             type="file"
@@ -534,7 +534,7 @@ export default memo(function Vocabulary({
           <button
             id="import-btn"
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-sm font-medium transition-colors border border-slate-600"
+            className="vm-btn flex items-center gap-2 px-4 py-2 bg-slate-800/80 hover:bg-slate-700/90 text-slate-100 rounded-xl text-sm font-medium border border-slate-400/20 hover:border-slate-400/35"
           >
             <Upload size={15} /> Import
           </button>
@@ -542,7 +542,7 @@ export default memo(function Vocabulary({
             id="export-btn"
             onClick={handleExport}
             disabled={words.length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-sm font-medium transition-colors"
+            className="vm-btn vm-btn-primary flex items-center gap-2 px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-sm font-semibold"
           >
             <Download size={15} /> Export
           </button>
@@ -553,18 +553,18 @@ export default memo(function Vocabulary({
       <form
         onSubmit={handleAdd}
         id="add-word-form"
-        className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5 mb-6"
+        className="vm-panel rounded-2xl p-5 mb-6"
       >
         <h2 className="text-white font-semibold mb-4 flex items-center gap-2">
           <Plus size={18} className="text-indigo-400" /> Add New Word
         </h2>
         {error && (
-          <div className="flex items-center gap-2 text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3 mb-3 text-sm">
+          <div className="flex items-center gap-2 text-rose-300 bg-rose-500/12 border border-rose-400/30 rounded-xl px-4 py-3 mb-3 text-sm animate-fade-in">
             <AlertCircle size={15} /> {error}
           </div>
         )}
         {success && (
-          <div className="flex items-center gap-2 text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3 mb-3 text-sm">
+          <div className="flex items-center gap-2 text-emerald-300 bg-emerald-500/12 border border-emerald-400/30 rounded-xl px-4 py-3 mb-3 text-sm animate-fade-in">
             <Check size={15} /> {success}
           </div>
         )}
@@ -576,7 +576,7 @@ export default memo(function Vocabulary({
               value={english}
               onChange={e => setEnglish(e.target.value)}
               placeholder="English word / phrase *"
-              className="flex-1 min-w-0 bg-slate-700 border border-slate-600 rounded-xl px-4 py-2.5 text-white text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-colors"
+              className="flex-1 min-w-0 vm-input rounded-xl px-4 py-2.5 text-sm"
             />
             <input
               id="input-annotation"
@@ -584,7 +584,7 @@ export default memo(function Vocabulary({
               onChange={e => setAnnotation(e.target.value)}
               placeholder="Từ loại (adj, v…)"
               title="Từ loại / Ghi chú"
-              className="w-28 sm:w-36 shrink-0 bg-slate-700 border border-slate-600 rounded-xl px-3 py-2.5 text-slate-300 text-xs placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+              className="w-28 sm:w-36 shrink-0 vm-input rounded-xl px-3 py-2.5 text-slate-200 text-xs"
             />
           </div>
           <input
@@ -592,20 +592,20 @@ export default memo(function Vocabulary({
             value={vietnamese}
             onChange={e => setVietnamese(e.target.value)}
             placeholder="Nghĩa tiếng Việt *"
-            className="bg-slate-700 border border-slate-600 rounded-xl px-4 py-2.5 text-white text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-colors"
+            className="vm-input rounded-xl px-4 py-2.5 text-sm"
           />
           <input
             id="input-image-url"
             value={imageUrl}
             onChange={e => setImageUrl(e.target.value)}
             placeholder="Image URL (optional)"
-            className="bg-slate-700 border border-slate-600 rounded-xl px-4 py-2.5 text-white text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition-colors"
+            className="vm-input rounded-xl px-4 py-2.5 text-sm"
           />
           <select
             id="input-word-type"
             value={wordType}
             onChange={e => setWordType(e.target.value)}
-            className="bg-slate-700 border border-slate-600 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+            className="vm-input rounded-xl px-4 py-2.5 text-sm"
           >
             {WORD_TYPES.map(t => (
               <option key={t.value} value={t.value}>{t.label}</option>
@@ -615,7 +615,7 @@ export default memo(function Vocabulary({
         <button
           id="add-word-btn"
           type="submit"
-          className="mt-3 flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold transition-colors shadow-lg shadow-indigo-500/20"
+          className="vm-btn vm-btn-primary mt-3.5 flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold"
         >
           <Plus size={16} /> Add Word
         </button>
@@ -623,7 +623,7 @@ export default memo(function Vocabulary({
 
       {/* Search Bar */}
       <div className="relative mb-4">
-        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
         <input
           id="vocab-search"
           type="text"
@@ -632,13 +632,13 @@ export default memo(function Vocabulary({
           placeholder="Search by English word or Vietnamese meaning…"
           autoComplete="off"
           spellCheck={false}
-          className="w-full bg-slate-800/60 border border-slate-700/50 rounded-xl pl-10 pr-10 py-2.5 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+          className="w-full vm-input rounded-xl pl-10 pr-10 py-2.5 text-sm"
         />
         {searchQuery && (
           <button
             id="vocab-search-clear"
             onClick={() => { setSearchQuery(''); setPage(1); }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
             title="Clear search"
           >
             <X size={14} />
@@ -653,14 +653,14 @@ export default memo(function Vocabulary({
             key={String(opt.value)}
             id={`filter-level-${opt.value ?? 'all'}`}
             onClick={() => { setVocabFilter(opt.value); setPage(1); }}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+            className={`vm-btn px-4 py-1.5 rounded-full text-sm font-medium border ${
               vocabFilter === opt.value
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700'
+                ? 'vm-btn-primary border-indigo-400/40'
+                : 'bg-slate-900/75 text-slate-300 hover:bg-slate-800 hover:text-white border-slate-400/20'
             }`}
           >
             {opt.label}
-            <span className="ml-1.5 text-xs opacity-70">
+            <span className="ml-1.5 text-xs opacity-75">
               ({opt.value === null ? poolForLevelCounts.length : levelCounts[opt.value] || 0})
             </span>
           </button>
@@ -671,10 +671,10 @@ export default memo(function Vocabulary({
           onClick={() => { setHardOnly(v => !v); setPage(1); }}
           aria-pressed={hardOnly}
           title={hardOnly ? 'Hiện tất cả từ' : 'Chỉ hiện từ khó đã đánh dấu sao'}
-          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 border ${
+          className={`vm-btn flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium border ${
             hardOnly
-              ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-md shadow-amber-500/10'
-              : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-amber-300 border-slate-700'
+              ? 'bg-amber-500/20 text-amber-200 border-amber-400/50 shadow-md shadow-amber-500/15'
+              : 'bg-slate-900/75 text-slate-300 hover:bg-slate-800 hover:text-amber-300 border-slate-400/20'
           }`}
         >
           <Star size={14} className={hardOnly ? 'fill-amber-400 text-amber-400' : 'text-amber-400'} />
@@ -684,21 +684,21 @@ export default memo(function Vocabulary({
       </div>
 
       {/* Type Filter Sub-Tabs */}
-      <div className="flex items-center gap-1 mb-5 bg-slate-800/40 border border-slate-700/40 rounded-xl p-1 w-fit max-w-full flex-wrap">
+      <div className="vm-panel flex items-center gap-1 mb-5 rounded-xl p-1 w-fit max-w-full flex-wrap">
         {typeFilterOptions.map(opt => (
           <button
             key={opt.value}
             id={`filter-type-${opt.value.toLowerCase()}`}
             onClick={() => { setTypeFilter(opt.value); setPage(1); }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+            className={`vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium ${
               typeFilter === opt.value
-                ? 'bg-slate-700 text-white shadow'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-slate-700/90 text-white shadow-sm ring-1 ring-white/10'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
             }`}
           >
             <span>{opt.icon}</span>
             <span className="hidden sm:inline">{opt.label.split('(')[0].trim()}</span>
-            <span className="text-xs opacity-60">
+            <span className="text-xs opacity-70">
               ({opt.value === 'All'
                 ? poolForTypeCounts.length
                 : typeCounts[opt.value] || 0})
@@ -709,27 +709,27 @@ export default memo(function Vocabulary({
 
       {/* Bulk Action Bar */}
       {selected.size > 0 && (
-        <div className="relative z-10 flex items-center gap-3 mb-4 px-4 py-3 bg-indigo-600/10 border border-indigo-500/30 rounded-xl animate-fade-in">
-          <Layers size={16} className="text-indigo-400 shrink-0" />
-          <span className="text-indigo-300 text-sm font-medium">
+        <div className="relative z-10 flex items-center gap-3 mb-4 px-4 py-3 bg-indigo-500/12 border border-indigo-400/35 rounded-xl backdrop-blur-sm animate-fade-in">
+          <Layers size={16} className="text-indigo-300 shrink-0" />
+          <span className="text-indigo-200 text-sm font-medium">
             {selected.size} word{selected.size !== 1 ? 's' : ''} selected
           </span>
           <div className="relative ml-auto">
             <button
               id="bulk-level-btn"
               onClick={() => setShowBulkDd(v => !v)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition-colors"
+              className="vm-btn vm-btn-primary flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
             >
               Change Level <ChevronDown size={13} />
             </button>
             {showBulkDd && (
-              <div className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 min-w-[140px] overflow-visible">
+              <div className="absolute right-0 top-full mt-1.5 bg-[#0f172a] border border-slate-400/25 rounded-xl shadow-[0_18px_42px_-10px_rgba(2,6,23,0.9)] z-50 min-w-[150px] overflow-visible vm-scale-in">
                 {[1, 2, 3, 4, 5].map(l => (
                   <button
                     key={l}
                     id={`bulk-set-level-${l}`}
                     onClick={() => handleBulkChangeLevel(l)}
-                    className="w-full text-left px-4 py-2.5 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                    className="w-full text-left px-4 py-2.5 text-sm text-slate-200 hover:bg-slate-800 hover:text-white transition-colors first:rounded-t-xl last:rounded-b-xl"
                   >
                     L{l} — {LEVEL_COLORS[l].label}
                   </button>
@@ -740,7 +740,7 @@ export default memo(function Vocabulary({
           <button
             id="bulk-clear-btn"
             onClick={() => setSelected(new Set())}
-            className="flex items-center gap-1 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-xs font-medium transition-colors"
+            className="vm-btn flex items-center gap-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-400/20 text-slate-200 rounded-lg text-xs font-medium"
           >
             <X size={13} /> Clear
           </button>
@@ -754,7 +754,7 @@ export default memo(function Vocabulary({
             <button
               id="select-all-btn"
               onClick={toggleSelectAll}
-              className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors"
+              className="flex items-center gap-2 text-slate-300 hover:text-white text-sm transition-colors"
             >
               {allSelected
                 ? <CheckSquare size={16} className="text-indigo-400" />
@@ -762,7 +762,7 @@ export default memo(function Vocabulary({
               }
               {allSelected ? 'Deselect All' : 'Select All'}
             </button>
-            <span className="text-slate-500 text-xs">
+            <span className="text-slate-400 text-xs">
               ({filtered.length} matching; {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, filtered.length)} shown)
             </span>
           </div>
@@ -775,15 +775,15 @@ export default memo(function Vocabulary({
       {/* Word Grid */}
       {filtered.length === 0 ? (
         <div className="text-center py-20">
-          <BookOpen size={56} className="text-slate-700 mx-auto mb-4" />
-          <p className="text-slate-400 font-medium text-lg">
+          <BookOpen size={56} className="text-slate-500 mx-auto mb-4" />
+          <p className="text-slate-300 font-medium text-lg">
             {hardOnly
               ? 'Chưa có từ khó ⭐ nào khớp bộ lọc hiện tại'
               : vocabFilter || typeFilter !== 'All' || searchQuery
                 ? 'No words match this filter'
                 : 'No words yet'}
           </p>
-          <p className="text-slate-500 text-sm mt-2">
+          <p className="text-slate-400 text-sm mt-2">
             {hardOnly
               ? 'Hãy đánh dấu ⭐ cho từ khó trong danh sách hoặc tắt bộ lọc "Khó ⭐".'
               : vocabFilter || typeFilter !== 'All' || searchQuery

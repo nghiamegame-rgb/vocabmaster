@@ -92,28 +92,28 @@ export default function Grammar({ grammarStore, addWord, words = [], vocabSyncSt
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 vm-page-enter">
       {/* Module header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 via-indigo-600 to-blue-600 flex items-center justify-center shadow-xl shadow-purple-500/25">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 via-indigo-600 to-blue-600 flex items-center justify-center shadow-xl shadow-violet-500/25 ring-1 ring-white/15">
             <span className="text-white font-black text-lg">G</span>
           </div>
           <div>
-            <h1 className="text-2xl font-black text-white">
-              Grammar <span className="text-purple-400">VSTEP B1</span>
+            <h1 className="text-2xl font-black tracking-tight text-white">
+              Grammar <span className="text-violet-400">VSTEP B1</span>
             </h1>
-            <p className="text-slate-400 text-sm">Nhận diện ngữ pháp · Phân tích cấu trúc câu</p>
+            <p className="text-slate-300 text-sm">Nhận diện ngữ pháp · Phân tích cấu trúc câu</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           {syncStatus === 'error' ? (
-            <button onClick={syncFromCloud} className="text-xs text-rose-400" title="Dữ liệu cục bộ được giữ nguyên">
+            <button onClick={syncFromCloud} className="vm-btn text-xs text-rose-300 hover:text-rose-200 underline underline-offset-2" title="Dữ liệu cục bộ được giữ nguyên">
               Lỗi đồng bộ · Thử lại
             </button>
           ) : (
-            <span className="text-xs text-slate-400" role="status">
+            <span className="text-xs text-slate-300" role="status">
               {syncStatus === 'syncing' || syncStatus === 'conflict'
                 ? 'Đang đồng bộ…'
                 : hasPending ? 'Chờ đồng bộ' : syncStatus === 'ok' ? 'Đã đồng bộ' : ''}
@@ -121,18 +121,18 @@ export default function Grammar({ grammarStore, addWord, words = [], vocabSyncSt
           )}
           {/* Local-only badge */}
           {!cloudConfigured && (
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/12 border border-amber-400/25 text-amber-300 text-xs font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 vm-pulse-soft" />
               Local Only
             </div>
           )}
           {/* Cloud settings button */}
           <button
             onClick={() => setShowCloud(v => !v)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 border relative ${
+            className={`vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border relative ${
               showCloud
-                ? 'bg-indigo-600/20 text-indigo-300 border-indigo-500/30'
-                : 'bg-slate-800 text-slate-400 hover:text-white border-slate-700'
+                ? 'bg-indigo-500/20 text-indigo-200 border-indigo-400/40'
+                : 'bg-slate-900/75 text-slate-300 hover:text-white border-slate-400/20 hover:border-slate-400/35'
             }`}
           >
             <Cloud size={13} />
@@ -158,7 +158,7 @@ export default function Grammar({ grammarStore, addWord, words = [], vocabSyncSt
       )}
 
       {/* Sub-tabs */}
-      <div className="flex gap-1 p-1 bg-slate-900/60 border border-slate-700/50 rounded-2xl">
+      <div className="vm-panel flex gap-1 p-1.5 rounded-2xl">
         {SUB_TABS.map(({ id, label, Icon }) => {
           const badge = id === 'review' ? dueForReview.length : 0;
           return (
@@ -166,16 +166,16 @@ export default function Grammar({ grammarStore, addWord, words = [], vocabSyncSt
               key={id}
               id={`grammar-tab-${id}`}
               onClick={() => { setSubTab(id); setSession(null); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 relative ${
+              className={`vm-btn flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold relative ${
                 subTab === id
-                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  ? 'vm-btn-violet text-white'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/75'
               }`}
             >
               <Icon size={15} />
               <span className="hidden sm:block">{label}</span>
               {badge > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 ring-2 ring-[#070b14] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                   {badge > 9 ? '9+' : badge}
                 </span>
               )}

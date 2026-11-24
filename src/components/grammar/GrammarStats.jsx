@@ -182,40 +182,40 @@ export default function GrammarStats(props) {
   const activity = grammarStats.sentenceActivity || {};
   const reviewed = activity.reviewed || 0;
   const understood = activity.understood || 0;
-  return <div className="space-y-6">
-    <h2 className="text-xl text-white font-bold">Thống kê phân tích và ôn câu</h2>
-    <p className="text-slate-400 text-sm">Mức hiểu do bạn tự đánh giá sau khi xem phân tích. Thống kê được lưu trên thiết bị này.</p>
+  return <div className="space-y-6 vm-page-enter">
+    <h2 className="text-xl text-white font-bold tracking-tight">Thống kê phân tích và ôn câu</h2>
+    <p className="text-slate-300 text-sm">Mức hiểu do bạn tự đánh giá sau khi xem phân tích. Thống kê được lưu trên thiết bị này.</p>
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
       {[
         ['Đã xem phân tích', activity.analyzed || 0], ['Lượt ôn', reviewed],
         ['Đã hiểu', understood], ['Cần ôn lại', reviewed - understood],
         ['Câu đã lưu', savedQuestions.length], ['Đến hạn ôn', dueForReview.length],
-      ].map(([label, value]) => <div key={label} className="bg-slate-900/80 border border-slate-700/50 rounded-2xl p-4 text-center">
-        <p className="text-2xl text-white font-bold">{value}</p><p className="text-slate-400 text-sm">{label}</p>
+      ].map(([label, value]) => <div key={label} className="vm-card vm-card-interactive rounded-2xl p-4 text-center">
+        <p className="text-2xl text-white font-extrabold tabular-nums">{value}</p><p className="text-slate-300 text-sm mt-0.5">{label}</p>
       </div>)}
     </div>
-    <div className="bg-slate-900/80 border border-slate-700/50 rounded-2xl p-4 space-y-3">
+    <div className="vm-panel rounded-2xl p-5 space-y-3">
       <h3 className="text-white font-semibold">Tiến độ câu đã lưu</h3>
-      <div className="flex flex-wrap gap-3">{[1, 2, 3, 4, 5].map(level => <span key={level} className="text-indigo-300 text-sm bg-slate-800 p-2 rounded-lg">
+      <div className="flex flex-wrap gap-2.5">{[1, 2, 3, 4, 5].map(level => <span key={level} className="text-indigo-200 text-sm font-medium bg-indigo-500/12 border border-indigo-400/25 px-3 py-1.5 rounded-xl tabular-nums">
         L{level}: {savedQuestions.filter(q => (reviewProgress[q.savedId]?.level ?? 1) === level).length}
       </span>)}</div>
     </div>
-    {Object.keys(activity.byTopic || {}).length > 0 && <div className="bg-slate-900/80 border border-slate-700/50 rounded-2xl p-4 space-y-3">
+    {Object.keys(activity.byTopic || {}).length > 0 && <div className="vm-panel rounded-2xl p-5 space-y-3">
       <h3 className="text-white font-semibold">Hoạt động theo chủ đề</h3>
-      {Object.entries(activity.byTopic).map(([topic, s]) => <div key={topic} className="flex flex-wrap justify-between gap-2 text-sm">
-        <span className="text-purple-300">{getTopicLabel(topic)}</span>
-        <span className="text-slate-400">{s.analyzed || 0} phân tích · {s.reviewed || 0} lượt ôn · {s.understood || 0} đã hiểu</span>
+      {Object.entries(activity.byTopic).map(([topic, s]) => <div key={topic} className="flex flex-wrap justify-between gap-2 text-sm py-1 border-b border-slate-400/10 last:border-b-0">
+        <span className="text-violet-300 font-medium">{getTopicLabel(topic)}</span>
+        <span className="text-slate-300">{s.analyzed || 0} phân tích · {s.reviewed || 0} lượt ôn · {s.understood || 0} đã hiểu</span>
       </div>)}
     </div>}
-    {activity.sessions?.length > 0 && <div className="bg-slate-900/80 border border-slate-700/50 rounded-2xl p-4 space-y-3">
+    {activity.sessions?.length > 0 && <div className="vm-panel rounded-2xl p-5 space-y-3">
       <h3 className="text-white font-semibold">Hoạt động gần đây</h3>
-      {activity.sessions.slice(0, 10).map((s, i) => <div key={i} className="text-sm text-slate-400 flex flex-wrap justify-between gap-2">
+      {activity.sessions.slice(0, 10).map((s, i) => <div key={i} className="text-sm text-slate-300 flex flex-wrap justify-between gap-2 py-1 border-b border-slate-400/10 last:border-b-0">
         <span>{getTopicLabel(s.topic)} · {s.activity === 'review' ? `${s.total} lượt ôn, ${s.understood || 0} đã hiểu` : `${s.total} câu đã phân tích`}</span>
-        <span>{new Date(s.date).toLocaleDateString('vi-VN')}</span>
+        <span className="text-slate-400 tabular-nums">{new Date(s.date).toLocaleDateString('vi-VN')}</span>
       </div>)}
     </div>}
-    {grammarStats.totalAnswered > 0 && <details className="bg-slate-900/50 border border-slate-700 rounded-2xl p-4">
-      <summary className="text-slate-300 cursor-pointer">Lịch sử trắc nghiệm TOEIC cũ (giữ nguyên)</summary>
+    {grammarStats.totalAnswered > 0 && <details className="vm-panel rounded-2xl p-4">
+      <summary className="text-slate-200 font-medium cursor-pointer hover:text-white transition-colors">Lịch sử trắc nghiệm TOEIC cũ (giữ nguyên)</summary>
       <div className="mt-4"><LegacyGrammarStats {...props} /></div>
     </details>}
   </div>;
