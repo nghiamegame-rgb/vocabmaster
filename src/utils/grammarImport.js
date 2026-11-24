@@ -35,35 +35,41 @@ export function matchGrammarSubstring(sentence, phrase) {
     : { error: 'Không tìm thấy đoạn trích liên tục trong câu.', suggestion: 'Chép đúng một đoạn trong sentence; mẫu có chỗ lược bỏ chỉ được đặt trong pattern.' };
 }
 
+// Scan whole top-level containers; never rescue a nested fragment of bad JSON.
+// Shared by Grammar import and Smart Quiz.
+export function scanJsonContainers(content) {
+  const containers = [];
+  let start = -1, stack = [], quoted = false, escaped = false;
+  for (let i = 0; i < content.length; i++) {
+    const char = content[i];
+    if (start === -1) {
+      if (char === '[' || char === '{') { start = i; stack = [char]; quoted = false; escaped = false; }
+      continue;
+    }
+    if (quoted) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === '"') quoted = false;
+      continue;
+    }
+    if (char === '"') quoted = true;
+    else if (char === '[' || char === '{') stack.push(char);
+    else if (char === ']' || char === '}') {
+      if (stack.pop() !== (char === ']' ? '[' : '{')) throw new Error('Ngoặc JSON không khớp. Hãy dán lại nguyên mảng JSON.');
+      if (!stack.length) { containers.push(content.slice(start, i + 1)); start = -1; }
+    }
+  }
+  if (start !== -1) throw new Error('JSON chưa đóng đủ ngoặc hoặc dấu nháy. Hãy copy toàn bộ kết quả từ AI.');
+  return containers;
+}
+
 export function parseGrammarInput(input) {
   const raw = input.trim();
   if (!raw) throw new Error('Chưa có JSON. Hãy dán kết quả từ AI.');
   const fenced = raw.match(/^```(?:json)?\s*\n?([\s\S]*?)\s*```$/i);
   const content = fenced ? fenced[1].trim() : raw;
   try { return JSON.parse(content); } catch {
-    // Scan whole top-level containers; never rescue a nested fragment of bad JSON.
-    const containers = [];
-    let start = -1, stack = [], quoted = false, escaped = false;
-    for (let i = 0; i < content.length; i++) {
-      const char = content[i];
-      if (start === -1) {
-        if (char === '[' || char === '{') { start = i; stack = [char]; quoted = false; escaped = false; }
-        continue;
-      }
-      if (quoted) {
-        if (escaped) escaped = false;
-        else if (char === '\\') escaped = true;
-        else if (char === '"') quoted = false;
-        continue;
-      }
-      if (char === '"') quoted = true;
-      else if (char === '[' || char === '{') stack.push(char);
-      else if (char === ']' || char === '}') {
-        if (stack.pop() !== (char === ']' ? '[' : '{')) throw new Error('Ngoặc JSON không khớp. Hãy dán lại nguyên mảng JSON.');
-        if (!stack.length) { containers.push(content.slice(start, i + 1)); start = -1; }
-      }
-    }
-    if (start !== -1) throw new Error('JSON chưa đóng đủ ngoặc hoặc dấu nháy. Hãy copy toàn bộ kết quả từ AI.');
+    const containers = scanJsonContainers(content);
     if (containers.length !== 1) throw new Error(containers.length > 1 ? 'Có nhiều khối JSON; không thể xác định bộ câu cần nhập. Chỉ dán một mảng JSON.' : 'Không tìm thấy một mảng JSON rõ ràng. Hãy dán mảng bắt đầu bằng [ và kết thúc bằng ].');
     try {
       const parsed = JSON.parse(containers[0]);

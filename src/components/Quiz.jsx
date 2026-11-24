@@ -8,6 +8,7 @@ import {
 import { playAudio } from '../utils/audio';
 import { selectStructures } from '../utils/structureStorage';
 import { buildStructurePrompt, validateStructureQuestions } from '../utils/structureQuiz';
+import { parseResponse, quizCountIssue } from '../utils/quizParse';
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                            */
@@ -233,60 +234,6 @@ VI DU MAU:
 Bay gio hay tao chinh xac ${count} cau hoi, dam bao MOI cau co boi canh va cau truc KHAC NHAU:`;
 }
 
-/**
- * Parse the AI response — handles:
- *  • Raw JSON arrays
- *  • Markdown fenced blocks (```json … ``` or ``` … ```)
- * Normalises answerIndex / correctIndex → correctIndex used by the quiz engine.
- */
-function parseResponse(text, structureMode = false) {
-  if (!text || !text.trim()) throw new Error('The paste area is empty.');
-
-  let src = text.trim();
-
-  // Strip markdown fences if present
-  const fenced = src.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fenced) src = fenced[1].trim();
-
-  // Find the outermost JSON array
-  const arrayMatch = src.match(/\[[\s\S]*\]/);
-  if (!arrayMatch) {
-    throw new Error('No JSON array found. Copy the full AI response and try again.');
-  }
-
-  let raw;
-  try {
-    raw = JSON.parse(arrayMatch[0]);
-  } catch {
-    throw new Error('JSON is malformed — missing comma, bracket, or quote. Fix and retry.');
-  }
-
-  if (!Array.isArray(raw) || raw.length === 0) {
-    throw new Error('Parsed result is not a valid array of questions.');
-  }
-
-  return raw.map((q, i) => {
-    if (!q || typeof q !== 'object') throw new Error(`Invalid question #${i + 1}.`);
-    if (structureMode && typeof q.answerIndex !== 'number' && typeof q.correctIndex !== 'number') throw new Error(`Question #${i + 1} missing answerIndex.`);
-    if (!q.question) throw new Error(`Question #${i + 1} is missing the "question" field.`);
-    if (!Array.isArray(q.options) || q.options.length < 2) {
-      throw new Error(`Question #${i + 1} needs an "options" array with at least 2 items.`);
-    }
-    const correctIndex =
-      typeof q.answerIndex  === 'number' ? q.answerIndex  :
-      typeof q.correctIndex === 'number' ? q.correctIndex : 0;
-    return {
-      question:    q.question,
-      options:     q.options,
-      correctIndex,
-      explanation: q.explanation || '',
-      wordEnglish: q.wordEnglish || q.options[correctIndex] || '',
-      structureId: q.structureId || q.structure_id || '',
-      trapPoint: q.trapPoint || '',
-    };
-  });
-}
-
 /* ------------------------------------------------------------------ */
 /* Shared: Pill selector                                                */
 /* ------------------------------------------------------------------ */
@@ -339,6 +286,8 @@ function QuizConfig({ words, structures = [], onStart }) {
 
   const textareaRef = useRef(null);
   const promptIdsRef = useRef(null);
+  // Paste text whose short question count the user already acknowledged.
+  const shortConfirmedRef = useRef(null);
   const knownStructureIdsRef = useRef(new Set(structures.map(item => item.id)));
 
   // Strict intersection across hardOnly, wordTypeFilter, and priority
@@ -414,7 +363,7 @@ function QuizConfig({ words, structures = [], onStart }) {
       return;
     }
     try {
-      const questions = parseResponse(jsonPaste, mode === 'structure');
+      const questions = parseResponse(jsonPaste);
       const activeQuestions = questions.slice(0, count);
       if (mode === 'structure') {
         validateStructureQuestions(questions, promptIdsRef.current || selectedStructures.map(item => item.id), structures, count);
@@ -426,6 +375,12 @@ function QuizConfig({ words, structures = [], onStart }) {
             'Bộ đề JSON đã dán chứa từ không thuộc danh sách "Chỉ từ khó ⭐" (hoặc bộ lọc hiện tại). Bộ lọc "Chỉ từ khó ⭐" dùng để tạo AI Prompt mới — hãy bấm "Copy AI Prompt" để tạo đề mới hoặc tắt bộ lọc này.'
           );
         }
+      }
+      const shortIssue = mode === 'structure' ? null : quizCountIssue(activeQuestions.length, count);
+      if (shortIssue && shortConfirmedRef.current !== jsonPaste) {
+        shortConfirmedRef.current = jsonPaste;
+        setParseError(shortIssue);
+        return;
       }
       onStart(activeQuestions, mode === 'structure' ? 'mc' : answerMode, mode);
     } catch (err) {
