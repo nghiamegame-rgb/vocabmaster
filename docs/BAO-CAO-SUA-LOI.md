@@ -55,7 +55,7 @@ Commit `296fe1c` chỉ lưu báo cáo phân tích gốc vào nhánh, để thấ
 | `npm run build` (ra thư mục tạm, không đè `dist/`) | exit 0; JS 499,56 kB (gzip 148,38) | exit 0; JS **503,88 kB** (gzip 149,82) | **Xấu đi nhẹ:** +4,3 kB (+0,9%), do thêm kiểm tra và component. Gói vừa vượt mốc 500 kB nên Vite in thêm cảnh báo "Some chunks are larger than 500 kB". App vẫn chạy bình thường; muốn hết cảnh báo thì cần tách gói theo tab (nằm ngoài danh sách sửa). |
 | `npm run lint` | 0 lỗi, 36 cảnh báo | 0 lỗi, **34 cảnh báo** | Tốt hơn |
 | Test Node | 19/19 file (chạy tay) | `npm test`: **30/30 file đạt** (19 cũ + 11 mới) | 4 test cũ được cập nhật có chủ đích (lỗi 10, 11, 14) |
-| 9 test trình duyệt (Playwright + Edge) | chưa chạy | **chưa chạy** | Không có Playwright trong dự án. Nên chạy trước khi deploy (`docs/HANDOFF.md` mục 7) |
+| 9 test trình duyệt (Playwright + Edge) | chưa chạy | **8/9 đạt** | Xem mục 6 "Kiểm tra trình duyệt"; test hỏng còn lại cũng hỏng trên `main` |
 
 ## 3. Thứ tự triển khai (bạn làm bằng tay)
 
@@ -93,11 +93,45 @@ Vocabulary không cần đổi Apps Script, proxy hay biến môi trường cho 
 
 ## 5. Việc còn lại / lưu ý
 
-- Tài liệu `AGENTS.md`, `STRUCTURES-SYNC-SETUP.md`, `docs/PROJECT_CONTEXT.md`, `docs/HANDOFF.md`, `GRAMMAR-VSTEP.md` vẫn mô tả cách cũ:
-  - secret là tùy chọn;
-  - tiến độ ôn nằm ở `Meta!B1`;
-  - store Grammar chỉ chạy trong tab;
-  - chưa có tombstone.
-
-  Tôi chưa sửa các file này vì chúng nằm ngoài danh sách. Nên cập nhật trước khi giao cho người hoặc agent khác.
+- Đã cập nhật tài liệu `AGENTS.md`, `STRUCTURES-SYNC-SETUP.md`, `docs/PROJECT_CONTEXT.md` và `docs/HANDOFF.md` (mục 17, có thứ tự triển khai) theo code mới, ở commit `12fdf71`. `GRAMMAR-VSTEP.md` chưa sửa: file này vốn đã bị đảo đoạn và không nằm trong yêu cầu.
 - Câu đã xóa và backup thường lệ vẫn được giữ dạng tombstone/có giới hạn, nên kho cloud tăng chậm theo thời gian (giống Structures).
+- Test `vocab-quota-browser` vẫn hỏng (lỗi có sẵn trên `main`, xem mục 6). Chưa sửa vì không do nhánh này gây ra.
+
+## 6. Kiểm tra trình duyệt (2026-11-24)
+
+**Cách chạy:**
+- Cài Playwright vào thư mục tạm ngoài dự án (`%TEMP%\vocabmaster-underline-test-tools`) theo `docs/HANDOFF.md` mục 7, với `--no-package-lock`. Không đổi `package.json` hay `package-lock.json`.
+- Trình duyệt là Edge có sẵn trên máy, chạy ẩn (headless).
+- Mọi test dùng dữ liệu giả và chặn mạng ra ngoài máy.
+
+| Test | Kết quả | Ghi chú |
+| --- | --- | --- |
+| `grammar-corpus-browser` | Đạt | |
+| `grammar-export-browser` | Đạt | |
+| `grammar-review-browser` | Đạt | |
+| `grammar-topic-browser` | Đạt | |
+| `sentence-notes-browser` | Đạt | |
+| `underline-rendering` | Đạt | |
+| `vocab-sync-browser` | Đạt | |
+| `vocab-star-browser` | Đạt **sau khi cập nhật test** (commit `0592875`) | Lần chạy đầu hỏng do thay đổi của lỗi 4 (xem dưới). Không đổi code app. |
+| `vocab-quota-browser` | **Hỏng, lỗi có sẵn trên `main`** | Không do nhánh này (xem dưới) |
+
+**`vocab-star-browser` (do code mới, đã xử lý):**
+- Test dán **1 câu** trong khi Smart Quiz mặc định yêu cầu 10 câu.
+- Theo lỗi 4, app giờ báo "AI chỉ trả về 1/10 câu…" và cần bấm Start Quiz lần nữa. Test cũ chỉ bấm một lần nên chờ quá 30 giây.
+- Đây là hành vi mới có chủ đích, nên tôi sửa test: kiểm tra thông báo hiện ra, chưa vào bài, rồi bấm lần hai. Sau đó test đạt.
+- Bản `main` (chưa có thay đổi này) đạt test cũ.
+
+**`vocab-quota-browser` (lỗi có sẵn, không do nhánh này):**
+- Hỏng ở dòng 101, kỳ vọng số backup không đổi sau khi tải lại trang.
+- Chạy cùng test trên code `main` (bản sao tạm bằng `git worktree`, đã xóa sau khi chạy) cũng hỏng đúng dòng đó: `main` 6≠5, nhánh này 4≠3. Nhánh này có ít backup hơn nhờ lỗi 12.
+- Đã dò bằng một bản sao tạm của test (đã xóa):
+  - trước khi tải lại: 3 backup, khóa cũ `vocabmaster_vocab_backup_old` vẫn ở LocalStorage;
+  - sau khi tải lại: 4 backup, khóa cũ đã chuyển vào IndexedDB và bị xóa khỏi LocalStorage.
+- Đây là tính năng "chuyển backup LocalStorage cũ sang IndexedDB" do commit `2ba0be3` trên `main` thêm vào, sau khi test này được viết. Test vẫn kỳ vọng khóa cũ nằm nguyên (dòng 108) và số backup không đổi.
+- Tôi chạy thêm một bản sao tạm của test, chỉ chỉnh 2 kỳ vọng lỗi thời này (cộng thêm bản backup được chuyển; khóa cũ có trong file xuất thay vì trong LocalStorage). **Toàn bộ phần còn lại đều đạt**: hết dung lượng, giữ dữ liệu/sao, thử lại, xuất bản sao, chống cache hỏng, không chạm kho khác.
+- Đề xuất: cập nhật test này cho khớp tính năng migrate của `main`. Tôi chưa làm vì nó nằm ngoài phạm vi nhánh; bạn muốn thì tôi làm thành một commit riêng.
+
+**Môi trường:** không có lỗi do môi trường. Edge và Playwright đều chạy được.
+
+**Lưu ý trong lúc kiểm tra:** khi dọn bản sao tạm của `main`, lệnh xóa của Git chạy trước khi gỡ liên kết `node_modules`. Tôi đã kiểm tra `node_modules` của dự án vẫn nguyên vẹn: `npm ls` không báo thiếu gói nào, build và `npm test` vẫn đạt sau đó.
