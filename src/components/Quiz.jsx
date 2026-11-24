@@ -9,6 +9,7 @@ import { playAudio } from '../utils/audio';
 import { selectStructures } from '../utils/structureStorage';
 import { buildStructurePrompt, validateStructureQuestions } from '../utils/structureQuiz';
 import { parseResponse, quizCountIssue } from '../utils/quizParse';
+import { shuffle } from '../utils/wordSelection';
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                            */
@@ -99,7 +100,7 @@ function matchesPriority(word, priority) {
 /** Shuffle & filter word pool by selected priority (strict intersection, no fallback to unfiltered words) */
 function buildPool(words, priority, count) {
   const pool = words.filter(w => matchesPriority(w, priority));
-  return [...pool].sort(() => Math.random() - 0.5).slice(0, Math.max(count * 2, 20));
+  return shuffle(pool).slice(0, Math.max(count * 2, 20));
 }
 
 /**

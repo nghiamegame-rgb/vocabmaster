@@ -61,3 +61,10 @@ test('Quiz.jsx uses the shared parser and shows the short-count notice', () => {
   assert.ok(!/function parseResponse/.test(source));
   assert.match(source, /quizCountIssue\(/);
 });
+
+test('Smart Quiz word pool uses the unbiased Fisher-Yates shuffle from wordSelection.js', () => {
+  const source = readFileSync(new URL('../src/components/Quiz.jsx', import.meta.url), 'utf8');
+  assert.ok(!/sort\(\(\) => Math\.random\(\) - 0\.5\)/.test(source), 'biased sort-based shuffle must be gone');
+  assert.match(source, /import \{ shuffle \} from '\.\.\/utils\/wordSelection'/);
+  assert.match(source, /function buildPool[\s\S]*?shuffle\(pool\)/);
+});
