@@ -4,6 +4,7 @@
 - **Phạm vi:** chỉ đọc mã/tài liệu, chạy `npm run build`, `npm run lint` và 19 test Node không cần trình duyệt. Không sửa file mã, không gọi endpoint production, không chạm LocalStorage hay dữ liệu cloud.
 - **Quy ước độ tin cậy:** nhận định kèm `file:dòng` là đã đối chiếu với mã. **"Ước tính"** = tôi tính từ mã, chưa đo thực tế. **"Chưa xác minh"** = không có bằng chứng trong repo (production, Google Sheets thật, trình duyệt thật, thiết bị cảm ứng).
 - **Không đọc:** `node_modules/`, `dist/`, `.git/` (trừ `git log`/`git grep` để tìm rò rỉ bí mật), `package-lock.json`.
+- **Đính chính (2026-11-24):** số dòng của `api/grammar-sync.js` trong bản đầu bị lệch 23 dòng (do đọc nối hai file); đã sửa theo file gốc 128 dòng. Bỏ nhận định sai rằng `FilterPills` có ở Flashcard/Vocabulary. Bổ sung lỗi `correctIndex = 0` ngầm ở Smart Quiz (Bảng 10 #8). Các lỗi đã sửa được ghi trong `docs/BAO-CAO-SUA-LOI.md`.
 
 ---
 
@@ -41,7 +42,7 @@ Không có module thi thử VSTEP đầy đủ (4 kỹ năng, đề theo passage
 ### 1.4 Năm vấn đề lớn nhất
 
 1. **URL Apps Script Vocabulary cũ nằm trong lịch sử git** (`6223f8f:src/config.js:11`) và repo có remote GitHub. Backend cũ nhận ghi không xác thực. Chưa xác minh repo public hay private. (Mục 8.1, Bảng 10 #1)
-2. **Proxy Grammar không xác thực người dùng, CORS `*`, secret tùy chọn**: ai biết domain Vercel đều đọc/ghi được toàn bộ kho câu và Structures (`api/grammar-sync.js:44-46`, `grammar-apps-script.js:42-47`). (Bảng 10 #2)
+2. **Proxy Grammar không xác thực người dùng, CORS `*`, secret tùy chọn**: ai biết domain Vercel đều đọc/ghi được toàn bộ kho câu và Structures (`api/grammar-sync.js:21-23,44,86`, `grammar-apps-script.js:42-47`). (Bảng 10 #2)
 3. **Tiến độ ôn Grammar nằm trong MỘT ô Google Sheets** (`Meta!B1`): ước tính hết giới hạn 50.000 ký tự/ô ở **~390 câu đã ôn**, sau đó mọi lần đẩy cloud thất bại (`grammar-apps-script.js:322-323`). (Bảng 10 #3)
 4. **Backup IndexedDB tăng không giới hạn:** mỗi lần sửa/chấm một từ ghi 2 snapshot toàn kho, không bao giờ dọn; ước tính ~0,7 MB/lần với 600 từ (`src/utils/vocabSync.js:150-152`, `src/utils/vocabBackup.js`). (Bảng 10 #4)
 5. **Không có Error Boundary, vài đường ghi có thể ném lỗi chưa bắt:** một lỗi quota trong `useEffect` hoặc `persistData` có thể làm trắng toàn app; thêm vào đó validator client lệch với backend (import level=7 → sync bị từ chối vĩnh viễn). (Bảng 10 #5, #6)
@@ -313,7 +314,6 @@ Thang hoàn thiện: **Cao** = đủ luồng + có test + xử lý lỗi; **TB**
 - **`structureProgress` và `mergeStructures`** nằm ở hai nơi giống hệt: `src/utils/grammarSyncMerge.js:205-267` và `grammar-apps-script.js:550-612`. Do Apps Script không import module nên phải chép; có test `structures.test.js`/`structures-backend.test.js` đối chiếu, nhưng không có kiểm tra tự động chống lệch.
 - **`validateSentenceAnalysis`/`validateStructure`/`validateQuestion`** cũng chép ba lần (`grammarSentence.js:5`, `grammarSyncMerge.js:19-76`, `grammar-apps-script.js:65-113,520-547`).
 - **Bảng khoảng ôn 1/3/7/14/30** lặp ở `useVocabStore.js:8`, `grammarStorage.js:154`, `structureStorage.js:4`, `grammarSyncMerge.js:214`.
-- **`FilterPills`** định nghĩa riêng ở `ListeningReview.jsx:53` (và bản tương tự ở Flashcard/Vocabulary — chưa đối chiếu từng dòng).
 
 ### 7.3 Code chết / thừa
 
@@ -386,13 +386,13 @@ Hạn chế chung: test `annotation`/một số test Vocabulary **sao chép logi
 
 ### 8.3 Proxy Vercel và CORS
 
-| | `api/vocab-sync.js` | `api/grammar-sync.js` |
+| | `api/vocab-sync.js` | `api/grammar-sync.js` (128 dòng) |
 | --- | --- | --- |
-| CORS | Không đặt (chỉ cùng origin) | `Access-Control-Allow-Origin: *` (`:44-46`) |
-| Xác thực người dùng | Không (secret chỉ chống truy cập trực tiếp upstream) | Không; secret **tùy chọn** (`:67`, `:109-111`) |
-| Timeout upstream | 25 s (`:9`) | **Không có** (`:73`, `:113`) |
+| CORS | Không đặt (chỉ cùng origin) | `Access-Control-Allow-Origin: *` (`:21-23`) |
+| Xác thực người dùng | Không (secret chỉ chống truy cập trực tiếp upstream) | Không; secret **tùy chọn** (`:44`, `:86`) |
+| Timeout upstream | 25 s (`:9`) | **Không có** (`:50`, `:90`) |
 | Chặn ghi mặc định | Có (`VOCAB_WRITES_ENABLED`) | Không |
-| Lộ thông tin lỗi | Chung (`upstream_failed`) | Trả `err.message` cho client (`:148`) |
+| Lộ thông tin lỗi | Chung (`upstream_failed`) | Trả `err.message` cho client (`:125`) |
 | Kiểm tra phương thức/payload | Chỉ GET/POST, bắt buộc `protocol:1` | Không kiểm tra schema ở proxy (dựa Apps Script) |
 
 Hệ quả: **bất kỳ ai biết domain triển khai** (kể cả trang web khác, nhờ CORS `*`) có thể GET toàn bộ câu/Structures và POST ghi đè — bị giới hạn bởi CAS (cần đúng `expectedRevision`, mà revision có thể đọc được qua GET), validate schema, và **chỉ một bản backup**. Dữ liệu là nội dung học, độ nhạy cảm thấp, nhưng khả năng phá hoại có thật. Tài liệu đã thừa nhận "proxy chưa xác thực người dùng riêng" (PROJECT_CONTEXT mục 7).
@@ -450,13 +450,13 @@ Mức độ: **Cao** = có thể mất/hỏng dữ liệu hoặc lộ truy cập
 | # | Mức | Mô tả | File | Đề xuất sửa |
 | --- | --- | --- | --- | --- |
 | 1 | **Cao** | URL Apps Script Vocabulary cũ (không xác thực) còn trong lịch sử git; repo có remote GitHub, **chưa xác minh public/private** và URL còn sống. | `6223f8f:src/config.js:11` (qua `git log -S`); `docs/VOCABULARY-RECOVERY.md` | Vô hiệu/lưu trữ **mọi** deployment cũ (đã nằm trong runbook bước 2), thay URL bằng deployment mới có secret; kiểm tra repo private; không cần viết lại lịch sử nếu URL đã bị vô hiệu. |
-| 2 | **Cao** | Proxy Grammar/Structures: CORS `*`, không xác thực người dùng, secret tùy chọn; Apps Script chạy không secret nếu chưa đặt; chế độ "Apps Script trực tiếp" không thể có secret. Ai biết domain đọc/ghi được kho. | `api/grammar-sync.js:44-46,67,109-111`; `grammar-apps-script.js:42-47`; `GrammarCloudSettings.jsx:20-27` | Bắt buộc `GRAMMAR_SYNC_SECRET` (từ chối khi thiếu, như Vocabulary); bỏ CORS `*` (cùng origin không cần); thêm timeout; bỏ lựa chọn trực tiếp tới Apps Script hoặc cảnh báo rõ; cân nhắc mật khẩu/ token người dùng ở proxy. |
+| 2 | **Cao** | Proxy Grammar/Structures: CORS `*`, không xác thực người dùng, secret tùy chọn; Apps Script chạy không secret nếu chưa đặt; chế độ "Apps Script trực tiếp" không thể có secret. Ai biết domain đọc/ghi được kho. | `api/grammar-sync.js:21-23,44,86`; `grammar-apps-script.js:42-47`; `GrammarCloudSettings.jsx:20-27` | Bắt buộc `GRAMMAR_SYNC_SECRET` (từ chối khi thiếu, như Vocabulary); bỏ CORS `*` (cùng origin không cần); thêm timeout; bỏ lựa chọn trực tiếp tới Apps Script hoặc cảnh báo rõ; cân nhắc mật khẩu/ token người dùng ở proxy. |
 | 3 | **Cao** (ước tính) | `reviewProgress` ghi vào **một ô** `Meta!B1`; Google Sheets giới hạn 50.000 ký tự/ô. ~127 ký tự/mục → hết ở **≈390 câu đã ôn**; sau đó `setValue` lỗi, mọi push Grammar thất bại. Chưa xác minh trên Sheets thật. | `grammar-apps-script.js:322-323,160-162` (createBackup cũng ghi vào ô) | Lưu review thành từng hàng (sheet `Review`), hoặc chia ô; kiểm tra kích thước trước khi ghi và báo lỗi rõ như Structures (`:469`). |
 | 4 | **Cao** (ước tính) | Backup IndexedDB tăng không giới hạn: mỗi `edit`/`sync` ghi 2 snapshot toàn kho (`{raw,legacy}` và `{state}`), không bao giờ xóa; ~0,7 MB/lần với 600 từ. Có thể lại gặp quota (vốn là sự cố đã xảy ra). | `src/utils/vocabSync.js:146-163`; `src/utils/vocabBackup.js` (không có hàm xóa) | Giữ N bản gần nhất + bản trước mỗi lần đổi generation/adopt; chỉ backup khi nội dung "nguy hiểm" (adopt/conflict) thay vì mỗi lần chấm; đo `navigator.storage.estimate()` và cảnh báo. |
 | 5 | **TB** | Không có Error Boundary; lỗi ném trong render/effect làm trắng cả app. Cụ thể: `saveGrammarStats` chạy trong `useEffect` không `try/catch`; `persistData` cập nhật `ref` **trước** `setItem` nên lỗi quota để lại ref ≠ đĩa ≠ state. | `src/main.jsx`; `src/hooks/useGrammarStore.js:44-51,59` | Thêm `ErrorBoundary` ở `App`; bọc `saveGrammarStats` và `persistData` bằng try/catch, chỉ đổi ref sau khi ghi thành công (như `recordReview`). |
 | 6 | **TB** | Validator client lệch Apps Script: client chỉ kiểm `id/english/vietnamese/hardMarked`; backend từ chối `level` ngoài 1–5, số âm, `imageUrl/annotation/wordType` không phải chuỗi. Import JSON có `level: 7` được lưu local nhưng **mọi POST sau đó bị `invalid_level`** đến khi sửa tay. | `src/utils/vocabSync.js:13-31` vs `google-apps-script.js:20-38`; `src/components/Vocabulary.jsx:470-480`; `useVocabStore.js:90-92` | Dùng chung một validator (cùng ràng buộc) ở `addWord`/import; chuẩn hóa/clamp `level`, ép kiểu chuỗi. |
 | 7 | **TB** | Sync Grammar chỉ chạy khi tab Grammar đang mở (hook mount trong `Grammar`); thay đổi `pending` không đẩy lên cloud nếu người dùng rời tab ngay. Structures thì đồng bộ ở App → hai kho Grammar hành xử khác nhau. | `src/components/Grammar.jsx:57` vs `src/App.jsx:35` | Đưa `useGrammarStore` lên `App` (như Structures) hoặc kích hoạt đẩy ở `beforeunload`/`visibilitychange`. |
-| 8 | **TB** | `parseResponse` (Vocabulary): `correctIndex` chỉ kiểm `typeof number` — có thể âm, lớn hơn số option, hoặc không nguyên; khi đó `shuffleOptions` cho `indexOf = -1` và **không có đáp án đúng**. Regex `/\[[\s\S]*\]/` tham lam từ `[` đầu đến `]` cuối nên lời dẫn có ngoặc vuông phá parse. Nếu AI trả ít câu hơn `count` vẫn bắt đầu. | `src/components/Quiz.jsx:252,275-277,418` | Kiểm `Number.isInteger` và `0 ≤ idx < options.length`; kiểm `question` có đúng một `[_____]`; dùng `parseGrammarInput` (đã có bộ quét ngoặc) thay regex; báo khi thiếu câu. |
+| 8 | **TB** | `parseResponse` (Vocabulary): `correctIndex` chỉ kiểm `typeof number` — có thể âm, lớn hơn số option, hoặc không nguyên; khi đó `shuffleOptions` cho `indexOf = -1` và **không có đáp án đúng**. Nếu thiếu cả `answerIndex` lẫn `correctIndex`, code **ngầm chọn đáp án đầu tiên** (`correctIndex = 0`, `Quiz.jsx:275-277`) thay vì báo lỗi, nên câu hỏi có thể chấm sai mà người dùng không biết. Regex `/\[[\s\S]*\]/` tham lam từ `[` đầu đến `]` cuối nên lời dẫn có ngoặc vuông phá parse. Nếu AI trả ít câu hơn `count` vẫn bắt đầu. | `src/components/Quiz.jsx:252,275-277,418` | Kiểm `Number.isInteger` và `0 ≤ idx < options.length`; kiểm `question` có đúng một `[_____]`; dùng `parseGrammarInput` (đã có bộ quét ngoặc) thay regex; báo khi thiếu câu. |
 | 9 | **TB** | Merge Grammar chưa có tombstone: câu đã xóa, ⭐ đã bỏ, ghi chú đã xóa, cấp đã giảm có thể quay lại sau sync từ thiết bị khác (đã được tài liệu hóa, chưa sửa). | `src/utils/grammarSyncMerge.js:121-202` | Thêm `deletedAt`/tombstone cho câu và `updatedAt` cho từng trường (giống Structures); `mergeReviewProgress` theo `lastReviewAt` thay vì max. |
 | 10 | **TB** | Ảnh dự phòng `source.unsplash.com` (dịch vụ Source đã ngừng theo hiểu biết của tôi, **chưa xác minh**) và gửi từ đang học ra bên thứ ba. | `ListeningReview.jsx:47`; `Quiz.jsx:840` | Bỏ ảnh dự phòng hoặc dùng dịch vụ có API khóa khác; hiện placeholder chữ cái. |
 | 11 | **TB** | Nhãn tab Navbar bị ẩn dưới 640 px và không có `aria-label`/`title`: nút chỉ icon, không tên truy cập. | `src/components/Navbar.jsx:176,201` | Thêm `aria-label={label}` và `aria-current` cho tab đang chọn. |
@@ -464,7 +464,7 @@ Mức độ: **Cao** = có thể mất/hỏng dữ liệu hoặc lộ truy cập
 | 13 | **TB** | Không có `npm test`, không CI, Playwright không nằm trong `package.json`; 9 test trình duyệt phải thiết lập tay. Quiz.jsx (1.362 dòng) gần như không có test đơn vị. | `package.json`; `docs/HANDOFF.md` mục 7 | Thêm script `test` (chạy tất cả file Node), `test:browser`; thêm GitHub Actions chạy build+lint+test; tách `parseResponse`/prompt ra util để test. |
 | 14 | **TB** | Component quá lớn: `Quiz.jsx` 1.362, `Vocabulary.jsx` 810, `ListeningReview.jsx` 782. | các file trên | Tách `QuizConfig`/`QuizGame`/`QuizResults`, prompt, parser thành module riêng; dùng `React.lazy` cho tab. |
 | 15 | **Thấp** | `.gitignore` thiếu `.env`, `.env.*`, `.vercel`. | `.gitignore` | Thêm `.env*`, `.vercel/`. |
-| 16 | **Thấp** | Proxy Grammar trả `err.message` cho client, không timeout; secret Vocabulary đi qua query string GET. | `api/grammar-sync.js:113,148`; `api/vocab-sync.js:11` | Trả mã lỗi chung, thêm `AbortSignal.timeout`; (Apps Script chỉ đọc secret ở query — chấp nhận, ghi chú rủi ro log). |
+| 16 | **Thấp** | Proxy Grammar trả `err.message` cho client, không timeout; secret Vocabulary đi qua query string GET. | `api/grammar-sync.js:50,90,125`; `api/vocab-sync.js:11` | Trả mã lỗi chung, thêm `AbortSignal.timeout`; (Apps Script chỉ đọc secret ở query — chấp nhận, ghi chú rủi ro log). |
 | 17 | **Thấp** | Gạch chân/ghi chú bị mất âm thầm khi hết quota (`catch { /* quota */ }`); chỉ local nên mất khi đổi máy. | `src/utils/grammarStorage.js:196-198,213-215` | Trả `{ok}` như `writeSentenceNotes`; cân nhắc đưa vào sync. |
 | 18 | **Thấp** | Tài liệu sai/đã lỗi thời: `GRAMMAR-VSTEP.md` đảo đoạn; PROJECT_CONTEXT ghi 11 test (thực tế 28); README là mẫu. | `GRAMMAR-VSTEP.md:1,7,43`; `docs/PROJECT_CONTEXT.md:16,79,248`; `README.md` | Sửa `GRAMMAR-VSTEP.md`; viết README thật; gộp HANDOFF thành CHANGELOG theo thời gian. |
 | 19 | **Thấp** | Code/asset chết: `importWords`, `validatePayload`, `clearWords`, 2 hằng Structures, pha "Clearing…", `verifying`, `App.css`, `hero.png`, `react.svg`, `vite.svg`, `icons.svg`, `scripts/` rỗng. | Xem 7.3 | Xóa sau khi `grep` xác nhận lần nữa. |
