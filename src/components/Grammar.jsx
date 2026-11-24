@@ -1,6 +1,5 @@
 ﻿import { useMemo, useState } from 'react';
 import { Zap, Bookmark, Brain, BarChart2, Cloud, Layers } from 'lucide-react';
-import { useGrammarStore } from '../hooks/useGrammarStore';
 import GrammarPractice     from './grammar/GrammarPractice';
 import GrammarQuiz         from './grammar/GrammarQuiz';
 import GrammarSaved        from './grammar/GrammarSaved';
@@ -24,9 +23,10 @@ const SUB_TABS = [
 /**
  * Grammar — Top-level Grammar module component.
  * Manages sub-tab routing and bridges the grammar store with child components.
- * @param {{ addWord: Function }} props — addWord from the Vocabulary store for word integration.
+ * @param {{ grammarStore: object, addWord: Function }} props — grammarStore is created in App.jsx
+ *   (useGrammarStore); addWord comes from the Vocabulary store for word integration.
  */
-export default function Grammar({ addWord, words = [], vocabSyncStatus = 'idle', vocabDataLoadError = '', structureStore }) {
+export default function Grammar({ grammarStore, addWord, words = [], vocabSyncStatus = 'idle', vocabDataLoadError = '', structureStore }) {
   const [subTab,      setSubTab]      = useState('practice');
   const [session,     setSession]     = useState(null); // { questions, config } when quiz is active
   const [showCloud,   setShowCloud]   = useState(false);
@@ -34,6 +34,7 @@ export default function Grammar({ addWord, words = [], vocabSyncStatus = 'idle',
   const {
     savedQuestions,
     dataLoadError,
+    storageError,
     reviewProgress,
     grammarStats,
     underlines,
@@ -54,7 +55,7 @@ export default function Grammar({ addWord, words = [], vocabSyncStatus = 'idle',
     recordGrammarSession,
     updateUnderlines,
     syncFromCloud,
-  } = useGrammarStore();
+  } = grammarStore; // created in App.jsx
   // Unsaved imports remain available across subtabs, until leaving this module.
   const [practiceQuestions, setPracticeQuestions] = useState([]);
   const corpus = useMemo(() => buildGrammarCorpus(words, [...savedQuestions, ...practiceQuestions]), [words, savedQuestions, practiceQuestions]);
@@ -142,6 +143,8 @@ export default function Grammar({ addWord, words = [], vocabSyncStatus = 'idle',
           </button>
         </div>
       </div>
+
+      {storageError && <p role="alert" className="text-amber-300 text-sm">{storageError}</p>}
 
       {/* Cloud settings panel */}
       {showCloud && (

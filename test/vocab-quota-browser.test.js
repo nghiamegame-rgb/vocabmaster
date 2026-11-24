@@ -97,15 +97,22 @@ try {
   await sync();
   const count = await backupCount();
   await page.reload(); await page.getByText('Vocabulary synced successfully!', { exact: false }).waitFor();
+  // Now that IndexedDB accepts writes, startup moves the old LocalStorage backup into
+  // IndexedDB (one new entry, verified by read-back) and only then removes the old key.
+  await page.waitForFunction(() => localStorage.getItem('vocabmaster_vocab_backup_old') === null);
+  const migratedCount = count + 1;
+  assert.equal(await backupCount(), migratedCount);
   await sync();
-  assert.equal(await backupCount(), count);
+  assert.equal(await backupCount(), migratedCount);
   assert.equal(posts, 1);
   const [download] = await Promise.all([page.waitForEvent('download'), controls.getByRole('button', { name: 'Xuất bản sao Vocabulary' }).click()]);
   const backup = JSON.parse(readFileSync(await download.path(), 'utf8'));
-  assert.equal(Object.keys(backup.indexedDBBackups).length, count);
+  assert.equal(Object.keys(backup.indexedDBBackups).length, migratedCount);
   assert.ok(Object.values(backup.indexedDBBackups).some(text => text.includes('hardMarked')));
-  const kept = await page.evaluate(keys => Object.fromEntries(keys.map(k => [k, localStorage.getItem(k)])), Object.keys(untouched));
-  assert.deepEqual(kept, untouched);
+  assert.ok(Object.values(backup.indexedDBBackups).includes(untouched.vocabmaster_vocab_backup_old), 'old backup kept, now in IndexedDB');
+  const { vocabmaster_vocab_backup_old: _migrated, ...otherStores } = untouched;
+  const kept = await page.evaluate(keys => Object.fromEntries(keys.map(k => [k, localStorage.getItem(k)])), Object.keys(otherStores));
+  assert.deepEqual(kept, otherStores);
 
   // Corrupt active snapshot: show the readable mirror, never silently adopt/upload it.
   await page.evaluate(() => localStorage.setItem('vocabmaster_vocab_sync_v1', '{broken'));
@@ -115,6 +122,6 @@ try {
   await page.reload(); await controls.getByText('Chưa xác định', { exact: false }).waitFor();
   assert.match(await total.innerText(), /—/); assert.equal(posts, 1);
   assert.deepEqual(errors, []);
-  console.log('PASS: real backup quota, retained Dashboard/pending/stars, retry/reload dedup, complete old+IndexedDB export, corrupt-cache guard, other stores unchanged.');
+  console.log('PASS: real backup quota, retained Dashboard/pending/stars, retry/reload dedup, old backup migrated to IndexedDB, complete export, corrupt-cache guard, other stores unchanged.');
   await context.close();
 } finally { await browser?.close(); await server.close(); }

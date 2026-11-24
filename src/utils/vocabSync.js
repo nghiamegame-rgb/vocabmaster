@@ -129,13 +129,17 @@ export class VocabSync {
     this.queue = result.catch(() => {});
     return result;
   }
-  async backup(data) {
-    try { await this.backups.put(canonical(data)); }
+  // kind: 'startup' | 'pre-write' | 'state' are routine (pruned beyond the most
+  // recent ones); 'archive' (conflict/adopt) is always kept. See vocabBackup.js.
+  async backup(data, kind) {
+    try { await this.backups.put(canonical(data), kind); }
     catch (error) { this.reportError(error); throw error; }
   }
   async protectStartup() {
     if (this.startup) {
-      await this.backup(this.startup);
+      await this.backup(this.startup, 'startup');
+      // The cache content at startup is now backed up.
+      this.lastBackedUp = { raw: this.startup.raw, legacy: this.startup.legacy };
       this.startup = null;
     }
   }
@@ -148,21 +152,29 @@ export class VocabSync {
     // Each distinct state is immutable and deduplicated across tabs/reloads.
     // This also protects another tab's pending state before it can be overwritten.
     await this.protectStartup();
-    await this.backup({ raw: this.storage.getItem(STATE_KEY), legacy: this.storage.getItem('vocabmaster_words') });
-    await this.backup({ state: next });
+    // Back up the current cache only when it differs from what this engine last
+    // backed up (e.g. another tab wrote it); an unchanged state is already saved.
+    const current = { raw: this.storage.getItem(STATE_KEY), legacy: this.storage.getItem('vocabmaster_words') };
+    if (!this.lastBackedUp || current.raw !== this.lastBackedUp.raw || current.legacy !== this.lastBackedUp.legacy) {
+      await this.backup(current, 'pre-write');
+    }
+    const serialized = JSON.stringify(next);
+    const words = JSON.stringify(next.words);
+    // Same shape as the cache itself, so an identical state (e.g. the startup
+    // backup after a reload) deduplicates to the same content-addressed entry.
+    await this.backup({ raw: serialized, legacy: words }, 'state');
     if (!valid()) return false;
     try {
-      const serialized = JSON.stringify(next);
       if (this.storage.getItem(STATE_KEY) !== serialized) this.storage.setItem(STATE_KEY, serialized);
       this.state = next; // The authoritative write succeeded, even if the legacy mirror fails.
-      const words = JSON.stringify(next.words);
       if (this.storage.getItem('vocabmaster_words') !== words) this.storage.setItem('vocabmaster_words', words);
     } catch (error) { this.reportError(error); throw error; }
+    this.lastBackedUp = { raw: serialized, legacy: words };
     this.storageError = ''; this.emit();
     return true;
   }
   async archive(reason, data) {
-    await this.backup({ reason, data });
+    await this.backup({ reason, data }, 'archive');
     this.notice = 'Có bản sao Vocabulary cũ/xung đột cần xem lại. Xuất bản sao trước khi chọn nhập lại từng mục.';
   }
   edit(update) {

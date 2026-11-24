@@ -1,5 +1,33 @@
 # Bàn giao workspace VocabMaster
 
+**Cập nhật 2026-11-24 — nhánh `fix/audit-2026-11`: sửa 17 mục của báo cáo phân tích; xem mục 17. Chưa push/deploy.**
+
+## 17. Sửa lỗi theo báo cáo phân tích — 2026-11-24
+
+- Nhánh `fix/audit-2026-11` tách từ `main` (`2ba0be3`), mỗi mục một commit tiếng Việt. Danh sách, test chứng minh và cách hoàn tác: [BAO-CAO-SUA-LOI.md](BAO-CAO-SUA-LOI.md); báo cáo gốc: [BAO-CAO-PHAN-TICH-WEB.md](BAO-CAO-PHAN-TICH-WEB.md). Không gọi Apps Script/Vercel/Sheets thật.
+- **Thay đổi hành vi cần biết:**
+  - `GRAMMAR_SYNC_SECRET` bắt buộc ở Vercel (env server) và Script Properties. Proxy `api/grammar-sync.js` thiếu env → 503 `unconfigured`; không CORS `*`; timeout 25 s; không trả `err.message`. `checkAuth` trong `grammar-apps-script.js` từ chối mọi yêu cầu khi chưa đặt secret. Chế độ nhập URL Apps Script trực tiếp không còn đồng bộ được.
+  - Tiến độ ôn câu Grammar: mỗi mục một hàng ở sheet `Review` (cột A savedId, cột B JSON), bản sao trước ghi ở `ReviewBackup`. Chưa có sheet Review thì đọc JSON cũ ở `Meta!B1`; lần ghi đầu tạo Review rồi mới ghi dấu `migrated-to-Review-sheet` vào `Meta!B1`. Hàng hỏng chặn đọc/ghi. Không quay Apps Script về bản cũ sau khi chuyển.
+  - `useGrammarStore` tạo ở `App.jsx`, truyền xuống `Grammar.jsx` qua prop `grammarStore` → đồng bộ chạy cả khi đóng tab Grammar. `persistData` chỉ đổi ref/state sau khi ghi LocalStorage thành công (hoàn nguyên khóa thứ nhất nếu khóa thứ hai lỗi), báo `storageError`; `saveGrammarStats` trong effect có try/catch.
+  - Bỏ lưu câu Grammar để lại tombstone `deletedAt`; `mergeSavedQuestions` lấy max `deletedAt`; store trả `savedQuestions` chỉ gồm câu sống; tiến độ câu đã xóa bị bỏ khi merge. Apps Script không cần đổi cho tombstone (validator chấp nhận trường thêm). Thiết bị còn chạy frontend cũ sẽ hiện lại câu đã xóa.
+  - Smart Quiz/Structures dùng prompt VSTEP B1–B2 (mã chế độ `toeic` → `vstep`); `index.html` `lang="vi"`, favicon `/favicon.svg`.
+  - Vocabulary: `vocabWord.js::normalizeWordInput` cho thêm/nhập từ (đúng `vocabValidate`). Backup IndexedDB có metadata `meta:<sha>`, chỉ dọn bản thường lệ khi > 40, giữ 30 bản gần nhất, luôn giữ archive/conflict/adopt, bản không có meta và bản cũ nhất; mỗi lần sửa chỉ backup lại trạng thái trước nếu nó đã đổi; backup trạng thái dùng dạng `{raw, legacy}` để trùng nội dung được gộp.
+  - Khác: `ErrorBoundary`, `quizParse.js` (answerIndex nguyên trong khoảng, thiếu đáp án báo lỗi, thiếu câu thì báo và bấm Start lần hai), `shuffle` cho Smart Quiz, `WordInitialTile` thay ảnh Unsplash, aria-label tab, `.gitignore` có `.env*`/`.vercel/`, xóa code/asset chết (giữ `validatePayload` vì test dùng).
+- **Kiểm tra:** `npm test` (mới) 30/30 file đạt; lint 34 cảnh báo/0 lỗi (trước 36); build đạt, JS 503,88 kB (trước 499,56 kB, vượt mốc cảnh báo 500 kB của Vite). Test trình duyệt (Playwright cài ở `%TEMP%\vocabmaster-underline-test-tools`, Edge): 9/9 đạt; `vocab-star-browser` được cập nhật cho thông báo "AI chỉ trả về 1/10 câu"; `vocab-quota-browser` (vốn hỏng cả trên `main`) được cập nhật cho việc chuyển backup LocalStorage cũ sang IndexedDB — xem BAO-CAO-SUA-LOI mục "Kiểm tra trình duyệt".
+- **Thứ tự triển khai (người dùng làm tay):**
+  1. Sao lưu: spreadsheet Grammar → File → Make a copy; trong app tải bản sao Vocabulary và xuất JSON Structures.
+  2. Tạo secret ngẫu nhiên dài (≈40 ký tự); không đưa vào code.
+  3. Vercel → Environment Variables: `GRAMMAR_SYNC_SECRET` = secret; kiểm tra `GRAMMAR_APPS_SCRIPT_URL` đúng `/exec` Grammar. Đã có secret thì giữ nguyên giá trị ở bước này và bước 6.
+  4. Ghép nhánh vào `main` rồi deploy web. Proxy mới gửi secret; Apps Script cũ vẫn chấp nhận yêu cầu có secret nên đồng bộ không gián đoạn.
+  5. Kiểm tra web: Grammar → Cloud → Sync phải "Đã đồng bộ"; lỗi `unconfigured` nghĩa là bước 3 sai hoặc Vercel chưa nhận env (redeploy).
+  6. Apps Script Grammar → Project Settings → Script Properties: `GRAMMAR_SYNC_SECRET` = đúng secret bước 3.
+  7. Dán `grammar-apps-script.js` mới → Save → Deploy → Manage deployments → Edit → New version (giữ URL). Không chạy hàm xóa/reset.
+  8. Kiểm tra: ôn một câu → chờ "Đã đồng bộ"; spreadsheet có sheet `Review`, `ReviewBackup`; `Meta!B1` = `migrated-to-Review-sheet`.
+  9. Mọi thiết bị: đóng tab cũ, mở lại; thiết bị dùng URL `/exec` trực tiếp chuyển sang `/api/grammar-sync`.
+  10. Không quay Apps Script về bản cũ sau bước 7 (bản cũ chỉ đọc `Meta!B1`).
+  Vocabulary không cần đổi Apps Script/proxy/env cho các sửa này.
+- **Giới hạn:** chưa kiểm tra Apps Script/Vercel/Sheets thật, Safari/Firefox hay thiết bị cảm ứng. Các mục 1–16 bên dưới là lịch sử; mô tả trái với mục này (secret tùy chọn, review ở `Meta!B1`, store Grammar mount trong tab, chưa có tombstone, prompt TOEIC) đã lỗi thời.
+
 **Cập nhật 2026-11-16 — sửa trạng thái nút và xử lý lỗi lưu trong Grammar → Ôn tập; xem mục 16. Chỉ sửa workspace, chưa commit/deploy.**
 
 ## 16. Grammar → Ôn tập: xác nhận lưu và màu nút — 2026-11-16

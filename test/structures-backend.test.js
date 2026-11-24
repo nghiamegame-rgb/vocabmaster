@@ -28,14 +28,15 @@ export function backend() {
   const context = vm.createContext({
     SpreadsheetApp: { getActiveSpreadsheet: () => ss, flush() {} },
     LockService: { getScriptLock: () => ({ tryLock() { if (locked) return false; locked = true; return true; }, releaseLock() { locked = false; } }) },
-    PropertiesService: { getScriptProperties: () => ({ getProperty: () => null }) },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: key => key === 'GRAMMAR_SYNC_SECRET' ? 'test-secret' : null }) },
     ContentService: { MimeType: { JSON: 'json' }, createTextOutput: text => ({ setMimeType: () => JSON.parse(text) }) },
   });
   vm.runInContext(readFileSync(new URL('../grammar-apps-script.js', import.meta.url), 'utf8'), context);
   return {
     sheets, context,
-    get: () => context.doGet({ parameter: { scope: 'structures' } }),
-    post: payload => context.doPost({ postData: { contents: JSON.stringify(payload) } }),
+    get: () => context.doGet({ parameter: { scope: 'structures', secret: 'test-secret' } }),
+    getGrammar: () => context.doGet({ parameter: { secret: 'test-secret' } }),
+    post: payload => context.doPost({ postData: { contents: JSON.stringify({ ...payload, secret: 'test-secret' }) } }),
   };
 }
 const item = (extra = {}) => ({ id: 's1', english: 'despite + noun', vietnamese: 'meaning', level: 3, createdAt: 1, updatedAt: 1, ...extra });
@@ -52,13 +53,13 @@ test('mixed legacy and sentence-analysis writes round-trip without changing stru
   const review = { 'old-1': { level: 5, totalReviews: 10 }, 'new-1': { level: 2, totalReviews: 1 } };
   const save = { action: 'save', savedQuestions: [legacy, analysis], reviewProgress: review, expectedRevision: 0 };
   assert.equal(b.post(save).ok, true);
-  const snapshot = b.context.doGet({ parameter: {} });
+  const snapshot = b.getGrammar();
   assert.equal(JSON.stringify(snapshot.savedQuestions), JSON.stringify(save.savedQuestions));
   assert.equal(JSON.stringify(snapshot.reviewProgress), JSON.stringify(review));
   assert.equal(b.post(save).error, 'conflict');
   assert.equal(b.post({ ...save, savedQuestions: [], expectedRevision: 1 }).error, 'empty_rejected');
   assert.equal(b.post({ ...save, expectedRevision: 1, savedQuestions: [legacy, { ...analysis, grammarPoints: [] }] }).error, 'validation');
-  assert.equal(JSON.stringify(b.context.doGet({ parameter: {} }).savedQuestions), JSON.stringify(save.savedQuestions));
+  assert.equal(JSON.stringify(b.getGrammar().savedQuestions), JSON.stringify(save.savedQuestions));
   assert.equal(JSON.stringify(b.get()), structures);
 });
 
@@ -80,7 +81,7 @@ test('actual backend: CAS, backup, stale/empty rejection, independent grammar wr
   assert.equal(b.get().structures[0].notes, 'phone');
   assert.equal(b.post(payload(mergeStructures([item({ deletedAt: 100 })], latest), 2)).ok, true);
   assert.equal(b.sheets.get('Meta').getRange(1, 1).getValue(), 1);
-  assert.equal(b.sheets.get('Meta').getRange(1, 2).getValue(), '{"q1":{"level":4}}');
+  assert.deepEqual(b.sheets.get('Review').getRange(1, 1, 1, 2).getValues(), [['q1', '{"level":4}']]);
   assert.equal(b.sheets.get('SavedQuestions').getRange(1, 1).getValue(), JSON.stringify(q));
   assert.equal(b.post(payload(latest, 3)).error, 'conflict');
 });

@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { LayoutDashboard, BookOpen, Brain, Headphones, RefreshCw, Trash2, Layers, BookOpenCheck, CloudOff, CloudUpload } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Brain, Headphones, RefreshCw, Layers, BookOpenCheck, CloudOff, CloudUpload } from 'lucide-react';
 
 const tabs = [
   { id: 'dashboard',  label: 'Dashboard', Icon: LayoutDashboard },
@@ -10,54 +9,29 @@ const tabs = [
   { id: 'grammar',    label: 'Grammar',    Icon: BookOpenCheck },
 ];
 
-/**
- * Sync button visual states.
- * syncMode='hard' + status='syncing' shows a distinct amber "Clearing…" phase
- * before the normal indigo "Syncing…" indicator.
- */
-function useSyncVisual(syncStatus, syncMode) {
-  // Track an internal phase so we can show "Clearing…" briefly before "Syncing…"
-  const [phase, setPhase] = useState('idle');
-
-  useEffect(() => {
-    if (syncStatus === 'syncing' && syncMode === 'hard') {
-      // First paint: "Clearing" phase
-      setPhase('clearing');
-      // After the 120ms yield in _doFetch the fetch starts; keep clearing for a
-      // little longer so users definitely see it, then switch to "syncing".
-      const t = setTimeout(() => setPhase('syncing'), 600);
-      return () => clearTimeout(t);
-    }
-    if (syncStatus === 'syncing' && syncMode === 'soft') {
-      setPhase('syncing');
-      return;
-    }
-    setPhase(syncStatus); // 'idle' | 'ok' | 'error'
-  }, [syncStatus, syncMode]);
-
+/** Sync button visual state for the current Vocabulary sync status. */
+function useSyncVisual(syncStatus) {
   const MAP = {
     idle:     { label: 'Sync',      cls: 'text-slate-400 hover:text-white hover:bg-slate-800',  spin: false, Icon: RefreshCw },
-    clearing: { label: 'Clearing…', cls: 'text-amber-400  bg-amber-500/15  cursor-wait',         spin: true,  Icon: Trash2    },
     syncing:  { label: 'Syncing…',  cls: 'text-indigo-400 bg-indigo-600/15 cursor-wait',         spin: false, Icon: RefreshCw },
     ok:       { label: 'Synced!',   cls: 'text-emerald-400 bg-emerald-500/15',                   spin: false, Icon: RefreshCw },
     error:    { label: 'Failed',    cls: 'text-rose-400   bg-rose-500/15',                       spin: false, Icon: RefreshCw },
   };
 
-  return MAP[phase] ?? MAP.idle;
+  return MAP[syncStatus] ?? MAP.idle;
 }
 
 /**
  * Push indicator — shows the status of the background debounced push to cloud.
  * This is separate from the manual Sync button, which only fetches FROM cloud.
  *
- * pushStatus: 'idle'|'pushing'|'verifying'|'ok'|'error'
+ * pushStatus: 'idle'|'pushing'|'ok'|'error'
  */
 function PushIndicator({ pushStatus }) {
   if (pushStatus === 'idle') return null;
 
   const MAP = {
     pushing:   { label: 'Saving…',   cls: 'text-sky-400    bg-sky-500/10    border-sky-500/20',     Icon: CloudUpload, animate: 'animate-pulse' },
-    verifying: { label: 'Verifying…',cls: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20',  Icon: CloudUpload, animate: 'animate-pulse' },
     ok:        { label: 'Saved ✓',   cls: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',Icon: CloudUpload, animate: '' },
     error:     { label: 'Save failed!',cls:'text-rose-400  bg-rose-500/10   border-rose-500/20',    Icon: CloudOff,    animate: '' },
   };
@@ -77,8 +51,6 @@ function PushIndicator({ pushStatus }) {
       title={
         pushStatus === 'error'
           ? 'Vocabulary chưa lưu/đồng bộ xong. Xem thông báo lỗi cụ thể bên dưới.'
-          : pushStatus === 'verifying'
-          ? 'Verifying that Google Sheets was updated…'
           : pushStatus === 'ok'
           ? 'Your vocabulary was saved to Google Sheets.'
           : 'Saving your vocabulary to Google Sheets…'
@@ -91,13 +63,12 @@ function PushIndicator({ pushStatus }) {
 }
 
 /* ── Toast banner ── */
-function SyncToast({ syncStatus, syncMode, pushStatus, show }) {
+function SyncToast({ syncStatus, pushStatus, show }) {
   // Compute which message to show
   // Push errors take priority over sync state for the toast
   const pushErrorActive = pushStatus === 'error';
 
   const messages = {
-    clearing:   { text: '🗑 Clearing local cache…',                   cls: 'bg-amber-500/90  text-white' },
     syncing:    { text: '☁️ Fetching fresh data from Google Sheets…', cls: 'bg-indigo-600/90 text-white' },
     ok:         { text: '✅ Vocabulary synced successfully!',          cls: 'bg-emerald-600/90 text-white' },
     error:      { text: '❌ Vocabulary gặp lỗi — xem chi tiết bên dưới.', cls: 'bg-rose-600/90 text-white' },
@@ -111,10 +82,7 @@ function SyncToast({ syncStatus, syncMode, pushStatus, show }) {
   } else if (!show) {
     return null;
   } else {
-    key =
-      syncStatus === 'syncing' && syncMode === 'hard' ? 'clearing' :
-      syncStatus === 'syncing'                        ? 'syncing'  :
-      syncStatus;
+    key = syncStatus;
   }
 
   const msg = messages[key];
@@ -136,8 +104,8 @@ function SyncToast({ syncStatus, syncMode, pushStatus, show }) {
   );
 }
 
-export default function Navbar({ activeTab, setActiveTab, syncStatus, syncMode = 'soft', pushStatus = 'idle', onSync }) {
-  const sync = useSyncVisual(syncStatus, syncMode);
+export default function Navbar({ activeTab, setActiveTab, syncStatus, pushStatus = 'idle', onSync }) {
+  const sync = useSyncVisual(syncStatus);
   const SyncIcon = sync.Icon;
 
   // Show toast whenever actively syncing, just finished (ok/error), or push failed
@@ -164,6 +132,7 @@ export default function Navbar({ activeTab, setActiveTab, syncStatus, syncMode =
                 <button
                   key={id}
                   id={`nav-tab-${id}`}
+                  aria-label={label}
                   onClick={() => setActiveTab(id)}
                   className={`
                     flex items-center gap-2 px-1.5 sm:px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200
@@ -205,7 +174,7 @@ export default function Navbar({ activeTab, setActiveTab, syncStatus, syncMode =
       </nav>
 
       {/* Toast notification — rendered outside the nav so it sits below it */}
-      <SyncToast syncStatus={syncStatus} syncMode={syncMode} pushStatus={pushStatus} show={showToast} />
+      <SyncToast syncStatus={syncStatus} pushStatus={pushStatus} show={showToast} />
     </>
   );
 }

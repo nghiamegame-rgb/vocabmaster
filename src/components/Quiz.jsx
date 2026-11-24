@@ -8,6 +8,9 @@ import {
 import { playAudio } from '../utils/audio';
 import { selectStructures } from '../utils/structureStorage';
 import { buildStructurePrompt, validateStructureQuestions } from '../utils/structureQuiz';
+import { parseResponse, quizCountIssue } from '../utils/quizParse';
+import { shuffle } from '../utils/wordSelection';
+import WordInitialTile from './WordInitialTile';
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                            */
@@ -36,16 +39,16 @@ const QUIZ_MODES = [
     desc: 'Câu tiếng Việt có [_____], chọn từ tiếng Anh phù hợp với ngữ cảnh',
   },
   {
-    id:   'toeic',
-    label:'TOEIC Part 5 (English)',
-    desc: 'Authentic English TOEIC Part 5 sentence with a [_____] blank — choose or type the correct word',
+    id:   'vstep',
+    label:'VSTEP B1–B2 (English)',
+    desc: 'English sentence at VSTEP B1–B2 level with a [_____] blank — choose or type the correct word',
   },
 ];
 
 QUIZ_MODES.push({
   id: 'structure',
   label: 'Grammar Structures',
-  desc: 'TOEIC Part 5 dựa trên các Structures đã lưu, có liên kết ID để cập nhật tiến độ',
+  desc: 'Câu VSTEP B1–B2 dựa trên các Structures đã lưu, có liên kết ID để cập nhật tiến độ',
 });
 
 const ANSWER_MODES = [
@@ -98,13 +101,13 @@ function matchesPriority(word, priority) {
 /** Shuffle & filter word pool by selected priority (strict intersection, no fallback to unfiltered words) */
 function buildPool(words, priority, count) {
   const pool = words.filter(w => matchesPriority(w, priority));
-  return [...pool].sort(() => Math.random() - 0.5).slice(0, Math.max(count * 2, 20));
+  return shuffle(pool).slice(0, Math.max(count * 2, 20));
 }
 
 /**
  * Build the structured prompt the user will paste into any AI chat.
- * Generates authentic TOEIC fill-in-the-blank sentences:
- *   - "question" is a realistic Vietnamese business/office scenario with [_____] blank
+ * Generates VSTEP B1–B2 fill-in-the-blank sentences:
+ *   - "question" is a familiar everyday/study/work context with a [_____] blank
  *   - "options" are exactly 4 English words
  *   - "explanation" is in Vietnamese explaining why the answer fits
  */
@@ -114,24 +117,24 @@ function buildPrompt(words, count, difficulty, mode) {
     .map(w => `"${w.english}" (${w.vietnamese})`)
     .join(', ');
 
-  /* ── TOEIC mode: real English Part 5 sentences ─────────────────────── */
-  if (mode === 'toeic') {
+  /* ── VSTEP B1–B2 mode: English fill-in-the-blank sentences ────────── */
+  if (mode === 'vstep') {
     const diffNote = {
-      Easy:   'Use simple office/travel contexts. Distractors should be clearly wrong.',
-      Medium: 'Use realistic business/corporate contexts. Distractors should be plausible but wrong.',
-      Hard:   'Use advanced contexts (finance, logistics, HR, legal). Distractors must be very close in meaning or form — near-synonyms, same word-family, or common confusables.',
+      Easy:   'Use simple, familiar B1 contexts (daily life, family, school, shopping, travel). Distractors should be clearly wrong.',
+      Medium: 'Use realistic B1–B2 contexts (study, work, health, technology, community). Distractors should be plausible but wrong.',
+      Hard:   'Use B2 contexts (environment, education, media, society). Distractors must be very close in meaning or form — near-synonyms, same word-family, or common confusables — but never go above B2.',
     }[difficulty] || '';
 
-    return `You are a TOEIC exam expert. Generate exactly ${count} TOEIC Part 5 fill-in-the-blank questions in English.
+    return `You are an English teacher preparing Vietnamese learners for the VSTEP exam (VSTEP B1–B2). Generate exactly ${count} fill-in-the-blank vocabulary questions in English.
 Difficulty: ${difficulty}. ${diffNote}
 
-=== MANDATORY RULES FOR TOEIC PART 5 FORMAT ===
+=== MANDATORY RULES (VSTEP B1–B2) ===
 
 Field "question":
-  - MUST be a complete, grammatically correct ENGLISH sentence.
+  - MUST be a complete, grammatically correct ENGLISH sentence at B1–B2 level (never above B2).
   - MUST contain exactly one blank represented as [_____].
-  - The sentence MUST reflect a realistic TOEIC business scenario: corporate email, HR announcement, airline/hotel notice, contract clause, product advertisement, financial report, or business news.
-  - Seamlessly weave in common TOEIC collocations and phrases (e.g., "in accordance with", "prior to", "on behalf of", "subject to", "in conjunction with", "as a result of", "take effect", "comply with", "reach an agreement", "place an order", etc.) naturally into the sentence.
+  - The sentence MUST reflect a familiar VSTEP-style context: daily life, study, work, travel, health, environment, technology, culture or community life.
+  - Use common, useful B1–B2 collocations and phrases (e.g., "take part in", "pay attention to", "make a decision", "have an effect on", "deal with", "be responsible for") naturally in the sentence.
   - Vary sentence structure: active voice, passive voice, conditional clauses, relative clauses, participial phrases.
   - NEVER start more than 2 sentences with the same subject.
   - NEVER write a definition question like "Which word means...?".
@@ -159,18 +162,18 @@ Vocabulary to use: ${wordList}
 SAMPLE OUTPUT (note the variety of contexts and structures):
 [
   {
-    "question": "All employees are required to [_____] the new data-privacy policy prior to accessing the updated client database.",
-    "options": ["acknowledge", "accumulate", "allocate", "accelerate"],
+    "question": "Doing regular exercise can [_____] your mood and help you sleep better at night.",
+    "options": ["improve", "increase", "provide", "prevent"],
     "answerIndex": 0,
-    "explanation": "'Acknowledge' (xác nhận) phù hợp với ngữ cảnh nhân viên cần xác nhận đã đọc chính sách. Các lựa chọn còn lại không hợp nghĩa trong bối cảnh này.",
-    "wordEnglish": "acknowledge"
+    "explanation": "'Improve' (cải thiện) đi với 'your mood' và phù hợp ý nghĩa tích cực của câu. Các lựa chọn còn lại không hợp nghĩa hoặc không đi với 'mood'.",
+    "wordEnglish": "improve"
   },
   {
-    "question": "The quarterly financial report must be [_____] to the board of directors no later than Friday afternoon.",
-    "options": ["submitted", "promoted", "allocated", "suspended"],
+    "question": "If more people used public transport, there would be less [_____] in big cities.",
+    "options": ["pollution", "population", "production", "promotion"],
     "answerIndex": 0,
-    "explanation": "'Submitted' (nộp/trình) phù hợp với ngữ cảnh nộp báo cáo đúng hạn. Các lựa chọn còn lại không đi với hành động nộp tài liệu.",
-    "wordEnglish": "submit"
+    "explanation": "'Pollution' (ô nhiễm) phù hợp với ý giảm xe cá nhân trong thành phố. Các từ còn lại có hình thức gần giống nhưng sai nghĩa.",
+    "wordEnglish": "pollution"
   }
 ]
 
@@ -180,20 +183,20 @@ Now generate exactly ${count} questions following the format above, ensuring EVE
   /* ── Vietnamese (VN) mode ───────────────────────────────────────────── */
   const diffNote = {
     Easy:   'Dùng ngữ cảnh đơn giản, từ vựng phổ thông, các lựa chọn sai rõ ràng.',
-    Medium: 'Dùng ngữ cảnh văn phòng/kinh doanh thực tế, các lựa chọn sai có liên quan.',
-    Hard:   'Dùng ngữ cảnh chuyên sâu (tài chính, logistics, HR), các lựa chọn sai rất gần nghĩa, dễ nhầm lẫn.',
+    Medium: 'Dùng ngữ cảnh học tập/công việc/đời sống quen thuộc (B1–B2), các lựa chọn sai có liên quan.',
+    Hard:   'Dùng ngữ cảnh B2 (môi trường, giáo dục, công nghệ, xã hội), các lựa chọn sai rất gần nghĩa, dễ nhầm lẫn; không vượt quá B2.',
   }[difficulty] || '';
 
-  return `Bạn là chuyên gia tạo đề thi TOEIC. Nhiệm vụ: tạo chính xác ${count} câu hỏi điền vào chỗ trống.
+  return `Bạn là giáo viên tiếng Anh luyện thi VSTEP B1–B2. Nhiệm vụ: tạo chính xác ${count} câu hỏi điền vào chỗ trống.
 Độ khó: ${difficulty}. ${diffNote}
 Tạo câu mô tả ngữ cảnh sử dụng từ đó trong tiếng Việt, có chỗ trống [_____].
 
 === QUY TAC TAO CAU — DAY LA PHAN QUAN TRONG NHAT ===
 
   YEU CAU BAT BUOC:
-  1. BOI CANH TOEIC: Cau PHAI mo phong tinh huong thuc te trong TOEIC. Chon ngau nhien
-     cac boi canh nhu: email cong ty, thong bao noi bo HR, phan hoi dich vu khach hang,
-     thong bao san bay/nha ga, dam phan hop dong, quang cao san pham, hoac tin tuc kinh doanh.
+  1. BOI CANH VSTEP B1-B2: Cau PHAI mo phong tinh huong quen thuoc trong de VSTEP. Chon ngau nhien
+     cac boi canh nhu: hoc tap, cong viec, du lich, suc khoe, moi truong, cong nghe,
+     gia dinh, mua sam, hoac doi song cong dong. Do kho khong vuot qua B2.
   2. DA DANG: KHONG dung cau truc cau lap di lap lai. Dung cau bi dong, cau dieu kien,
      hoac menh de phuc hop khi phu hop.
   3. NGON NGU TU NHIEN: Ban dich tieng Viet phai nghe chuyen nghiep va tu nhien.
@@ -231,60 +234,6 @@ VI DU MAU:
 ]
 
 Bay gio hay tao chinh xac ${count} cau hoi, dam bao MOI cau co boi canh va cau truc KHAC NHAU:`;
-}
-
-/**
- * Parse the AI response — handles:
- *  • Raw JSON arrays
- *  • Markdown fenced blocks (```json … ``` or ``` … ```)
- * Normalises answerIndex / correctIndex → correctIndex used by the quiz engine.
- */
-function parseResponse(text, structureMode = false) {
-  if (!text || !text.trim()) throw new Error('The paste area is empty.');
-
-  let src = text.trim();
-
-  // Strip markdown fences if present
-  const fenced = src.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fenced) src = fenced[1].trim();
-
-  // Find the outermost JSON array
-  const arrayMatch = src.match(/\[[\s\S]*\]/);
-  if (!arrayMatch) {
-    throw new Error('No JSON array found. Copy the full AI response and try again.');
-  }
-
-  let raw;
-  try {
-    raw = JSON.parse(arrayMatch[0]);
-  } catch {
-    throw new Error('JSON is malformed — missing comma, bracket, or quote. Fix and retry.');
-  }
-
-  if (!Array.isArray(raw) || raw.length === 0) {
-    throw new Error('Parsed result is not a valid array of questions.');
-  }
-
-  return raw.map((q, i) => {
-    if (!q || typeof q !== 'object') throw new Error(`Invalid question #${i + 1}.`);
-    if (structureMode && typeof q.answerIndex !== 'number' && typeof q.correctIndex !== 'number') throw new Error(`Question #${i + 1} missing answerIndex.`);
-    if (!q.question) throw new Error(`Question #${i + 1} is missing the "question" field.`);
-    if (!Array.isArray(q.options) || q.options.length < 2) {
-      throw new Error(`Question #${i + 1} needs an "options" array with at least 2 items.`);
-    }
-    const correctIndex =
-      typeof q.answerIndex  === 'number' ? q.answerIndex  :
-      typeof q.correctIndex === 'number' ? q.correctIndex : 0;
-    return {
-      question:    q.question,
-      options:     q.options,
-      correctIndex,
-      explanation: q.explanation || '',
-      wordEnglish: q.wordEnglish || q.options[correctIndex] || '',
-      structureId: q.structureId || q.structure_id || '',
-      trapPoint: q.trapPoint || '',
-    };
-  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -339,6 +288,8 @@ function QuizConfig({ words, structures = [], onStart }) {
 
   const textareaRef = useRef(null);
   const promptIdsRef = useRef(null);
+  // Paste text whose short question count the user already acknowledged.
+  const shortConfirmedRef = useRef(null);
   const knownStructureIdsRef = useRef(new Set(structures.map(item => item.id)));
 
   // Strict intersection across hardOnly, wordTypeFilter, and priority
@@ -414,7 +365,7 @@ function QuizConfig({ words, structures = [], onStart }) {
       return;
     }
     try {
-      const questions = parseResponse(jsonPaste, mode === 'structure');
+      const questions = parseResponse(jsonPaste);
       const activeQuestions = questions.slice(0, count);
       if (mode === 'structure') {
         validateStructureQuestions(questions, promptIdsRef.current || selectedStructures.map(item => item.id), structures, count);
@@ -426,6 +377,12 @@ function QuizConfig({ words, structures = [], onStart }) {
             'Bộ đề JSON đã dán chứa từ không thuộc danh sách "Chỉ từ khó ⭐" (hoặc bộ lọc hiện tại). Bộ lọc "Chỉ từ khó ⭐" dùng để tạo AI Prompt mới — hãy bấm "Copy AI Prompt" để tạo đề mới hoặc tắt bộ lọc này.'
           );
         }
+      }
+      const shortIssue = mode === 'structure' ? null : quizCountIssue(activeQuestions.length, count);
+      if (shortIssue && shortConfirmedRef.current !== jsonPaste) {
+        shortConfirmedRef.current = jsonPaste;
+        setParseError(shortIssue);
+        return;
       }
       onStart(activeQuestions, mode === 'structure' ? 'mc' : answerMode, mode);
     } catch (err) {
@@ -634,14 +591,14 @@ function QuizConfig({ words, structures = [], onStart }) {
 
         {/* Info banner */}
         <div className="flex items-start gap-3 bg-sky-500/10 border border-sky-500/20 rounded-xl p-4">
-          <span className="text-xl shrink-0">{mode === 'toeic' ? '🎯' : '✍️'}</span>
+          <span className="text-xl shrink-0">{mode === 'vstep' ? '🎯' : '✍️'}</span>
           <p className="text-sky-300 text-xs leading-relaxed">
-            {mode === 'toeic' ? (
-              <><strong className="text-sky-200">TOEIC Part 5 (English):</strong> The AI generates
-              authentic English sentences with a <strong>[_____] blank</strong>, common TOEIC collocations,
+            {mode === 'vstep' ? (
+              <><strong className="text-sky-200">VSTEP B1–B2 (English):</strong> The AI generates
+              English sentences at VSTEP B1–B2 level with a <strong>[_____] blank</strong>, common collocations,
               and 4 English word choices. Explanation is in Vietnamese.</>
             ) : mode === 'structure' ? (
-              <><strong className="text-sky-200">Cấu trúc ngữ pháp:</strong> AI tạo câu TOEIC Part 5 dựa trên cấu trúc đã chọn, có 4 đáp án và điểm bẫy.</>
+              <><strong className="text-sky-200">Cấu trúc ngữ pháp:</strong> AI tạo câu VSTEP B1–B2 dựa trên cấu trúc đã chọn, có 4 đáp án và điểm bẫy.</>
             ) : (
               <><strong className="text-sky-200">Vietnamese → English:</strong> The AI writes a Vietnamese
               context sentence with a <strong>[_____] blank</strong> and 4 English word choices.</>
@@ -833,12 +790,9 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
     w => w.english.toLowerCase() === (q.wordEnglish || '').toLowerCase()
   );
 
-  // Determine image URL: use stored imageUrl or Unsplash fallback
-  const imageUrl = wordObj?.imageUrl
-    ? wordObj.imageUrl
-    : mode !== 'structure' && q.wordEnglish
-      ? `https://source.unsplash.com/featured/300x200/?${encodeURIComponent(q.wordEnglish)}`
-      : null;
+  // Stored imageUrl, otherwise a local initial-letter tile (no image service).
+  const imageUrl = wordObj?.imageUrl?.trim() || null;
+  const showVisual = mode !== 'structure' && Boolean(q.wordEnglish);
 
   function stopRepeatingPlayback() {
     repeatGenerationRef.current += 1;
@@ -1082,7 +1036,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
 
       {/* Question card — Listening & Typing shows the image immediately */}
       <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6 mb-5 shadow-xl">
-        <div className={`flex gap-5 ${isDictation && imageUrl ? 'flex-col sm:flex-row' : ''}`}>
+        <div className={`flex gap-5 ${isDictation && showVisual ? 'flex-col sm:flex-row' : ''}`}>
 
           {/* Left: question text + explanation */}
           <div className="flex-1 min-w-0">
@@ -1107,14 +1061,18 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
           </div>
 
           {/* Right: vocabulary image — visible immediately in Listening & Typing */}
-          {isDictation && imageUrl && (
+          {isDictation && showVisual && (
             <div className="animate-fade-in sm:w-56 sm:shrink-0 rounded-2xl overflow-hidden border border-slate-700/50 shadow-lg relative">
-              <img
-                src={imageUrl}
-                alt={q.wordEnglish}
-                className="w-full h-48 sm:h-full object-cover"
-                onError={e => { e.target.style.display = 'none'; }}
-              />
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt={q.wordEnglish}
+                  className="w-full h-48 sm:h-full object-cover"
+                  onError={e => { e.target.style.display = 'none'; }}
+                />
+              ) : (
+                <WordInitialTile word={q.wordEnglish} className="w-full h-48 sm:h-full" />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent" />
               <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
                 <Volume2 size={13} className="text-white/80" />

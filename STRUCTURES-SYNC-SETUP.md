@@ -2,17 +2,19 @@
 
 Mã trong repo đã hoàn thiện; chưa triển khai hay ghi thử lên Google Sheets thật.
 
+**Từ 2026-11-24 (nhánh `fix/audit-2026-11`): secret `GRAMMAR_SYNC_SECRET` là BẮT BUỘC** ở cả Vercel (env server) và Apps Script (Script Property), cùng một giá trị. Thiếu ở Vercel → proxy trả 503 `unconfigured`; thiếu ở Apps Script → mọi yêu cầu bị `unauthorized`. Thứ tự triển khai an toàn nằm ở [docs/HANDOFF.md](docs/HANDOFF.md) mục 17 (đặt env Vercel → deploy web → đặt Script Property → cập nhật Apps Script).
+
 ## Cập nhật backend hiện có
 
 1. Mở **spreadsheet Grammar hiện có** (không phải spreadsheet Vocabulary). Tạo bản sao dự phòng bằng **File → Make a copy**. Trên laptop/mobile có dữ liệu Structures, xuất JSON trong **Grammar → Structures → Xuất JSON** trước khi cập nhật ứng dụng.
-2. Mở **Extensions → Apps Script** của spreadsheet Grammar. Thay mã backend Grammar bằng toàn bộ nội dung `grammar-apps-script.js` trong repo này rồi Save. Giữ nguyên Script Property `GRAMMAR_SYNC_SECRET` nếu đang dùng. Không chạy hàm xóa/reset sheet.
+2. Mở **Extensions → Apps Script** của spreadsheet Grammar. Trước khi thay mã, đặt Script Property `GRAMMAR_SYNC_SECRET` (bắt buộc; giữ nguyên giá trị nếu đã có) và bảo đảm Vercel đã có cùng giá trị. Thay mã backend Grammar bằng toàn bộ nội dung `grammar-apps-script.js` trong repo này rồi Save. Không chạy hàm xóa/reset sheet.
 3. Chọn **Deploy → Manage deployments → Edit** deployment Web App hiện có → **Version: New version → Deploy**. Giữ cách thực thi/quyền truy cập đang dùng để proxy truy cập được. Dùng deployment hiện có để giữ URL `/exec`.
-4. Không cần tạo hoặc nhập tay sheet. Khi sync, script tự tạo `Structures` và `StructuresBackup` trong cùng spreadsheet. Mỗi hàng cột A là một cấu trúc JSON, gồm ghi chú, tiến độ và lịch sử trả lời. Script dùng `Meta!E1` làm revision Structures, `Meta!F1` làm dấu ghi đang thực hiện. Không sửa hai ô này bằng tay trong vận hành bình thường. `SavedQuestions`, `Meta!A1:D1`, Grammar review và Vocabulary được giữ riêng.
+4. Không cần tạo hoặc nhập tay sheet. Khi sync, script tự tạo `Structures` và `StructuresBackup` trong cùng spreadsheet. Mỗi hàng cột A là một cấu trúc JSON, gồm ghi chú, tiến độ và lịch sử trả lời. Script dùng `Meta!E1` làm revision Structures, `Meta!F1` làm dấu ghi đang thực hiện. Không sửa hai ô này bằng tay trong vận hành bình thường. `SavedQuestions`, `Meta!A1:D1`, Grammar review và Vocabulary được giữ riêng. Tiến độ ôn câu Grammar nằm ở sheet `Review` (mỗi mục một hàng, tự tạo ở lần ghi đầu) và bản sao trước khi ghi ở `ReviewBackup`; `Meta!B1` chỉ còn dữ liệu cũ hoặc dấu `migrated-to-Review-sheet`.
 
 ## Proxy và ứng dụng
 
-5. Khi triển khai phiên bản ứng dụng này trên Vercel, giữ biến môi trường server `GRAMMAR_APPS_SCRIPT_URL` trỏ đến `/exec` ở bước 3 và `GRAMMAR_SYNC_SECRET` khớp Script Property nếu đã bật secret. Nếu URL giữ nguyên thì không cần thay biến môi trường. Proxy phải dùng bản mới trong `api/grammar-sync.js` để chuyển tiếp `scope=structures`. Secret chỉ nằm trên server, không đưa vào mã frontend.
-6. Trên cả laptop và mobile, dùng cùng URL trong **Grammar Cloud**: `/api/grammar-sync` nếu dùng proxy. Nếu đang dùng Apps Script trực tiếp và không bật secret, giữ URL `/exec` hiện có. Với secret, dùng proxy. Vite chạy riêng không phục vụ `/api/grammar-sync`; dùng môi trường có Vercel function để sync.
+5. Khi triển khai phiên bản ứng dụng này trên Vercel, giữ biến môi trường server `GRAMMAR_APPS_SCRIPT_URL` trỏ đến `/exec` ở bước 3 và **bắt buộc** đặt `GRAMMAR_SYNC_SECRET` khớp Script Property. Sau khi đổi biến môi trường cần redeploy để Vercel áp dụng. Proxy phải dùng bản mới trong `api/grammar-sync.js` để chuyển tiếp `scope=structures`. Secret chỉ nằm trên server, không đưa vào mã frontend.
+6. Trên cả laptop và mobile, dùng cùng URL trong **Grammar Cloud**: `/api/grammar-sync` (proxy). Không còn hỗ trợ nhập URL Apps Script trực tiếp, vì backend bắt buộc secret mà frontend không được chứa secret; thiết bị nào đang dùng `/exec` phải chuyển sang proxy. Vite chạy riêng không phục vụ `/api/grammar-sync`; dùng môi trường có Vercel function để sync.
 7. Mở **Grammar → Structures → Sync Structures** trên từng thiết bị. Chờ thông báo **đã đồng bộ Google Sheets**. Sau đó Smart Quiz có chế độ **Grammar Structures**: chọn cấu trúc → Copy Prompt → dán JSON → trả lời. Không cần có bốn từ Vocabulary để dùng chế độ này.
 
 ## Quy tắc bảo toàn dữ liệu
