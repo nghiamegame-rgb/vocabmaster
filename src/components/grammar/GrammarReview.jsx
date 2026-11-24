@@ -13,6 +13,7 @@ export default function GrammarReview({ savedQuestions, reviewProgress, onRecord
   const [current, setCurrent] = useState(0);
   const [assessments, setAssessments] = useState({});
   const [stars, setStars] = useState({});
+  const [notesShown, setNotesShown] = useState(false);
   const assessedIds = useRef(new Set());
   const [reviewError, setReviewError] = useState('');
   const filtered = savedQuestions.filter(q => (topic === 'All' || q.topic === topic) && (!starredOnly || q.hardMarked));
@@ -25,7 +26,7 @@ export default function GrammarReview({ savedQuestions, reviewProgress, onRecord
   function start() {
     assessedIds.current = new Set(); setReviewError('');
     setQueue([...subsets[reviewMode]].sort(() => Math.random() - 0.5));
-    setCurrent(0); setAssessments({}); setStars({}); setMode('session');
+    setCurrent(0); setAssessments({}); setStars({}); setNotesShown(false); setMode('session');
   }
   function assess(value) {
     const q = queue[current];
@@ -91,7 +92,8 @@ export default function GrammarReview({ savedQuestions, reviewProgress, onRecord
       underlineKey={q.savedId}
       onUnderlineChange={onUnderlineChange}
       underlines={underlines}
-      sentenceNotes={sentenceNotes} onNoteChange={onNoteChange} hideNotesInitially
+      sentenceNotes={sentenceNotes} onNoteChange={onNoteChange}
+      hideNotesInitially={!notesShown} onNotesShownChange={setNotesShown}
     />
     {reviewError && <p role="alert" className="text-rose-300 text-sm animate-fade-in">{reviewError}</p>}
     <div className="flex justify-between gap-3">
