@@ -15,7 +15,7 @@
  * Security & Data Integrity Features:
  *   1. Strict Compare-And-Swap (CAS): writes are rejected unless expectedRevision === serverRevision.
  *   2. Concurrency Control: Google Apps Script LockService serializes all writes.
- *   3. Secret Authentication: Optional GRAMMAR_SYNC_SECRET in Script Properties prevents unauthorized public writes.
+ *   3. Secret Authentication: REQUIRED GRAMMAR_SYNC_SECRET in Script Properties; requests are rejected until it is set.
  *   4. Zero Data Loss: Pre-write backup and in-place updates prevent accidental wipes.
  *   5. Empty Dataset Protection: Accidental empty writes rejected without confirmEmpty: true.
  *   6. Strict Payload Validation: Malformed questions or invalid schemas are rejected before touching sheets.
@@ -35,15 +35,20 @@ var MAX_QUESTIONS     = 5000;
 // ── Authentication Helper ────────────────────────────────────────────────────
 
 /**
- * Validates request authorization if a secret is configured in Script Properties.
+ * Validates request authorization. The secret is REQUIRED: while Script Property
+ * GRAMMAR_SYNC_SECRET is not set, every request is rejected.
  * To set the secret in Apps Script:
  *   File / Project Settings -> Script Properties -> Add "GRAMMAR_SYNC_SECRET" = "<your-random-token>"
+ * Use the same value for the Vercel environment variable GRAMMAR_SYNC_SECRET.
  */
 function checkAuth(e, payload) {
   var requiredSecret = PropertiesService.getScriptProperties().getProperty('GRAMMAR_SYNC_SECRET');
   if (!requiredSecret) {
-    // No secret configured in Script Properties -> allow (setup/development mode)
-    return { ok: true };
+    return {
+      ok: false,
+      error: 'unauthorized',
+      message: 'Unauthorized: Script Property GRAMMAR_SYNC_SECRET is not configured.'
+    };
   }
 
   var providedSecret = (payload && payload.secret) || (e && e.parameter && e.parameter.secret);

@@ -488,7 +488,7 @@ test('proxy forwards existing Apps Script protocol and secret without real netwo
     delete process.env.GRAMMAR_APPS_SCRIPT_URL;
     const missing = response();
     await proxy({ method: 'GET' }, missing);
-    assert.equal(missing.code, 500);
+    assert.equal(missing.code, 503);
   } finally {
     globalThis.fetch = originalFetch;
     for (const [key, value] of [['GRAMMAR_APPS_SCRIPT_URL', originalUrl], ['GRAMMAR_SYNC_SECRET', originalSecret]]) {

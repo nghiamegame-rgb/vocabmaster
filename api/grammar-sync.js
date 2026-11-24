@@ -1,49 +1,35 @@
 /**
  * api/grammar-sync.js — Vercel Serverless Function Proxy for Grammar Cloud Sync.
  *
- * Provides a secure, authenticated server-side proxy between the frontend client
- * and Google Apps Script backend.
+ * Server-side proxy between the frontend (same origin) and the Google Apps
+ * Script backend for Grammar sentences and Structures.
  *
- * Security Benefits:
- * 1. ZERO credentials in frontend client code:
- *    - GRAMMAR_SYNC_SECRET is stored strictly in server-side environment variables.
- *    - GRAMMAR_APPS_SCRIPT_URL is stored strictly in server-side environment variables.
- * 2. Reliable server-confirmed persistence:
- *    - Eliminates opaque "no-cors" POST requests.
- *    - Returns true HTTP status codes (200 OK, 409 Conflict, 400 Bad Request, 503 Busy)
- *      and parses server responses for confirmed persistence.
- * 3. Same-origin requests:
- *    - Frontend calls /api/grammar-sync without cross-origin friction.
+ * - GRAMMAR_APPS_SCRIPT_URL and GRAMMAR_SYNC_SECRET are REQUIRED server-side
+ *   environment variables; without them the proxy answers 503 "unconfigured".
+ *   The same secret must be set as Script Property GRAMMAR_SYNC_SECRET.
+ * - No credentials in frontend code; no CORS headers (same-origin only).
+ * - Every upstream call has a 25 s timeout; internal error details are never
+ *   returned to the browser.
+ * - Returns real HTTP status codes (200, 400, 401, 409, 503) from the parsed
+ *   Apps Script response so the client can verify persistence.
  */
 
-export default async function handler(req, res) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+const UPSTREAM_TIMEOUT_MS = 25000;
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
 
   const scriptUrl = process.env.GRAMMAR_APPS_SCRIPT_URL;
   const syncSecret = process.env.GRAMMAR_SYNC_SECRET;
-
-  if (!scriptUrl) {
-    return res.status(500).json({
-      ok: false,
-      error: 'unconfigured',
-      message: 'Server environment variable GRAMMAR_APPS_SCRIPT_URL is not configured.',
-    });
+  if (!scriptUrl || !syncSecret) {
+    return res.status(503).json({ ok: false, error: 'unconfigured' });
   }
 
   try {
     // ── Handle GET (Fetch saved questions & revision) ────────────────────────
     if (req.method === 'GET') {
       const url = new URL(scriptUrl);
-      if (syncSecret) {
-        url.searchParams.set('secret', syncSecret);
-      }
+      url.searchParams.set('secret', syncSecret);
       url.searchParams.set('_cb', String(Date.now()));
       if (req.query?.scope === 'structures') url.searchParams.set('scope', 'structures');
 
@@ -51,6 +37,7 @@ export default async function handler(req, res) {
         method: 'GET',
         headers: { Accept: 'application/json' },
         redirect: 'follow',
+        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
       });
 
       if (!upstream.ok) {
@@ -83,9 +70,7 @@ export default async function handler(req, res) {
       }
 
       // Inject server-side secret token into payload
-      if (syncSecret) {
-        payload.secret = syncSecret;
-      }
+      payload.secret = syncSecret;
 
       const upstream = await fetch(scriptUrl, {
         method: 'POST',
@@ -94,6 +79,7 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify(payload),
         redirect: 'follow',
+        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
       });
 
       if (!upstream.ok) {
@@ -118,11 +104,8 @@ export default async function handler(req, res) {
     }
 
     return res.status(405).json({ ok: false, error: 'method_not_allowed' });
-  } catch (err) {
-    return res.status(502).json({
-      ok: false,
-      error: 'proxy_failed',
-      message: 'Proxy upstream request failed: ' + err.message,
-    });
+  } catch {
+    // Never echo internal error messages (they may contain URLs or secrets).
+    return res.status(502).json({ ok: false, error: 'proxy_failed' });
   }
 }
