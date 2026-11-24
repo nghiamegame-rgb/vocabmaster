@@ -55,7 +55,7 @@ Commit `296fe1c` chỉ lưu báo cáo phân tích gốc vào nhánh, để thấ
 | `npm run build` (ra thư mục tạm, không đè `dist/`) | exit 0; JS 499,56 kB (gzip 148,38) | exit 0; JS **503,88 kB** (gzip 149,82) | **Xấu đi nhẹ:** +4,3 kB (+0,9%), do thêm kiểm tra và component. Gói vừa vượt mốc 500 kB nên Vite in thêm cảnh báo "Some chunks are larger than 500 kB". App vẫn chạy bình thường; muốn hết cảnh báo thì cần tách gói theo tab (nằm ngoài danh sách sửa). |
 | `npm run lint` | 0 lỗi, 36 cảnh báo | 0 lỗi, **34 cảnh báo** | Tốt hơn |
 | Test Node | 19/19 file (chạy tay) | `npm test`: **30/30 file đạt** (19 cũ + 11 mới) | 4 test cũ được cập nhật có chủ đích (lỗi 10, 11, 14) |
-| 9 test trình duyệt (Playwright + Edge) | chưa chạy | **8/9 đạt** | Xem mục 6 "Kiểm tra trình duyệt"; test hỏng còn lại cũng hỏng trên `main` |
+| 9 test trình duyệt (Playwright + Edge) | chưa chạy | **9/9 đạt** | Xem mục 6 "Kiểm tra trình duyệt"; 2 test được cập nhật cho khớp hành vi hiện tại, không đổi code app |
 
 ## 3. Thứ tự triển khai (bạn làm bằng tay)
 
@@ -95,7 +95,7 @@ Vocabulary không cần đổi Apps Script, proxy hay biến môi trường cho 
 
 - Đã cập nhật tài liệu `AGENTS.md`, `STRUCTURES-SYNC-SETUP.md`, `docs/PROJECT_CONTEXT.md` và `docs/HANDOFF.md` (mục 17, có thứ tự triển khai) theo code mới, ở commit `12fdf71`. `GRAMMAR-VSTEP.md` chưa sửa: file này vốn đã bị đảo đoạn và không nằm trong yêu cầu.
 - Câu đã xóa và backup thường lệ vẫn được giữ dạng tombstone/có giới hạn, nên kho cloud tăng chậm theo thời gian (giống Structures).
-- Test `vocab-quota-browser` vẫn hỏng (lỗi có sẵn trên `main`, xem mục 6). Chưa sửa vì không do nhánh này gây ra.
+- Test `vocab-quota-browser` (hỏng sẵn trên `main`) đã được cập nhật theo yêu cầu ở commit `722263e`, xem mục 6.
 
 ## 6. Kiểm tra trình duyệt (2026-11-24)
 
@@ -114,7 +114,7 @@ Vocabulary không cần đổi Apps Script, proxy hay biến môi trường cho 
 | `underline-rendering` | Đạt | |
 | `vocab-sync-browser` | Đạt | |
 | `vocab-star-browser` | Đạt **sau khi cập nhật test** (commit `0592875`) | Lần chạy đầu hỏng do thay đổi của lỗi 4 (xem dưới). Không đổi code app. |
-| `vocab-quota-browser` | **Hỏng, lỗi có sẵn trên `main`** | Không do nhánh này (xem dưới) |
+| `vocab-quota-browser` | Đạt **sau khi cập nhật test** (commit `722263e`) | Hỏng sẵn trên `main`, không do nhánh này (xem dưới). Không đổi code app. |
 
 **`vocab-star-browser` (do code mới, đã xử lý):**
 - Test dán **1 câu** trong khi Smart Quiz mặc định yêu cầu 10 câu.
@@ -130,7 +130,8 @@ Vocabulary không cần đổi Apps Script, proxy hay biến môi trường cho 
   - sau khi tải lại: 4 backup, khóa cũ đã chuyển vào IndexedDB và bị xóa khỏi LocalStorage.
 - Đây là tính năng "chuyển backup LocalStorage cũ sang IndexedDB" do commit `2ba0be3` trên `main` thêm vào, sau khi test này được viết. Test vẫn kỳ vọng khóa cũ nằm nguyên (dòng 108) và số backup không đổi.
 - Tôi chạy thêm một bản sao tạm của test, chỉ chỉnh 2 kỳ vọng lỗi thời này (cộng thêm bản backup được chuyển; khóa cũ có trong file xuất thay vì trong LocalStorage). **Toàn bộ phần còn lại đều đạt**: hết dung lượng, giữ dữ liệu/sao, thử lại, xuất bản sao, chống cache hỏng, không chạm kho khác.
-- Đề xuất: cập nhật test này cho khớp tính năng migrate của `main`. Tôi chưa làm vì nó nằm ngoài phạm vi nhánh; bạn muốn thì tôi làm thành một commit riêng.
+- Đã cập nhật theo yêu cầu người dùng (commit `722263e`): sau khi tải lại, chờ khóa cũ rời LocalStorage, kỳ vọng số backup tăng đúng 1 và giữ nguyên khi đồng bộ lại; bản cũ có trong IndexedDB và file xuất; các khóa khác vẫn nguyên. Test đạt.
+- Lần chạy cuối (sau commit `722263e`): `npm test` 30/30, lint 34 cảnh báo/0 lỗi, build đạt, test trình duyệt **9/9**.
 
 **Môi trường:** không có lỗi do môi trường. Edge và Playwright đều chạy được.
 
