@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment / Vercel (secrets must never be committed)
+.env
+.env.*
+.vercel/
