@@ -31,9 +31,9 @@ function PushIndicator({ pushStatus }) {
   if (pushStatus === 'idle') return null;
 
   const MAP = {
-    pushing:   { label: 'Saving…',   cls: 'text-sky-400    bg-sky-500/10    border-sky-500/20',     Icon: CloudUpload, animate: 'animate-pulse' },
-    ok:        { label: 'Saved ✓',   cls: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',Icon: CloudUpload, animate: '' },
-    error:     { label: 'Save failed!',cls:'text-rose-400  bg-rose-500/10   border-rose-500/20',    Icon: CloudOff,    animate: '' },
+    pushing:   { label: 'Saving…',   cls: 'text-sky-300     bg-sky-500/15     border-sky-400/30',     Icon: CloudUpload, animate: 'vm-pulse-soft' },
+    ok:        { label: 'Saved ✓',   cls: 'text-emerald-300 bg-emerald-500/15 border-emerald-400/30', Icon: CloudUpload, animate: '' },
+    error:     { label: 'Save failed!',cls:'text-rose-300   bg-rose-500/15    border-rose-400/30',    Icon: CloudOff,    animate: '' },
   };
 
   const config = MAP[pushStatus];
@@ -44,8 +44,8 @@ function PushIndicator({ pushStatus }) {
   return (
     <div
       className={`
-        flex items-center gap-1.5 px-1.5 sm:px-2.5 py-1 rounded-lg text-xs font-semibold
-        border transition-all duration-300 shrink-0
+        vm-scale-in flex items-center gap-1.5 px-1.5 sm:px-2.5 py-1 rounded-xl text-xs font-semibold
+        border transition-colors duration-200 shrink-0
         ${cls}
       `}
       title={
@@ -69,10 +69,10 @@ function SyncToast({ syncStatus, pushStatus, show }) {
   const pushErrorActive = pushStatus === 'error';
 
   const messages = {
-    syncing:    { text: '☁️ Fetching fresh data from Google Sheets…', cls: 'bg-indigo-600/90 text-white' },
-    ok:         { text: '✅ Vocabulary synced successfully!',          cls: 'bg-emerald-600/90 text-white' },
-    error:      { text: '❌ Vocabulary gặp lỗi — xem chi tiết bên dưới.', cls: 'bg-rose-600/90 text-white' },
-    push_error: { text: '⚠️ Vocabulary chưa lưu/đồng bộ xong — xem chi tiết bên dưới.', cls: 'bg-rose-600/90 text-white' },
+    syncing:    { text: '☁️ Fetching fresh data from Google Sheets…', cls: 'bg-indigo-600/90 border-indigo-400/40 text-white' },
+    ok:         { text: '✅ Vocabulary synced successfully!',          cls: 'bg-emerald-600/90 border-emerald-400/40 text-white' },
+    error:      { text: '❌ Vocabulary gặp lỗi — xem chi tiết bên dưới.', cls: 'bg-rose-600/90 border-rose-400/40 text-white' },
+    push_error: { text: '⚠️ Vocabulary chưa lưu/đồng bộ xong — xem chi tiết bên dưới.', cls: 'bg-rose-600/90 border-rose-400/40 text-white' },
   };
 
   // Derive the display key
@@ -91,9 +91,9 @@ function SyncToast({ syncStatus, pushStatus, show }) {
   return (
     <div
       className={`
-        fixed top-[68px] left-1/2 -translate-x-1/2 z-50
-        px-5 py-2.5 rounded-xl shadow-2xl text-sm font-semibold
-        animate-fade-in max-w-[calc(100vw-2rem)] whitespace-normal sm:whitespace-nowrap
+        fixed top-[72px] left-1/2 -translate-x-1/2 z-50
+        px-5 py-2.5 rounded-2xl border backdrop-blur-md shadow-[0_18px_42px_-10px_rgba(2,6,23,0.88)] text-sm font-semibold
+        vm-toast-enter max-w-[calc(100vw-2rem)] whitespace-normal sm:whitespace-nowrap
         ${msg.cls}
       `}
       role="status"
