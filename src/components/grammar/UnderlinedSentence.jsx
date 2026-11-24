@@ -10,7 +10,7 @@ const noteClass = 'rounded px-0.5 text-center text-[12px] leading-4 text-slate-3
 
 /** English text alone lives in containerRef; note labels/editor are siblings. */
 export default function UnderlinedSentence({ sentence, segments, onUnderlineChange, className = '', readOnly = false,
-  notes = EMPTY, onNoteChange, hideNotesInitially = false, sentenceKey }) {
+  notes = EMPTY, onNoteChange, hideNotesInitially = false, onNotesShownChange, sentenceKey }) {
   const containerRef = useRef(null), hostRef = useRef(null), measureRef = useRef(null);
   const labelsRef = useRef(new Map()), pendingRange = useRef(null);
   const [toolbar, setToolbar] = useState(null);
@@ -90,6 +90,7 @@ export default function UnderlinedSentence({ sentence, segments, onUnderlineChan
     if (!onNoteChange || !range) return;
     const existing = notes.find(note => note.start === range.start && note.end === range.end);
     setNotesShown(true);
+    onNotesShownChange?.(true);
     setEditor({ ...range, id: existing?.id || crypto.randomUUID(), text: existing?.text || '', error: '' });
     closeToolbar(); window.getSelection()?.removeAllRanges();
   }
@@ -100,7 +101,11 @@ export default function UnderlinedSentence({ sentence, segments, onUnderlineChan
   const chars = toCodepoints(sentence);
   return <div ref={hostRef} className="relative min-w-0" data-sentence-area="">
     {notes.length > 0 && <div data-sentence-controls="" className="mb-1 flex flex-wrap items-center justify-end gap-1">
-      <button type="button" aria-expanded={notesShown} onClick={() => setNotesShown(value => !value)}
+      <button type="button" aria-expanded={notesShown} onClick={() => {
+        const next = !notesShown;
+        setNotesShown(next);
+        onNotesShownChange?.(next);
+      }}
         className="max-w-full rounded px-1 text-xs text-indigo-300 hover:bg-slate-800/70 hover:text-indigo-200 focus-visible:outline focus-visible:outline-1 focus-visible:outline-indigo-400">
         {notesShown ? 'Ẩn ghi chú' : 'Hiện ghi chú'} ({notes.length})
       </button>

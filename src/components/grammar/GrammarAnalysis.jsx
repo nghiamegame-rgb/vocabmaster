@@ -46,7 +46,7 @@ export function GrammarAnalysis({ question: q, onQuickAdd, analysisTopic }) {
 export default function GrammarSentenceCard({
   question, onReveal, onAssess, assessed, onQuickAdd, onNext, nextLabel = 'Câu tiếp', analysisTopic,
   underlineKey, onUnderlineChange, underlines = {},
-  sentenceNotes, onNoteChange, hideNotesInitially = false,
+  sentenceNotes, onNoteChange, hideNotesInitially = false, onNotesShownChange,
 }) {
   const [shown, setShown] = useState(false);
 
@@ -73,6 +73,7 @@ export default function GrammarSentenceCard({
       sentenceKey={underlineKey} notes={notesForSentence(sentenceNotes, underlineKey, sentence)}
       onNoteChange={onNoteChange ? draft => onNoteChange(underlineKey, sentence, draft) : undefined}
       hideNotesInitially={hideNotesInitially}
+      onNotesShownChange={onNotesShownChange}
     />
     {(onAssess || onNext) && <div className="flex flex-wrap gap-2">
       {onAssess && [true, false].map(understood => <button key={String(understood)} type="button" disabled={assessed !== undefined}
