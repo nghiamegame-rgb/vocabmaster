@@ -41,13 +41,32 @@ export function useGrammarStore() {
   // Only an explicit removal after hydration can authorize an empty write.
   const emptyDeletionRef = useRef(false);
 
+  const [storageError, setStorageError] = useState('');
+
+  // Publish refs/state only after both LocalStorage writes succeed. If the
+  // second write fails, restore the first so disk, refs and UI stay identical.
   const persistData = useCallback((questions, review) => {
+    const previousQuestions = savedQuestionsRef.current;
+    try {
+      saveSavedQuestions(questions);
+      try { saveReviewProgress(review); }
+      catch (error) {
+        try { saveSavedQuestions(previousQuestions); } catch { /* keep the first error */ }
+        throw error;
+      }
+    } catch (error) {
+      const quota = error?.name === 'QuotaExceededError' || /quota/i.test(error?.message || '');
+      setStorageError(quota
+        ? 'Không đủ dung lượng lưu Grammar trên trình duyệt; thay đổi vừa rồi chưa được lưu. Dữ liệu cũ vẫn giữ nguyên.'
+        : 'Không lưu được Grammar trên thiết bị; thay đổi vừa rồi chưa được lưu. Dữ liệu cũ vẫn giữ nguyên.');
+      return false;
+    }
     savedQuestionsRef.current = questions;
     reviewProgressRef.current = review;
-    saveSavedQuestions(questions);
-    saveReviewProgress(review);
     setSavedQuestions(questions);
     setReviewProgress(review);
+    setStorageError('');
+    return true;
   }, []);
 
   const markPending = useCallback(value => {
@@ -56,7 +75,11 @@ export function useGrammarStore() {
     setHasPending(value);
   }, []);
 
-  useEffect(() => { saveGrammarStats(grammarStats); }, [grammarStats]);
+  useEffect(() => {
+    // A full or blocked storage must not crash the app from inside an effect.
+    try { saveGrammarStats(grammarStats); }
+    catch (error) { console.error('Grammar stats storage', error?.name || 'Error'); }
+  }, [grammarStats]);
 
   const queuePush = useCallback(() => {
     clearTimeout(pushTimerRef.current);
@@ -74,7 +97,7 @@ export function useGrammarStore() {
     };
     for (const edit of editsDuringSyncRef.current) data = edit(data);
     editsDuringSyncRef.current = [];
-    persistData(data.questions, data.review);
+    return persistData(data.questions, data.review);
   }, [persistData]);
 
   const executePush = useCallback(async () => {
@@ -118,7 +141,8 @@ export function useGrammarStore() {
         const cloud = await fetchGrammarFromCloud(endpoint);
         if (!active()) return;
         if (!cloud) break;
-        mergeCloud(cloud);
+        // Never adopt the cloud revision without its data being stored locally.
+        if (!mergeCloud(cloud)) break;
         saveGrammarRevision(cloud.serverRevision);
         readyRef.current = true;
         if (savedQuestionsRef.current.length > 0) emptyDeletionRef.current = false;
@@ -155,11 +179,12 @@ export function useGrammarStore() {
       const preserveLocal = savedQuestionsRef.current.length > 0
         || Object.keys(reviewProgressRef.current).length > 0;
       if (pendingRef.current || preserveLocal) {
-        mergeCloud(cloud);
+        if (!mergeCloud(cloud)) { setSyncStatus('error'); return; }
         // An already-empty cloud needs no empty POST from an empty cache.
         markPending(savedQuestionsRef.current.length > 0 || Object.keys(reviewProgressRef.current).length > 0);
-      } else {
-        persistData(cloud.savedQuestions, cloud.reviewProgress);
+      } else if (!persistData(cloud.savedQuestions, cloud.reviewProgress)) {
+        setSyncStatus('error');
+        return;
       }
       saveGrammarRevision(cloud.serverRevision);
       readyRef.current = true;
@@ -203,13 +228,15 @@ export function useGrammarStore() {
 
   function commitEdit(edit) {
     const data = edit({ questions: savedQuestionsRef.current, review: reviewProgressRef.current });
+    // Persist synchronously so switching tabs cannot leave pending without data.
+    // A failed write leaves the previous state untouched and is not replayed.
+    if (!persistData(data.questions, data.review)) return false;
     changeVersionRef.current++;
     if (isSyncingRef.current) editsDuringSyncRef.current.push(edit);
-    // Persist synchronously so switching tabs cannot leave pending without data.
-    persistData(data.questions, data.review);
     markPending(true);
     if (data.questions.length > 0) emptyDeletionRef.current = false;
     queuePush();
+    return true;
   }
 
   function saveQuestion(question) {
@@ -221,7 +248,7 @@ export function useGrammarStore() {
       savedId: `gq_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       savedAt: Date.now(), hardMarked: false, userNotes: '',
     };
-    commitEdit(data => ({ ...data, questions: [newQ, ...data.questions.filter(q => q.savedId !== newQ.savedId)] }));
+    if (!commitEdit(data => ({ ...data, questions: [newQ, ...data.questions.filter(q => q.savedId !== newQ.savedId)] }))) return 'error';
     migrateUnderlineKey(question.sentence, newQ.savedId);
     setUnderlines(getAllUnderlines());
     const notes = readSentenceNotes();
@@ -233,12 +260,12 @@ export function useGrammarStore() {
   function unsaveQuestion(savedId) {
     const explicitEmpty = readyRef.current && savedQuestionsRef.current.length === 1
       && savedQuestionsRef.current[0].savedId === savedId;
-    commitEdit(data => {
+    const saved = commitEdit(data => {
       const review = { ...data.review };
       delete review[savedId];
       return { questions: data.questions.filter(q => q.savedId !== savedId), review };
     });
-    if (explicitEmpty) emptyDeletionRef.current = true;
+    if (saved && explicitEmpty) emptyDeletionRef.current = true;
   }
 
   function isQuestionSaved(sentence) {
@@ -402,6 +429,7 @@ export function useGrammarStore() {
   return {
     // State
     dataLoadError: initialRead.error,
+    storageError,
     savedQuestions,
     reviewProgress,
     grammarStats,

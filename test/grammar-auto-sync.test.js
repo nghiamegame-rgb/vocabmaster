@@ -496,3 +496,49 @@ test('proxy forwards existing Apps Script protocol and secret without real netwo
     }
   }
 });
+
+test('failed local save keeps the previous state, reports an error and does not mark pending', async () => {
+  let failing = '';
+  const h = harness({ fetchCloud: () => cloud([question()], 3), failWrite: key => key === failing });
+  await h.settle();
+  const savedBefore = h.storage.get('vocabmaster_grammar_saved');
+  const reviewBefore = h.storage.get('vocabmaster_grammar_review');
+  failing = 'vocabmaster_grammar_saved';
+  assert.doesNotThrow(() => h.state.toggleHardMark('q1'));
+  assert.equal(h.state.savedQuestions[0].hardMarked, false);
+  assert.ok(h.state.storageError.length > 0);
+  assert.equal(h.storage.get('vocabmaster_grammar_saved'), savedBefore);
+  assert.equal(h.state.hasPending, false);
+  // The second write failing rolls back the first one.
+  failing = 'vocabmaster_grammar_review';
+  assert.doesNotThrow(() => h.state.toggleHardMark('q1'));
+  assert.equal(h.storage.get('vocabmaster_grammar_saved'), savedBefore);
+  assert.equal(h.storage.get('vocabmaster_grammar_review'), reviewBefore);
+  assert.equal(h.state.savedQuestions[0].hardMarked, false);
+  await h.tick();
+  assert.equal(h.posts.length, 0);
+  failing = '';
+  h.state.toggleHardMark('q1');
+  assert.equal(h.state.savedQuestions[0].hardMarked, true);
+  assert.equal(h.state.storageError, '');
+  assert.equal(JSON.parse(h.storage.get('vocabmaster_grammar_saved'))[0].hardMarked, true);
+});
+
+test('a failed cloud adoption does not advance the local revision', async () => {
+  const h = harness({ fetchCloud: () => cloud([question()], 7), failWrite: key => key === 'vocabmaster_grammar_saved' });
+  await h.settle();
+  assert.equal(h.storage.get('vocabmaster_grammar_revision'), '0');
+  assert.equal(h.state.syncStatus, 'error');
+  assert.equal(h.state.savedQuestions.length, 0);
+  assert.ok(h.state.storageError.length > 0);
+});
+
+test('stats save failure inside the effect does not crash the store', async () => {
+  const h = harness({ failWrite: key => key === 'vocabmaster_grammar_stats' });
+  await h.settle();
+  assert.doesNotThrow(() => {
+    h.state.recordGrammarSession({ mode: 'sentence-analysis', activity: 'practice', topic: 'Tenses', total: 2 });
+    return h.state.grammarStats;
+  });
+  assert.equal(h.state.grammarStats.sentenceActivity.analyzed, 2);
+});

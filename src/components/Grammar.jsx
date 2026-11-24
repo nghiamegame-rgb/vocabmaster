@@ -34,6 +34,7 @@ export default function Grammar({ addWord, words = [], vocabSyncStatus = 'idle',
   const {
     savedQuestions,
     dataLoadError,
+    storageError,
     reviewProgress,
     grammarStats,
     underlines,
@@ -142,6 +143,8 @@ export default function Grammar({ addWord, words = [], vocabSyncStatus = 'idle',
           </button>
         </div>
       </div>
+
+      {storageError && <p role="alert" className="text-amber-300 text-sm">{storageError}</p>}
 
       {/* Cloud settings panel */}
       {showCloud && (
