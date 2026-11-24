@@ -77,7 +77,7 @@ export default function GrammarSentenceCard({
     {(onAssess || onNext) && <div className="flex flex-wrap gap-2">
       {onAssess && [true, false].map(understood => <button key={String(understood)} type="button" disabled={assessed !== undefined}
         onClick={() => onAssess(understood)}
-        className={`vm-btn px-4 py-2 rounded-xl text-sm font-semibold ${assessed !== undefined ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : understood ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : 'bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-500/20'}`}>
+        className={`px-4 py-2 rounded-xl text-sm font-semibold ${assessed !== undefined ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : understood ? 'vm-btn bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : 'vm-btn bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-500/20'}`}>
         {understood ? 'Đã hiểu' : 'Cần ôn lại'}{assessed === understood ? ' ✓' : ''}
       </button>)}
       {onNext && <button type="button" onClick={onNext} className="vm-btn vm-btn-violet px-4 py-2 rounded-xl text-sm font-semibold">{nextLabel}</button>}

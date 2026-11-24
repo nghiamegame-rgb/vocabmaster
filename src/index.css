@@ -61,11 +61,11 @@
   --shadow-violet: 0 8px 20px -6px rgba(139, 92, 246, 0.42);
   --shadow-floating: 0 18px 42px -10px rgba(2, 6, 23, 0.88);
 
-  /* Radii & Motion */
-  --radius-sm: 0.625rem;
-  --radius-md: 0.875rem;
-  --radius-lg: 1.125rem;
-  --radius-xl: 1.5rem;
+  /* Radii & Motion (prefixed so Tailwind v4's built-in --radius-* scale stays intact) */
+  --vm-radius-sm: 0.625rem;
+  --vm-radius-md: 0.75rem;
+  --vm-radius-lg: 1rem;
+  --vm-radius-xl: 1.5rem;
   --ease-out-smooth: cubic-bezier(0.22, 1, 0.36, 1);
   --duration-fast: 160ms;
   --duration-normal: 220ms;
@@ -124,7 +124,7 @@ body {
   background: var(--bg-input);
   border: 1px solid var(--border-default);
   color: var(--text-primary);
-  border-radius: var(--radius-sm);
+  border-radius: var(--vm-radius-md);
   padding: 0.65rem 0.875rem;
   font-size: 0.875rem;
   transition: border-color var(--duration-fast) var(--ease-out-smooth),
