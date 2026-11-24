@@ -7,10 +7,15 @@
  * Sheet layout:
  *   Sheet "SavedQuestions" → each row is 1 saved question (JSON blob in col A)
  *   Sheet "Meta"           → row 1 col A: revision counter (integer)
- *                            row 1 col B: reviewProgress (JSON blob)
+ *                            row 1 col B: LEGACY reviewProgress JSON blob; after the first
+ *                                         write it holds the marker REVIEW_MIGRATED_MARKER
  *                            row 1 col C: "revision" label
  *                            row 1 col D: lastUpdated (ISO timestamp)
- *   Sheet "Backup"         → automatic pre-write backup of previous state
+ *   Sheet "Review"         → review progress, one row per entry: col A savedId, col B JSON
+ *                            (created by the first write; a single cell is limited to
+ *                            50,000 characters, so progress no longer lives in Meta!B1)
+ *   Sheet "Backup"         → automatic pre-write backup of previous questions/revision
+ *   Sheet "ReviewBackup"   → pre-write backup of the previous review progress (rows)
  *
  * Security & Data Integrity Features:
  *   1. Strict Compare-And-Swap (CAS): writes are rejected unless expectedRevision === serverRevision.
@@ -29,6 +34,10 @@ var SHEET_META        = 'Meta';
 var SHEET_STRUCTURES  = 'Structures';
 var SHEET_STRUCTURES_BACKUP = 'StructuresBackup';
 var SHEET_BACKUP      = 'Backup';
+var SHEET_REVIEW      = 'Review';
+var SHEET_REVIEW_BACKUP = 'ReviewBackup';
+var REVIEW_MIGRATED_MARKER = 'migrated-to-Review-sheet';
+var MAX_REVIEW_ROW_CHARS = 45000;
 var LOCK_TIMEOUT_MS   = 10000; // 10 seconds timeout for script lock
 var MAX_QUESTIONS     = 5000;
 
@@ -143,15 +152,79 @@ function validatePayload(payload) {
   if (payload.reviewProgress && (typeof payload.reviewProgress !== 'object' || Array.isArray(payload.reviewProgress))) {
     return 'reviewProgress must be an object.';
   }
+  // Each entry becomes one row in sheet "Review"; reject values that could not be read back.
+  var reviewIds = Object.keys(payload.reviewProgress || {});
+  for (var r = 0; r < reviewIds.length; r++) {
+    var entry = payload.reviewProgress[reviewIds[r]];
+    if (!reviewIds[r].trim() || !entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      return 'reviewProgress entry ' + reviewIds[r] + ' must be an object.';
+    }
+    if (JSON.stringify(entry).length > MAX_REVIEW_ROW_CHARS) return 'reviewProgress entry ' + reviewIds[r] + ' is too large.';
+  }
   return null;
+}
+
+// ── Review progress (one row per entry) ──────────────────────────────────────
+
+/** Read sheet rows into a map. Corrupt rows abort instead of disappearing on the next save. */
+function reviewRowsToMap(sheet) {
+  var map = {};
+  var lastRow = sheet.getLastRow();
+  if (!lastRow) return map;
+  sheet.getRange(1, 1, lastRow, 2).getValues().forEach(function(row, i) {
+    if (row[0] === '' && row[1] === '') return;
+    var record;
+    try { record = JSON.parse(row[1]); } catch { record = null; }
+    if (!String(row[0]).trim() || !record || typeof record !== 'object' || Array.isArray(record)) {
+      throw new Error('Review row ' + (i + 1) + ' is invalid; restore it from ReviewBackup before syncing.');
+    }
+    map[String(row[0])] = record;
+  });
+  return map;
+}
+
+/** Legacy Meta!B1 JSON map; malformed or migrated values read as empty, as before. */
+function readLegacyReview(metaSheet) {
+  try {
+    var metaRaw = metaSheet.getRange(1, 2).getValue();
+    if (!metaRaw || metaRaw === REVIEW_MIGRATED_MARKER) return {};
+    var parsed = JSON.parse(metaRaw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Review progress: sheet "Review" when it exists; otherwise (data written by an older
+ * version of this script) the legacy Meta!B1 JSON. If the Review sheet is still empty
+ * and Meta!B1 was never marked as migrated, the migration did not finish: use Meta!B1.
+ */
+function readReviewProgress(ss, metaSheet) {
+  var sheet = ss.getSheetByName(SHEET_REVIEW);
+  if (!sheet) return readLegacyReview(metaSheet);
+  var rows = reviewRowsToMap(sheet);
+  if (!Object.keys(rows).length && metaSheet.getRange(1, 2).getValue() !== REVIEW_MIGRATED_MARKER) {
+    return readLegacyReview(metaSheet);
+  }
+  return rows;
+}
+
+/** Replace the rows of a review sheet with the given map, clearing leftover rows. */
+function writeReviewRows(sheet, progress) {
+  var rows = Object.keys(progress).map(function(id) { return [id, JSON.stringify(progress[id])]; });
+  var lastRow = sheet.getLastRow();
+  if (rows.length) sheet.getRange(1, 1, rows.length, 2).setValues(rows);
+  if (lastRow > rows.length) sheet.getRange(rows.length + 1, 1, lastRow - rows.length, 2).clearContent();
 }
 
 // ── Backup Helper ────────────────────────────────────────────────────────────
 
 /**
- * Creates a pre-write snapshot of questions and review progress in the Backup sheet.
+ * Creates a pre-write snapshot of questions (Backup sheet) and of the previous
+ * review progress (ReviewBackup sheet, one row per entry).
  */
-function createBackup(ss, questionsSheet, metaSheet, currentRevision) {
+function createBackup(ss, questionsSheet, metaSheet, currentRevision, previousReview) {
   ensureSheet(ss, SHEET_BACKUP);
   var backupSheet = ss.getSheetByName(SHEET_BACKUP);
   backupSheet.clearContents();
@@ -162,11 +235,15 @@ function createBackup(ss, questionsSheet, metaSheet, currentRevision) {
     backupSheet.getRange(2, 1, oldValues.length, 1).setValues(oldValues);
   }
 
-  var oldMetaRevProgress = metaSheet.getRange(1, 2).getValue();
   backupSheet.getRange(1, 1).setValue(new Date().toISOString());
-  backupSheet.getRange(1, 2).setValue(oldMetaRevProgress || '{}');
+  backupSheet.getRange(1, 2).setValue('review progress: see sheet ' + SHEET_REVIEW_BACKUP);
   backupSheet.getRange(1, 3).setValue(currentRevision);
   backupSheet.getRange(1, 4).setValue(lastRow >= 1 ? lastRow : 0);
+
+  ensureSheet(ss, SHEET_REVIEW_BACKUP);
+  var reviewBackup = ss.getSheetByName(SHEET_REVIEW_BACKUP);
+  reviewBackup.clearContents();
+  writeReviewRows(reviewBackup, previousReview || {});
 }
 
 // ── GET Endpoint ─────────────────────────────────────────────────────────────
@@ -200,12 +277,8 @@ function doGet(e) {
         .filter(function(q) { return q !== null; });
     }
 
-    // Read review progress
-    var reviewProgress = {};
-    try {
-      var metaRaw = metaSheet.getRange(1, 2).getValue();
-      if (metaRaw) reviewProgress = JSON.parse(metaRaw);
-    } catch(err) {}
+    // Read review progress (sheet "Review", or legacy Meta!B1)
+    var reviewProgress = readReviewProgress(ss, metaSheet);
 
     // Read revision counter
     var revision = 0;
@@ -302,8 +375,10 @@ function doPost(e) {
       });
     }
 
-    // 7. Create pre-write snapshot in Backup sheet
-    createBackup(ss, questionsSheet, metaSheet, serverRevision);
+    // 7. Create pre-write snapshot in Backup/ReviewBackup sheets
+    // (reading the current progress first: corrupt Review rows abort before any write)
+    var previousReview = readReviewProgress(ss, metaSheet);
+    createBackup(ss, questionsSheet, metaSheet, serverRevision, previousReview);
 
     // 8. In-place question writing with tail clearing (never leaves sheet empty midway)
     if (payload.savedQuestions.length > 0) {
@@ -323,9 +398,13 @@ function doPost(e) {
       ).clearContent();
     }
 
-    // 9. Write review progress
+    // 9. Write review progress: one row per entry in sheet "Review".
+    // The marker in Meta!B1 is written last, so an interrupted first migration
+    // still falls back to the legacy JSON on the next read.
     var reviewProgress = payload.reviewProgress || {};
-    metaSheet.getRange(1, 2).setValue(JSON.stringify(reviewProgress));
+    ensureSheet(ss, SHEET_REVIEW);
+    writeReviewRows(ss.getSheetByName(SHEET_REVIEW), reviewProgress);
+    metaSheet.getRange(1, 2).setValue(REVIEW_MIGRATED_MARKER);
 
     // 10. Atomic revision increment
     var newRevision = serverRevision + 1;

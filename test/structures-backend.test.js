@@ -81,7 +81,7 @@ test('actual backend: CAS, backup, stale/empty rejection, independent grammar wr
   assert.equal(b.get().structures[0].notes, 'phone');
   assert.equal(b.post(payload(mergeStructures([item({ deletedAt: 100 })], latest), 2)).ok, true);
   assert.equal(b.sheets.get('Meta').getRange(1, 1).getValue(), 1);
-  assert.equal(b.sheets.get('Meta').getRange(1, 2).getValue(), '{"q1":{"level":4}}');
+  assert.deepEqual(b.sheets.get('Review').getRange(1, 1, 1, 2).getValues(), [['q1', '{"level":4}']]);
   assert.equal(b.sheets.get('SavedQuestions').getRange(1, 1).getValue(), JSON.stringify(q));
   assert.equal(b.post(payload(latest, 3)).error, 'conflict');
 });
