@@ -6,8 +6,8 @@ export function buildStructurePrompt(structures, count, difficulty) {
     ...(item.example ? { example: item.example } : {}),
     ...(item.topic ? { topic: item.topic } : {}),
   })).join(',\n');
-  return `You are a TOEIC Part 5 expert. Generate exactly ${count} multiple-choice questions based ONLY on the saved grammar structures below.
-Difficulty: ${difficulty}. Use realistic workplace, email, HR, travel, contract, and business contexts.
+  return `You are an English teacher preparing Vietnamese learners for the VSTEP exam (B1–B2). Generate exactly ${count} multiple-choice questions based ONLY on the saved grammar structures below.
+Difficulty: ${difficulty}. Keep every sentence at B1–B2 level (never above B2). Use familiar VSTEP-style contexts: study, work, travel, health, environment, technology, community and daily life.
 Each question must contain exactly one blank marked [_____], four English options A-D, one correct answer, a Vietnamese explanation, and a Vietnamese trapPoint explaining the common mistake.
 Every question MUST include the exact source structure ID in "structureId". Do not invent or change IDs. Use each selected structure at least once when possible and do not repeat a structure until other selected structures have been used.
 

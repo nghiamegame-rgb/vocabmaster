@@ -55,7 +55,7 @@ function LegacyGrammarStats({
         </div>
         <div>
           <h2 className="text-xl font-bold text-white">Thống kê Grammar</h2>
-          <p className="text-slate-400 text-sm">Tổng quan kết quả luyện tập ngữ pháp TOEIC</p>
+          <p className="text-slate-400 text-sm">Tổng quan kết quả luyện tập ngữ pháp VSTEP B1–B2</p>
         </div>
       </div>
 

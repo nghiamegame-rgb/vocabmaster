@@ -81,7 +81,7 @@ export default function Dashboard({ words, hasReadableWords = true, stats, setAc
         <p className="text-slate-400">Track your vocabulary learning progress</p>
         <div className="mt-4 flex items-start gap-2 rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-3 py-2.5 text-sm text-indigo-200 sm:items-center">
           <Volume2 size={16} className="mt-0.5 shrink-0 text-indigo-300 sm:mt-0" aria-hidden="true" />
-          <p>🔊 Mẹo học tập: Hãy đọc thành tiếng mỗi từ vựng, sau đó nghe phát âm chuẩn để ghi nhớ tốt hơn và cải thiện TOEIC Listening!</p>
+          <p>🔊 Mẹo học tập: Hãy đọc thành tiếng mỗi từ vựng, sau đó nghe phát âm chuẩn để ghi nhớ tốt hơn và cải thiện kỹ năng Nghe VSTEP!</p>
         </div>
       </div>
 
