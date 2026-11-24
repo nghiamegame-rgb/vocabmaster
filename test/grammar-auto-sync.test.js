@@ -400,13 +400,15 @@ test('empty cloud preserves local questions and progress; fresh empty cache neve
   assert.equal(fresh.posts.length, 0);
 });
 
-test('explicit deletion after hydration can remove the final question', async () => {
+test('explicit deletion after hydration removes the final question (sent as a tombstone)', async () => {
   const h = harness();
   await h.settle();
   h.state.unsaveQuestion('q1');
   await h.tick();
-  assert.equal(h.posts[0].savedQuestions.length, 0);
-  assert.equal(h.posts[0].confirmEmpty, true);
+  // The record travels as a tombstone, so no live question remains and no empty write is needed.
+  assert.equal(h.posts[0].savedQuestions.filter(q => !q.deletedAt).length, 0);
+  assert.ok(h.posts[0].savedQuestions.find(q => q.savedId === 'q1').deletedAt > 0);
+  assert.equal(h.state.savedQuestions.length, 0);
 });
 
 test('push failure keeps pending and a manual retry fetches before uploading', async () => {
@@ -541,4 +543,37 @@ test('stats save failure inside the effect does not crash the store', async () =
     return h.state.grammarStats;
   });
   assert.equal(h.state.grammarStats.sentenceActivity.analyzed, 2);
+});
+
+test('merge keeps tombstones: a deleted sentence is not revived by a stale device; legacy data is unchanged', () => {
+  const live = question('q1', { savedAt: 5 });
+  const dead = question('q1', { savedAt: 5, deletedAt: 100 });
+  assert.equal(merge.mergeSavedQuestions([dead], [live])[0].deletedAt, 100);
+  assert.equal(merge.mergeSavedQuestions([live], [dead])[0].deletedAt, 100);
+  assert.equal(merge.mergeSavedQuestions([question('q1', { deletedAt: 50 })], [question('q1', { deletedAt: 90 })])[0].deletedAt, 90);
+  const legacy = merge.mergeSavedQuestions([question('q1')], [question('q2')]);
+  assert.ok(legacy.every(q => !('deletedAt' in q)), 'records without tombstones keep their shape');
+});
+
+test('deleting a sentence leaves a tombstone that survives a stale cloud copy', async () => {
+  const fetches = [cloud([question('q1'), question('q2')], 3, { q1: { level: 3 } })];
+  const h = harness({ fetchCloud: () => fetches.shift() || cloud([question('q1'), question('q2')], 4, { q1: { level: 3 } }) });
+  await h.settle();
+  h.state.unsaveQuestion('q1');
+  assert.deepEqual(h.state.savedQuestions.map(q => q.savedId), ['q2']);
+  assert.equal(h.state.isQuestionSaved(question('q1').sentence), false);
+  const stored = JSON.parse(h.storage.get('vocabmaster_grammar_saved'));
+  assert.ok(stored.find(q => q.savedId === 'q1').deletedAt > 0, 'tombstone kept locally');
+  await h.tick();
+  const sent = h.posts[0].savedQuestions.find(q => q.savedId === 'q1');
+  assert.ok(sent.deletedAt > 0, 'tombstone sent to the cloud');
+  assert.equal(h.posts[0].reviewProgress.q1, undefined);
+  // Another (stale) device still has q1 alive in the cloud: it must not come back.
+  await h.online();
+  assert.deepEqual(h.state.savedQuestions.map(q => q.savedId), ['q2']);
+  assert.equal(h.state.reviewProgress.q1, undefined);
+  // The same sentence can be saved again as a new record.
+  assert.equal(h.state.saveQuestion({ ...question('q1'), savedId: undefined }), 'saved');
+  assert.equal(h.state.savedQuestions.filter(q => q.sentence === question('q1').sentence).length, 1);
+  assert.notEqual(h.state.savedQuestions.find(q => q.sentence === question('q1').sentence).savedId, 'q1');
 });

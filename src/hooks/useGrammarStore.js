@@ -29,6 +29,9 @@ export function useGrammarStore() {
   const cloudConfigured = Boolean(endpoint);
 
   const savedQuestionsRef = useRef(savedQuestions);
+  // Deleted sentences stay in storage/cloud as tombstones ({ deletedAt }) so
+  // other devices cannot revive them; every reader uses only live records.
+  const liveOf = questions => questions.filter(q => !q.deletedAt);
   const reviewProgressRef = useRef(reviewProgress);
   const pendingRef = useRef(hasPending);
   const changeVersionRef = useRef(0);
@@ -97,6 +100,12 @@ export function useGrammarStore() {
     };
     for (const edit of editsDuringSyncRef.current) data = edit(data);
     editsDuringSyncRef.current = [];
+    // Progress of tombstoned sentences is not kept (as when deleting locally).
+    const dead = data.questions.filter(q => q.deletedAt).map(q => q.savedId);
+    if (dead.some(id => id in data.review)) {
+      data = { ...data, review: { ...data.review } };
+      for (const id of dead) delete data.review[id];
+    }
     return persistData(data.questions, data.review);
   }, [persistData]);
 
@@ -240,7 +249,7 @@ export function useGrammarStore() {
   }
 
   function saveQuestion(question) {
-    if (savedQuestionsRef.current.some(q =>
+    if (liveOf(savedQuestionsRef.current).some(q =>
       q.sentence?.trim().toLowerCase() === question.sentence?.trim().toLowerCase()
     )) return 'duplicate';
     const newQ = {
@@ -260,16 +269,18 @@ export function useGrammarStore() {
   function unsaveQuestion(savedId) {
     const explicitEmpty = readyRef.current && savedQuestionsRef.current.length === 1
       && savedQuestionsRef.current[0].savedId === savedId;
+    const deletedAt = Date.now();
     const saved = commitEdit(data => {
       const review = { ...data.review };
       delete review[savedId];
-      return { questions: data.questions.filter(q => q.savedId !== savedId), review };
+      // Keep a tombstone instead of removing the record.
+      return { questions: data.questions.map(q => q.savedId === savedId ? { ...q, deletedAt: q.deletedAt || deletedAt } : q), review };
     });
     if (saved && explicitEmpty) emptyDeletionRef.current = true;
   }
 
   function isQuestionSaved(sentence) {
-    return savedQuestionsRef.current.some(q => q.sentence?.trim().toLowerCase() === sentence?.trim().toLowerCase());
+    return liveOf(savedQuestionsRef.current).some(q => q.sentence?.trim().toLowerCase() === sentence?.trim().toLowerCase());
   }
 
   function toggleHardMark(savedId) {
@@ -303,7 +314,7 @@ export function useGrammarStore() {
   }
 
   function recordReview(savedId, isCorrect) {
-    const question = savedQuestionsRef.current.find(q => q.savedId === savedId);
+    const question = liveOf(savedQuestionsRef.current).find(q => q.savedId === savedId);
     if (!question || typeof isCorrect !== 'boolean') return { ok: false, message: 'Không thể đánh giá: câu không còn trong kho hoặc lựa chọn không hợp lệ.' };
     const rec = reviewProgressRef.current[savedId] ?? { level: 1, wrongCount: 0, totalReviews: 0 };
     const previousLevel = Math.min(5, Math.max(1, Number(rec.level) || 1));
@@ -416,12 +427,13 @@ export function useGrammarStore() {
 
   // ── Derived Data ──────────────────────────────────────────────────────────
 
-  const dueForReview = savedQuestions.filter(q => {
+  const liveQuestions = liveOf(savedQuestions);
+  const dueForReview = liveQuestions.filter(q => {
     const rec = reviewProgress[q.savedId];
     return isGrammarDueForReview(rec);
   });
 
-  const wrongQuestions = savedQuestions.filter(q => {
+  const wrongQuestions = liveQuestions.filter(q => {
     const rec = reviewProgress[q.savedId];
     return rec && rec.wrongCount > 0;
   });
@@ -430,7 +442,7 @@ export function useGrammarStore() {
     // State
     dataLoadError: initialRead.error,
     storageError,
-    savedQuestions,
+    savedQuestions: liveQuestions,
     reviewProgress,
     grammarStats,
     underlines,

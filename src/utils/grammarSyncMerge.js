@@ -159,6 +159,11 @@ export function mergeSavedQuestions(localQuestions = [], serverQuestions = []) {
         // Earliest saved date
         savedAt: Math.min(Number(sq.savedAt) || Date.now(), Number(lq.savedAt) || Date.now()),
       };
+      // Tombstone wins: once either side deleted the sentence it stays deleted,
+      // so an older device cannot revive it. Records without one keep their shape.
+      const deletedAt = Math.max(Number(sq.deletedAt) || 0, Number(lq.deletedAt) || 0);
+      if (deletedAt) merged.deletedAt = deletedAt;
+      else delete merged.deletedAt;
       map.set(key, merged);
     }
   }
