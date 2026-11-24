@@ -1,5 +1,7 @@
 # Bàn giao workspace VocabMaster
 
+> **Lưu ý 2026-11-25:** tình hình mới nhất (các nhánh đã ghép vào `main` và push, theme, quiz đọc từ + ảnh, giữ ghi chú Ôn tập, việc còn mở) nằm ở [TRANG-THAI-DU-AN.md](TRANG-THAI-DU-AN.md). Dòng "Chưa push/deploy" ngay dưới chỉ đúng cho thời điểm 24/11 chiều.
+
 **Cập nhật 2026-11-24 — nhánh `fix/audit-2026-11`: sửa 17 mục của báo cáo phân tích; xem mục 17. Chưa push/deploy.**
 
 ## 17. Sửa lỗi theo báo cáo phân tích — 2026-11-24
