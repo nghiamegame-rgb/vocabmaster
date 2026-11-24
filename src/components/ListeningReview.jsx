@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Headphones, RotateCcw, Eye, EyeOff, Volume2,
-  ChevronRight, Trophy, AlertCircle, CheckCircle2, XCircle, Clock, Star,
+  ChevronRight, Trophy, AlertCircle, CheckCircle2, XCircle, Clock, Star, Keyboard,
 } from 'lucide-react';
 import { playAudio } from '../utils/audio';
+import { readListeningAutofocus, writeListeningAutofocus, safeLocalStorage } from '../utils/listeningPrefs';
 import { isDueForReview } from '../hooks/useVocabStore';
 import { shuffle, buildListeningRound } from '../utils/wordSelection';
 import WordInitialTile from './WordInitialTile';
@@ -230,6 +231,8 @@ export default function ListeningReview({ words, updateWordLevel }) {
   const [isPlaying,     setIsPlaying]     = useState(false);
   const [listenCount,   setListenCount]   = useState(0);   // how many times Replay was clicked
   const [typingInput,   setTypingInput]   = useState('');  // user's typed answer
+  // Per-device: auto-focus the typing input (opens the phone keyboard) on each new word.
+  const [autoFocusInput, setAutoFocusInput] = useState(() => readListeningAutofocus(safeLocalStorage()));
 
   const audioRef        = useRef(null);
   const inputRef        = useRef(null); // ref for the typing input — keeps focus between rounds
@@ -324,9 +327,9 @@ export default function ListeningReview({ words, updateWordLevel }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [round?.correct?.id]);
 
-  /* ── Re-focus the typing input whenever a fresh round begins ── */
+  /* ── Re-focus the typing input whenever a fresh round begins (only if enabled) ── */
   useEffect(() => {
-    if (!round || answered) return;
+    if (!round || answered || !autoFocusInput) return;
     // Small delay so the DOM has rendered the input before we focus
     const timer = setTimeout(() => inputRef.current?.focus(), 50);
     return () => clearTimeout(timer);
@@ -407,6 +410,15 @@ export default function ListeningReview({ words, updateWordLevel }) {
     return 'disabled';
   }
 
+  /* ── Toggle "auto-open keyboard" (saved on this device only) ── */
+  function toggleAutoFocus() {
+    const next = !autoFocusInput;
+    setAutoFocusInput(next);
+    writeListeningAutofocus(safeLocalStorage(), next);
+    if (next) inputRef.current?.focus();
+    else inputRef.current?.blur(); // close the on-screen keyboard if it is open
+  }
+
   /* ── Toggle global meaning visibility (persists across questions) ── */
   function toggleMeaning() {
     setIsMeaningRevealed(v => !v);
@@ -467,9 +479,27 @@ export default function ListeningReview({ words, updateWordLevel }) {
         </p>
       </div>
 
-      {/* ── Stats bar ── */}
-      <div className="mb-5">
+      {/* ── Stats bar + auto-open keyboard toggle ── */}
+      <div className="mb-5 flex flex-wrap items-center gap-3">
         <StatsBar score={score} total={totalPlayed} />
+        <button
+          id="lr-autofocus-toggle"
+          type="button"
+          onClick={toggleAutoFocus}
+          aria-pressed={autoFocusInput}
+          title={autoFocusInput
+            ? 'Đang bật: mỗi từ mới con trỏ tự vào ô gõ (điện thoại sẽ tự bật bàn phím). Bấm để tắt.'
+            : 'Đang tắt: sang từ mới bàn phím không tự bật; chạm vào ô gõ nếu muốn gõ. Bấm để bật.'}
+          className={`
+            vm-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border max-w-full
+            ${autoFocusInput
+              ? 'bg-indigo-500/20 border-indigo-400/50 text-indigo-200 hover:bg-indigo-500/30'
+              : 'bg-slate-900/75 border-slate-400/20 text-slate-300 hover:text-white hover:border-slate-400/35'}
+          `}
+        >
+          <Keyboard size={14} className="shrink-0" />
+          <span>Tự mở bàn phím: {autoFocusInput ? 'Bật' : 'Tắt'}</span>
+        </button>
       </div>
 
       {/* ── Filter panel ── */}
