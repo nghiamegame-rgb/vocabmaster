@@ -3,6 +3,7 @@ import { getStats, saveStats } from '../utils/storage';
 import { pushToCloud, fetchFromCloud } from '../utils/cloud';
 import { createVocabBackupStore, storageMessage } from '../utils/vocabBackup';
 import { VocabSync, BACKUP_PREFIX, STATE_KEY, PAUSE_KEY } from '../utils/vocabSync';
+import { normalizeWordInput } from '../utils/vocabWord';
 
 const LEVEL_UP_THRESHOLD = { 1: 2, 2: 4, 3: 8, 4: 15 };
 export const REVIEW_INTERVALS = { 1: 1, 2: 3, 3: 7, 4: 14, 5: 30 };
@@ -76,23 +77,14 @@ export function useVocabStore() {
   /** Add a new word (returns false if duplicate) */
   const addWord = useCallback(async (wordObj) => {
     if (!engine || loadError) return false;
+    // Same constraints as the Vocabulary Apps Script, so an import cannot block sync.
+    const normalized = normalizeWordInput(wordObj);
+    if (!normalized) return false;
     const exists = (engine.pendingEdit || engine.state).words.some(
-      w => w.english.toLowerCase() === wordObj.english.toLowerCase()
+      w => w.english.toLowerCase() === normalized.word.english.toLowerCase()
     );
     if (exists) return false;
-    const newWord = {
-      id:            crypto.randomUUID(),
-      english:       wordObj.english.trim(),
-      annotation:    typeof wordObj.annotation === 'string' ? wordObj.annotation.trim() : '',
-      vietnamese:    wordObj.vietnamese.trim(),
-      imageUrl:      wordObj.imageUrl?.trim() || '',
-      wordType:      wordObj.wordType || 'Word',
-      level:         wordObj.level         ?? 1,
-      currentStreak: wordObj.currentStreak ?? 0,
-      createdAt:     wordObj.createdAt     ?? Date.now(),
-      ...(wordObj.lastReviewedDate != null ? { lastReviewedDate: wordObj.lastReviewedDate } : {}),
-      ...(wordObj.hardMarked ? { hardMarked: true } : {}),
-    };
+    const newWord = { id: crypto.randomUUID(), ...normalized.word };
     return setWords(prev => {
       if (prev.some(w => w.english.toLowerCase() === newWord.english.toLowerCase())) throw new Error('duplicate_word');
       return [newWord, ...prev];

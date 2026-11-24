@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { playAudio } from '../utils/audio';
 import { isDueForReview } from '../hooks/useVocabStore';
+import { normalizeWordInput } from '../utils/vocabWord';
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                            */
@@ -467,19 +468,24 @@ export default memo(function Vocabulary({
       try {
         const data = JSON.parse(ev.target.result);
         if (!Array.isArray(data)) throw new Error('Invalid format');
-        data.forEach(w => {
-          if (!w.english || !w.vietnamese) throw new Error('Missing fields');
-          if (!w.id)            w.id            = Date.now().toString() + Math.random();
-          if (!w.level)         w.level         = 1;
-          if (!w.wordType)      w.wordType      = 'Word';
-          if (w.currentStreak == null) w.currentStreak = 0;
+        // Normalise to the backend constraints (level 1–5, string fields, streak ≥ 0).
+        const normalized = data.map(w => {
+          const result = normalizeWordInput(w);
+          if (!result || !result.word.vietnamese) throw new Error('Missing fields');
+          return result;
         });
         const existingEnglish = new Set(words.map(w => w.english.toLowerCase()));
-        const newWords = data.filter(w => !existingEnglish.has(w.english.toLowerCase()));
-        let added = 0;
-        for (const word of newWords) if (await addWord(word)) added++;
-        if (added !== newWords.length) setError('Một số từ chưa lưu được. Xem thông báo Vocabulary và thử lại.');
-        setSuccess(`Imported ${added} new word(s)!`);
+        const fresh = normalized.filter(({ word }) => !existingEnglish.has(word.english.toLowerCase()));
+        let added = 0, adjustedCount = 0;
+        for (const { word, adjusted } of fresh) {
+          if (await addWord(word)) {
+            added++;
+            if (adjusted.length) adjustedCount++;
+          }
+        }
+        if (added !== fresh.length) setError('Một số từ chưa lưu được. Xem thông báo Vocabulary và thử lại.');
+        setSuccess(`Imported ${added} new word(s)!` + (adjustedCount
+          ? ` Đã chỉnh ${adjustedCount} mục có giá trị không hợp lệ về giá trị hợp lệ gần nhất.` : ''));
         setTimeout(() => setSuccess(''), 3000);
       } catch {
         setError('Invalid JSON file. Make sure you are importing a VocabMaster export.');
