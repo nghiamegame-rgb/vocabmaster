@@ -3,7 +3,7 @@ import {
   Brain, ChevronRight, CheckCircle, XCircle,
   RotateCcw, AlertCircle, Trophy, Zap,
   Copy, Check, ClipboardPaste, BookOpen, Volume2,
-  Headphones, Type, Send, FastForward, Star
+  Headphones, Type, Send, FastForward, Star, Image as ImageIcon
 } from 'lucide-react';
 import { playAudio } from '../utils/audio';
 import { selectStructures } from '../utils/structureStorage';
@@ -1114,7 +1114,6 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
   }
 
   return (
-    <>
     <div className="vm-page-enter max-w-2xl mx-auto">
       {/* Progress */}
       <div className="mb-6">
@@ -1133,9 +1132,9 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
         </div>
       </div>
 
-      {/* Question card — Listening & Typing shows the image immediately */}
+      {/* Question card — Listening & Typing shows the image immediately; MC reserves a fixed right slot */}
       <div className="vm-card rounded-2xl p-6 mb-5">
-        <div className={`flex gap-5 ${isDictation && showVisual ? 'flex-col sm:flex-row' : ''}`}>
+        <div className={`flex ${isDictation && showVisual ? 'flex-col sm:flex-row gap-5' : !isDictation && showVisual ? 'items-start gap-3 sm:gap-5' : 'gap-5'}`}>
 
           {/* Left: question text + explanation */}
           <div className="flex-1 min-w-0">
@@ -1180,6 +1179,45 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
                   <QuizAnnotation english={q.wordEnglish} words={words} />
                 </span>
               </div>
+            </div>
+          )}
+
+          {/* Right: reserved square image slot for Multiple Choice vocabulary (no answer leaked before click) */}
+          {!isDictation && showVisual && (
+            <div
+              id="quiz-mc-image-slot"
+              aria-live="polite"
+              className="w-[72px] h-[72px] min-[360px]:w-24 min-[360px]:h-24 sm:w-[176px] sm:h-[176px] shrink-0 self-start rounded-2xl overflow-hidden border border-slate-400/20 bg-slate-900/55 shadow-lg relative"
+            >
+              {answered ? (
+                <div className="vm-feedback-in relative w-full h-full">
+                  {imageUrl && feedbackImageReady && !feedbackImgError ? (
+                    <img
+                      src={imageUrl}
+                      alt={q.wordEnglish}
+                      className="w-full h-full object-cover"
+                      onError={() => setFeedbackImgError(true)}
+                    />
+                  ) : (
+                    <WordInitialTile word={q.wordEnglish} className="w-full h-full" />
+                  )}
+                  <div className="hidden sm:block absolute inset-0 bg-gradient-to-t from-[#070b14]/90 via-[#070b14]/25 to-transparent pointer-events-none" />
+                  <div className="hidden sm:flex absolute bottom-2.5 left-2.5 right-2.5 items-center gap-1.5">
+                    <Volume2 size={13} className="text-indigo-300 shrink-0" />
+                    <span className="text-white font-bold text-sm drop-shadow truncate">
+                      {q.wordEnglish}
+                      <QuizAnnotation english={q.wordEnglish} words={words} />
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  aria-hidden="true"
+                  className="w-full h-full flex items-center justify-center bg-slate-900/40"
+                >
+                  <ImageIcon size={24} className="text-slate-500/55 sm:w-8 sm:h-8" />
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1327,39 +1365,6 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
         </div>
       )}
     </div>
-
-    {/* ── Multiple-Choice Audio + Visual Feedback Overlay ── */}
-    {!isDictation && showVisual && answered && (
-      <div
-        id="quiz-mc-feedback-overlay"
-        aria-live="polite"
-        className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-3 pointer-events-none"
-      >
-        <div className="vm-feedback-in w-full max-w-[236px] sm:max-w-[256px] rounded-2xl overflow-hidden border border-slate-400/25 bg-[#0d1424]/95 shadow-[var(--shadow-floating)] ring-1 ring-white/10">
-          <div className="relative w-full h-[176px]">
-            {imageUrl && feedbackImageReady && !feedbackImgError ? (
-              <img
-                src={imageUrl}
-                alt={q.wordEnglish}
-                className="w-full h-full object-cover"
-                onError={() => setFeedbackImgError(true)}
-              />
-            ) : (
-              <WordInitialTile word={q.wordEnglish} className="w-full h-full" />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#070b14]/90 via-[#070b14]/25 to-transparent" />
-            <div className="absolute bottom-3 left-3 right-3 flex items-center gap-1.5">
-              <Volume2 size={14} className="text-indigo-300 shrink-0" />
-              <span className="text-white font-bold text-sm drop-shadow truncate">
-                {q.wordEnglish}
-                <QuizAnnotation english={q.wordEnglish} words={words} />
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    )}
-    </>
   );
 }
 
