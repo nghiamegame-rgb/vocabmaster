@@ -1,6 +1,21 @@
 // Immutable, content-addressed backups. LocalStorage backups are migrated to
 // IndexedDB on first load and removed after verification.
+//
+// Pruning: each backup written by this version also stores a small metadata
+// record under `meta:<sha>` ({ kind, at, seq }) in the same object store.
+// Only ROUTINE kinds (startup / pre-write / state snapshots) are ever pruned,
+// and only beyond the BACKUP_KEEP_RECENT most recent ones. Archive/conflict/
+// adopt backups, unknown kinds (e.g. migrated LocalStorage backups), backups
+// written before this version (no metadata) and the oldest surviving backup are
+// always kept, so the only backup is never deleted.
 export const BACKUP_DB = 'vocabmaster_vocabulary_backups';
+export const BACKUP_KEEP_RECENT = 30;
+const PRUNE_SLACK = 10; // prune only above 40 routine backups, back down to 30
+const META_PREFIX = 'meta:';
+const ROUTINE_KINDS = new Set(['startup', 'pre-write', 'state']);
+let sequence = 0;
+const nextSeq = () => Date.now() * 1000 + (sequence++ % 1000);
+
 export function createVocabBackupStore() {
   async function open() {
     return new Promise((resolve, reject) => {
@@ -26,19 +41,62 @@ export function createVocabBackupStore() {
       });
     } finally { db.close(); }
   }
+  // Delete routine backups beyond the most recent BACKUP_KEEP_RECENT. Never
+  // touches protected kinds, backups without metadata or the oldest backup.
+  async function prune() {
+    return transact('readwrite', (store, done) => {
+      const metas = [];
+      const request = store.openCursor(IDBKeyRange.bound(META_PREFIX, META_PREFIX + '￿'));
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (cursor) {
+          try { metas.push({ key: cursor.key.slice(META_PREFIX.length), ...JSON.parse(cursor.value) }); }
+          catch { /* unreadable metadata: treat the backup as protected */ }
+          cursor.continue();
+          return;
+        }
+        const routine = metas.filter(meta => ROUTINE_KINDS.has(meta.kind)).sort((a, b) => b.seq - a.seq);
+        if (routine.length <= BACKUP_KEEP_RECENT + PRUNE_SLACK) return done(0);
+        const oldest = metas.reduce((min, meta) => (meta.seq < min.seq ? meta : min), metas[0]);
+        const remove = routine.slice(BACKUP_KEEP_RECENT).filter(meta => meta.key !== oldest.key);
+        for (const meta of remove) {
+          store.delete(meta.key);
+          store.delete(META_PREFIX + meta.key);
+        }
+        done(remove.length);
+      };
+    });
+  }
+
   return {
-    async put(content) {
+    // kind: 'startup' | 'pre-write' | 'state' (routine) or anything else (protected,
+    // e.g. 'archive'). Omitted kind is protected.
+    async put(content, kind = 'other') {
       const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(content));
       const key = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
       await transact('readwrite', (store, done, fail) => {
         const request = store.get(key);
         request.onsuccess = () => {
           try {
-            if (request.result === undefined) store.add(content, key);
-            else if (request.result !== content) fail(new Error('backup_hash_collision'));
+            const existed = request.result !== undefined;
+            if (!existed) store.add(content, key);
+            else if (request.result !== content) return fail(new Error('backup_hash_collision'));
+            const metaRequest = store.get(META_PREFIX + key);
+            metaRequest.onsuccess = () => {
+              let previous = null;
+              try { previous = metaRequest.result ? JSON.parse(metaRequest.result) : null; } catch { previous = { kind: 'other' }; }
+              // A backup written before metadata existed stays without metadata (protected).
+              if (existed && !previous) return;
+              // Protection is sticky: a routine snapshot that is later archived stays protected.
+              const protectedKind = previous && !ROUTINE_KINDS.has(previous.kind) ? previous.kind : kind;
+              try { store.put(JSON.stringify({ at: Date.now(), seq: nextSeq(), kind: protectedKind }), META_PREFIX + key); }
+              catch (error) { fail(error); }
+            };
           } catch (error) { fail(error); }
         };
       });
+      // Pruning failures never fail the backup that was just committed.
+      if (ROUTINE_KINDS.has(kind)) await prune().catch(() => {});
       return key;
     },
     async entries() {
@@ -48,7 +106,7 @@ export function createVocabBackupStore() {
         request.onsuccess = () => {
           const cursor = request.result;
           if (!cursor) return done(entries);
-          entries[cursor.key] = cursor.value;
+          if (!String(cursor.key).startsWith(META_PREFIX)) entries[cursor.key] = cursor.value;
           cursor.continue();
         };
       });
