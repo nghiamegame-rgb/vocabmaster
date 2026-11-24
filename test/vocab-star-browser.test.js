@@ -247,6 +247,10 @@ try {
     },
   ]));
   await page.locator('#start-quiz-btn').click();
+  // Only 1 of the 10 requested questions: the app reports it first, a second click starts.
+  await page.getByText('AI chỉ trả về 1/10 câu', { exact: false }).waitFor();
+  assert.equal(await page.locator('#option-0').count(), 0);
+  await page.locator('#start-quiz-btn').click();
   await page.locator('#option-0').waitFor();
 
   // ── 5. Responsive Viewport Check (1280px, 375px, 320px) ──────────────────
