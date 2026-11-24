@@ -164,6 +164,7 @@ export default function Navbar({ activeTab, setActiveTab, syncStatus, syncMode =
                 <button
                   key={id}
                   id={`nav-tab-${id}`}
+                  aria-label={label}
                   onClick={() => setActiveTab(id)}
                   className={`
                     flex items-center gap-2 px-1.5 sm:px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200
