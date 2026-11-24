@@ -8,6 +8,7 @@ import Flashcard       from './components/Flashcard';
 import Grammar         from './components/Grammar';
 import { useVocabStore } from './hooks/useVocabStore';
 import { useStructuresStore } from './hooks/useStructuresStore';
+import { useGrammarStore } from './hooks/useGrammarStore';
 
 export default function App() {
   const [activeTab,   setActiveTab]   = useState('dashboard');
@@ -33,6 +34,8 @@ export default function App() {
     syncNotice, syncPaused, pauseSync, resumeSync, exportSyncBackup,
   } = useVocabStore();
   const structureStore = useStructuresStore();
+  // Lives at App level (like Structures) so Grammar sync also runs while the Grammar tab is closed.
+  const grammarStore = useGrammarStore();
 
   function handleSetActiveTab(tab) {
     setActiveTab(tab);
@@ -104,6 +107,7 @@ export default function App() {
         )}
         {activeTab === 'grammar' && (
           <Grammar
+            grammarStore={grammarStore}
             addWord={addWord}
             words={words}
             structureStore={structureStore}
