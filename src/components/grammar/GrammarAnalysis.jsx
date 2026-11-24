@@ -60,7 +60,7 @@ export default function GrammarSentenceCard({
 
   const sentence = getGrammarSentence(question);
 
-  return <div data-grammar-sentence-card="" className="bg-slate-900/80 border border-slate-700/50 rounded-2xl p-4 sm:p-6 space-y-4">
+  return <div data-grammar-sentence-card="" className="vm-panel rounded-2xl p-4 sm:p-6 space-y-4">
     <div className="flex flex-wrap items-start gap-1.5">
       <GrammarTopicBadge question={question} />
     </div>
@@ -77,15 +77,15 @@ export default function GrammarSentenceCard({
     {(onAssess || onNext) && <div className="flex flex-wrap gap-2">
       {onAssess && [true, false].map(understood => <button key={String(understood)} type="button" disabled={assessed !== undefined}
         onClick={() => onAssess(understood)}
-        className={`px-4 py-2 rounded-xl text-sm font-semibold ${assessed !== undefined ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : understood ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-rose-600 hover:bg-rose-500 text-white'}`}>
+        className={`vm-btn px-4 py-2 rounded-xl text-sm font-semibold ${assessed !== undefined ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : understood ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : 'bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-500/20'}`}>
         {understood ? 'Đã hiểu' : 'Cần ôn lại'}{assessed === understood ? ' ✓' : ''}
       </button>)}
-      {onNext && <button type="button" onClick={onNext} className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold">{nextLabel}</button>}
+      {onNext && <button type="button" onClick={onNext} className="vm-btn vm-btn-violet px-4 py-2 rounded-xl text-sm font-semibold">{nextLabel}</button>}
     </div>}
     <button type="button" aria-expanded={shown} onClick={() => {
       if (!shown) onReveal?.();
       setShown(v => !v);
-    }} className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold">
+    }} className="vm-btn vm-btn-violet px-4 py-2 rounded-xl text-sm font-semibold">
       {shown ? 'Ẩn phân tích' : 'Hiện phân tích'}
     </button>
     {shown && <>
