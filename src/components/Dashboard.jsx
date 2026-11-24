@@ -13,16 +13,16 @@ const LEVEL_META = [
 
 function StatCard({ icon: Icon, label, value, gradient, suffix = '' }) {
   return (
-    <div className={`relative overflow-hidden rounded-2xl p-6 ${gradient} shadow-lg`}>
-      <div className="flex items-start justify-between">
+    <div className={`relative overflow-hidden rounded-2xl p-5 sm:p-6 ${gradient} border border-white/15 shadow-[0_12px_28px_-10px_rgba(2,6,23,0.75)] vm-card-interactive transition-all duration-200`}>
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-white/70 text-sm font-medium mb-1">{label}</p>
-          <p className="text-white text-3xl font-bold">
-            {value}<span className="text-lg font-medium opacity-80">{suffix}</span>
+          <p className="text-white/80 text-xs sm:text-sm font-medium mb-1.5">{label}</p>
+          <p className="text-white text-3xl font-extrabold tracking-tight">
+            {value}<span className="text-lg font-medium opacity-85">{suffix}</span>
           </p>
         </div>
-        <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
-          <Icon size={22} className="text-white" />
+        <div className="w-11 h-11 rounded-xl bg-white/15 ring-1 ring-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
+          <Icon size={21} className="text-white" />
         </div>
       </div>
     </div>
@@ -35,25 +35,25 @@ function MasteryBar({ level, label, count, total, color, onClick }) {
     <button
       id={`mastery-level-${level}`}
       onClick={onClick}
-      className="w-full text-left group p-4 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 transition-all duration-200 border border-slate-700/50 hover:border-slate-600"
+      className="w-full text-left group p-4 rounded-xl vm-card vm-card-interactive"
     >
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <div className={`w-2.5 h-2.5 rounded-full ${color}`} />
-          <span className="text-white font-medium text-sm">{label}</span>
+      <div className="flex items-center justify-between mb-2.5">
+        <div className="flex items-center gap-2.5">
+          <div className={`w-2.5 h-2.5 rounded-full ring-4 ring-white/5 ${color}`} />
+          <span className="text-slate-100 font-semibold text-sm">{label}</span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-slate-400 text-xs">{count} words</span>
-          <span className="text-white font-bold text-sm">{pct}%</span>
+          <span className="text-slate-300 text-xs">{count} words</span>
+          <span className="text-white font-bold text-sm tabular-nums">{pct}%</span>
         </div>
       </div>
-      <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+      <div className="w-full h-2.5 bg-slate-900/90 rounded-full overflow-hidden ring-1 ring-white/5">
         <div
           className={`h-full rounded-full progress-fill ${color}`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <p className="text-slate-500 text-xs mt-2 group-hover:text-slate-400 transition-colors">
+      <p className="text-slate-400 text-xs mt-2 group-hover:text-indigo-300 transition-colors">
         Click to filter vocabulary →
       </p>
     </button>
@@ -75,11 +75,11 @@ export default function Dashboard({ words, hasReadableWords = true, stats, setAc
   }
 
   return (
-    <div className="animate-fade-in">
+    <div className="vm-page-enter">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
-        <p className="text-slate-400">Track your vocabulary learning progress</p>
-        <div className="mt-4 flex items-start gap-2 rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-3 py-2.5 text-sm text-indigo-200 sm:items-center">
+        <h1 className="text-3xl font-extrabold tracking-tight text-white mb-1.5">Dashboard</h1>
+        <p className="text-slate-300 text-sm sm:text-base">Track your vocabulary learning progress</p>
+        <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-indigo-400/25 bg-indigo-500/10 backdrop-blur-sm px-4 py-3 text-sm text-indigo-100 shadow-sm sm:items-center">
           <Volume2 size={16} className="mt-0.5 shrink-0 text-indigo-300 sm:mt-0" aria-hidden="true" />
           <p>🔊 Mẹo học tập: Hãy đọc thành tiếng mỗi từ vựng, sau đó nghe phát âm chuẩn để ghi nhớ tốt hơn và cải thiện kỹ năng Nghe VSTEP!</p>
         </div>
@@ -91,41 +91,41 @@ export default function Dashboard({ words, hasReadableWords = true, stats, setAc
           icon={BookOpen}
           label="Total Words"
           value={hasReadableWords ? totalWords : '—'}
-          gradient="bg-gradient-to-br from-indigo-600 to-purple-700"
+          gradient="bg-gradient-to-br from-indigo-600/95 via-indigo-700/90 to-violet-800/95"
         />
         <StatCard
           icon={Star}
           label="Mastered (L5)"
           value={hasReadableWords ? masteredCount : '—'}
-          gradient="bg-gradient-to-br from-emerald-600 to-teal-700"
+          gradient="bg-gradient-to-br from-emerald-600/95 via-emerald-700/90 to-teal-800/95"
         />
         <StatCard
           icon={CheckCircle}
           label="Quiz Accuracy"
           value={accuracy}
           suffix="%"
-          gradient="bg-gradient-to-br from-sky-600 to-blue-700"
+          gradient="bg-gradient-to-br from-sky-600/95 via-blue-700/90 to-indigo-800/95"
         />
         <StatCard
           icon={HelpCircle}
           label="Questions Answered"
           value={stats.totalQuestions}
-          gradient="bg-gradient-to-br from-amber-600 to-orange-700"
+          gradient="bg-gradient-to-br from-amber-600/95 via-orange-700/90 to-rose-800/90"
         />
       </div>
 
       {/* Mastery Levels */}
-      <div className="bg-slate-800/30 rounded-2xl p-6 border border-slate-700/50">
-        <div className="flex items-center gap-2 mb-5">
+      <div className="vm-panel rounded-2xl p-5 sm:p-6">
+        <div className="flex items-center gap-2.5 mb-5">
           <TrendingUp size={20} className="text-indigo-400" />
-          <h2 className="text-white font-semibold text-lg">Mastery Levels</h2>
+          <h2 className="text-white font-bold tracking-tight text-lg">Mastery Levels</h2>
         </div>
 
         {totalWords === 0 ? (
           <div className="text-center py-10">
-            <BookOpen size={48} className="text-slate-600 mx-auto mb-3" />
-            <p className="text-slate-400 font-medium">No words yet</p>
-            <p className="text-slate-500 text-sm mt-1">Add words in the Vocabulary tab to get started</p>
+            <BookOpen size={48} className="text-slate-500 mx-auto mb-3" />
+            <p className="text-slate-300 font-medium">No words yet</p>
+            <p className="text-slate-400 text-sm mt-1">Add words in the Vocabulary tab to get started</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -146,16 +146,16 @@ export default function Dashboard({ words, hasReadableWords = true, stats, setAc
 
       {/* Quick Tips */}
       {totalWords > 0 && (
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4">
-            <p className="text-indigo-300 text-sm font-medium">💡 Spaced Repetition</p>
-            <p className="text-slate-400 text-xs mt-1">
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="vm-panel border-indigo-400/25 rounded-2xl p-4 sm:p-5">
+            <p className="text-indigo-300 text-sm font-semibold">💡 Spaced Repetition</p>
+            <p className="text-slate-300 text-xs mt-1.5 leading-relaxed">
               Answer correctly 2×, 4×, 8×, 15× in a row to advance through L1→L2→L3→L4→L5.
             </p>
           </div>
-          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
-            <p className="text-emerald-300 text-sm font-medium">🎯 Current focus</p>
-            <p className="text-slate-400 text-xs mt-1">
+          <div className="vm-panel border-emerald-400/25 rounded-2xl p-4 sm:p-5">
+            <p className="text-emerald-300 text-sm font-semibold">🎯 Current focus</p>
+            <p className="text-slate-300 text-xs mt-1.5 leading-relaxed">
               You have <strong className="text-white">{level1Count}</strong> new / struggling words to review.
             </p>
           </div>
