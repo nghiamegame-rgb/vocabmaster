@@ -5,7 +5,7 @@ export default function WordInitialTile({ word, className = '' }) {
   return (
     <div
       aria-hidden="true"
-      className={`flex items-center justify-center bg-gradient-to-br from-indigo-600/40 to-purple-700/40 text-white/90 font-black text-6xl select-none ${className}`}
+      className={`flex items-center justify-center bg-gradient-to-br from-indigo-600/40 via-violet-700/35 to-[#0b1222] text-white/95 font-black text-6xl tracking-tight select-none ${className}`}
     >{letter}</div>
   );
 }

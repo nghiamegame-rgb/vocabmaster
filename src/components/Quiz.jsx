@@ -244,10 +244,10 @@ function Pill({ id, label, selected, onClick }) {
     <button
       id={id}
       onClick={onClick}
-      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 border ${
+      className={`vm-btn px-4 py-2 rounded-xl text-sm font-medium border ${
         selected
-          ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/20'
-          : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-500 hover:text-white'
+          ? 'vm-btn-primary border-indigo-400/40'
+          : 'bg-slate-900/75 text-slate-300 border-slate-400/20 hover:bg-slate-800 hover:border-slate-400/35 hover:text-white'
       }`}
     >
       {label}
@@ -260,8 +260,8 @@ function Pill({ id, label, selected, onClick }) {
 /* ------------------------------------------------------------------ */
 function Section({ title, children }) {
   return (
-    <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5">
-      <h3 className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-3">
+    <div className="vm-panel rounded-2xl p-5">
+      <h3 className="text-slate-300 text-xs font-semibold uppercase tracking-wider mb-3">
         {title}
       </h3>
       {children}
@@ -392,20 +392,20 @@ function QuizConfig({ words, structures = [], onStart }) {
   }
 
   return (
-    <div className="animate-fade-in max-w-2xl mx-auto">
+    <div className="vm-page-enter max-w-2xl mx-auto">
       {/* Page header */}
       <div className="mb-7">
-        <h1 className="text-3xl font-bold text-white mb-1">Smart Quiz</h1>
-        <p className="text-slate-400 text-sm">
+        <h1 className="text-3xl font-extrabold tracking-tight text-white mb-1">Smart Quiz</h1>
+        <p className="text-slate-300 text-sm">
           Configure your quiz, copy the AI prompt, then paste the response to start.
         </p>
       </div>
 
       {/* Insufficient words warning */}
       {!hasSource && (
-        <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-5">
-          <AlertCircle size={17} className="text-amber-400 shrink-0 mt-0.5" />
-          <p className="text-amber-300 text-sm">
+        <div className="flex items-start gap-3 bg-amber-500/12 border border-amber-400/35 rounded-2xl p-4 mb-5 animate-fade-in">
+          <AlertCircle size={17} className="text-amber-300 shrink-0 mt-0.5" />
+          <p className="text-amber-200 text-sm leading-relaxed">
             {mode === 'structure'
               ? <>Chưa có cấu trúc được chọn. Hãy thêm cấu trúc trong tab <strong>Grammar → Structures</strong>.</>
               : hardOnly
@@ -487,15 +487,15 @@ function QuizConfig({ words, structures = [], onStart }) {
                   key={wt.id}
                   id={`wtype-${wt.id.toLowerCase()}`}
                   onClick={() => { setWordTypeFilter(wt.id); setCopied(false); }}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 border ${
+                  className={`vm-btn flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border ${
                     wordTypeFilter === wt.id
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/20'
-                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-500 hover:text-white'
+                      ? 'vm-btn-primary border-indigo-400/40'
+                      : 'bg-slate-900/75 text-slate-300 border-slate-400/20 hover:bg-slate-800 hover:border-slate-400/35 hover:text-white'
                   }`}
                 >
                   <span>{wt.icon}</span>
                   {wt.label}
-                  <span className="text-xs opacity-60">({cnt})</span>
+                  <span className="text-xs opacity-75">({cnt})</span>
                 </button>
               );
             })}
@@ -512,18 +512,18 @@ function QuizConfig({ words, structures = [], onStart }) {
                   type="button"
                   onClick={() => { setHardOnly(v => !v); setCopied(false); }}
                   aria-pressed={hardOnly}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 border ${
+                  className={`vm-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border ${
                     hardOnly
-                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-lg shadow-amber-500/10'
-                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-amber-500/40 hover:text-amber-300'
+                      ? 'bg-amber-500/20 text-amber-200 border-amber-400/50 shadow-lg shadow-amber-500/15'
+                      : 'bg-slate-900/75 text-slate-300 border-slate-400/20 hover:border-amber-400/45 hover:text-amber-300'
                   }`}
                 >
                   <Star size={15} className={hardOnly ? 'fill-amber-400 text-amber-400' : 'text-amber-400'} />
                   <span>Chỉ từ khó ⭐</span>
                   <span className="text-xs opacity-80">({hardCount})</span>
                 </button>
-                <p className="text-slate-500 text-xs mt-2">
-                  Áp dụng cho nguồn từ Vocabulary khi tạo AI Prompt mới (hiện có <strong className="text-slate-300">{eligibleWords.length}</strong> từ khớp bộ lọc, cần tối thiểu 4 từ).
+                <p className="text-slate-400 text-xs mt-2">
+                  Áp dụng cho nguồn từ Vocabulary khi tạo AI Prompt mới (hiện có <strong className="text-slate-200">{eligibleWords.length}</strong> từ khớp bộ lọc, cần tối thiểu 4 từ).
                 </p>
               </div>
             </div>
@@ -532,12 +532,12 @@ function QuizConfig({ words, structures = [], onStart }) {
 
         {mode === 'structure' && (
           <Section title="Structures to practice">
-            <div className="flex items-center justify-between mb-3 text-xs text-slate-400">
+            <div className="flex items-center justify-between mb-3 text-xs text-slate-300">
               <span>{selectedStructures.length}/{structures.length} cấu trúc được chọn</span>
-              <div className="flex gap-2"><button type="button" onClick={() => setSelectedStructureIds(new Set(structures.map(item => item.id)))} className="text-indigo-300 hover:text-white">Chọn tất cả</button><button type="button" onClick={() => setSelectedStructureIds(new Set())} className="text-slate-400 hover:text-white">Bỏ chọn</button></div>
+              <div className="flex gap-2"><button type="button" onClick={() => setSelectedStructureIds(new Set(structures.map(item => item.id)))} className="text-indigo-300 hover:text-white">Chọn tất cả</button><button type="button" onClick={() => setSelectedStructureIds(new Set())} className="text-slate-300 hover:text-white">Bỏ chọn</button></div>
             </div>
             <div className="max-h-56 overflow-y-auto space-y-1 pr-1">
-              {structures.map(item => <label key={item.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-700/50 cursor-pointer"><input type="checkbox" checked={selectedStructureIds.has(item.id)} onChange={e => setSelectedStructureIds(prev => { const next = new Set(prev); e.target.checked ? next.add(item.id) : next.delete(item.id); return next; })} className="accent-indigo-500" /><span className="text-sm text-white">{item.english}</span><span className="text-xs text-slate-500">L{item.level}</span></label>)}
+              {structures.map(item => <label key={item.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-800/70 cursor-pointer"><input type="checkbox" checked={selectedStructureIds.has(item.id)} onChange={e => setSelectedStructureIds(prev => { const next = new Set(prev); e.target.checked ? next.add(item.id) : next.delete(item.id); return next; })} className="accent-indigo-500" /><span className="text-sm text-white">{item.english}</span><span className="text-xs text-slate-400">L{item.level}</span></label>)}
             </div>
           </Section>
         )}
@@ -550,14 +550,14 @@ function QuizConfig({ words, structures = [], onStart }) {
                 key={qm.id}
                 id={`mode-${qm.id}`}
                 onClick={() => { setMode(qm.id); setCopied(false); }}
-                className={`text-left p-4 rounded-xl border transition-all duration-200 ${
+                className={`vm-btn text-left p-4 rounded-xl border ${
                   mode === qm.id
-                    ? 'bg-indigo-600/20 border-indigo-500 text-white'
-                    : 'bg-slate-700/30 border-slate-600 text-slate-400 hover:border-slate-500 hover:text-white'
+                    ? 'bg-indigo-500/18 border-indigo-400/60 text-white shadow-md shadow-indigo-500/15'
+                    : 'bg-slate-900/65 border-slate-400/20 text-slate-300 hover:border-slate-400/40 hover:text-white'
                 }`}
               >
                 <p className="font-semibold text-sm">{qm.label}</p>
-                <p className="text-xs mt-1 opacity-70">{qm.desc}</p>
+                <p className="text-xs mt-1 opacity-80">{qm.desc}</p>
               </button>
             ))}
           </div>
@@ -571,41 +571,41 @@ function QuizConfig({ words, structures = [], onStart }) {
                 key={am.id}
                 id={`answer-mode-${am.id}`}
                 onClick={() => setAnswerMode(am.id)}
-                className={`text-left p-4 rounded-xl border transition-all duration-200 ${
+                className={`vm-btn text-left p-4 rounded-xl border ${
                   answerMode === am.id
-                    ? 'bg-purple-600/20 border-purple-500 text-white'
-                    : 'bg-slate-700/30 border-slate-600 text-slate-400 hover:border-slate-500 hover:text-white'
+                    ? 'bg-violet-500/18 border-violet-400/60 text-white shadow-md shadow-violet-500/15'
+                    : 'bg-slate-900/65 border-slate-400/20 text-slate-300 hover:border-slate-400/40 hover:text-white'
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1">
                   {am.id === 'mc'
-                    ? <Type size={14} className={answerMode === am.id ? 'text-purple-400' : 'text-slate-500'} />
-                    : <Headphones size={14} className={answerMode === am.id ? 'text-purple-400' : 'text-slate-500'} />}
+                    ? <Type size={14} className={answerMode === am.id ? 'text-violet-300' : 'text-slate-400'} />
+                    : <Headphones size={14} className={answerMode === am.id ? 'text-violet-300' : 'text-slate-400'} />}
                   <p className="font-semibold text-sm">{am.label}</p>
                 </div>
-                <p className="text-xs opacity-70">{am.desc}</p>
+                <p className="text-xs opacity-80">{am.desc}</p>
               </button>
             ))}
           </div>
         </Section>
 
         {/* Info banner */}
-        <div className="flex items-start gap-3 bg-sky-500/10 border border-sky-500/20 rounded-xl p-4">
+        <div className="flex items-start gap-3 bg-sky-500/10 border border-sky-400/25 rounded-2xl p-4">
           <span className="text-xl shrink-0">{mode === 'vstep' ? '🎯' : '✍️'}</span>
-          <p className="text-sky-300 text-xs leading-relaxed">
+          <p className="text-sky-200 text-xs leading-relaxed">
             {mode === 'vstep' ? (
-              <><strong className="text-sky-200">VSTEP B1–B2 (English):</strong> The AI generates
+              <><strong className="text-sky-100">VSTEP B1–B2 (English):</strong> The AI generates
               English sentences at VSTEP B1–B2 level with a <strong>[_____] blank</strong>, common collocations,
               and 4 English word choices. Explanation is in Vietnamese.</>
             ) : mode === 'structure' ? (
-              <><strong className="text-sky-200">Cấu trúc ngữ pháp:</strong> AI tạo câu VSTEP B1–B2 dựa trên cấu trúc đã chọn, có 4 đáp án và điểm bẫy.</>
+              <><strong className="text-sky-100">Cấu trúc ngữ pháp:</strong> AI tạo câu VSTEP B1–B2 dựa trên cấu trúc đã chọn, có 4 đáp án và điểm bẫy.</>
             ) : (
-              <><strong className="text-sky-200">Vietnamese → English:</strong> The AI writes a Vietnamese
+              <><strong className="text-sky-100">Vietnamese → English:</strong> The AI writes a Vietnamese
               context sentence with a <strong>[_____] blank</strong> and 4 English word choices.</>
             )}
             {answerMode === 'dictation' && (
-              <span className="block mt-1 text-purple-300">
-                🎧 <strong className="text-purple-200">Listening & Typing mode:</strong> You'll hear
+              <span className="block mt-1 text-violet-200">
+                🎧 <strong className="text-violet-100">Listening & Typing mode:</strong> You'll hear
                 the word, see the answer immediately, and type it manually.
               </span>
             )}
@@ -613,20 +613,20 @@ function QuizConfig({ words, structures = [], onStart }) {
         </div>
 
         {/* ── Step 1: Copy Prompt ─────────────────────────────────────── */}
-        <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-6 h-6 rounded-full bg-indigo-600/30 text-indigo-400 text-xs font-bold flex items-center justify-center shrink-0">
+        <div className="vm-panel rounded-2xl p-5">
+          <div className="flex items-center gap-2.5 mb-1">
+            <span className="w-6 h-6 rounded-full bg-indigo-500/25 ring-1 ring-indigo-400/40 text-indigo-300 text-xs font-bold flex items-center justify-center shrink-0">
               1
             </span>
             <h3 className="text-white font-semibold text-sm">Copy the AI Prompt</h3>
           </div>
-          <p className="text-slate-500 text-xs ml-8 mb-4">
+          <p className="text-slate-300 text-xs ml-8 mb-4">
             Paste it into{' '}
             <a
               href="https://gemini.google.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-indigo-400 hover:text-indigo-300 underline"
+              className="text-indigo-300 hover:text-indigo-200 underline"
             >
               Gemini
             </a>
@@ -635,7 +635,7 @@ function QuizConfig({ words, structures = [], onStart }) {
               href="https://chat.openai.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-indigo-400 hover:text-indigo-300 underline"
+              className="text-indigo-300 hover:text-indigo-200 underline"
             >
               ChatGPT
             </a>
@@ -646,10 +646,10 @@ function QuizConfig({ words, structures = [], onStart }) {
             id="copy-prompt-btn"
             onClick={handleCopy}
             disabled={!hasSource}
-            className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
+            className={`vm-btn w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm ${
               copied
-                ? 'bg-emerald-600 text-white'
-                : 'bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-40 disabled:cursor-not-allowed'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30'
+                : 'vm-btn-primary disabled:opacity-40 disabled:cursor-not-allowed'
             }`}
           >
             {copied
@@ -660,14 +660,14 @@ function QuizConfig({ words, structures = [], onStart }) {
         </div>
 
         {/* ── Step 2: Paste JSON & Start ──────────────────────────────── */}
-        <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-6 h-6 rounded-full bg-indigo-600/30 text-indigo-400 text-xs font-bold flex items-center justify-center shrink-0">
+        <div className="vm-panel rounded-2xl p-5">
+          <div className="flex items-center gap-2.5 mb-1">
+            <span className="w-6 h-6 rounded-full bg-indigo-500/25 ring-1 ring-indigo-400/40 text-indigo-300 text-xs font-bold flex items-center justify-center shrink-0">
               2
             </span>
             <h3 className="text-white font-semibold text-sm">Paste AI Response (JSON)</h3>
           </div>
-          <p className="text-slate-500 text-xs ml-8 mb-3">
+          <p className="text-slate-300 text-xs ml-8 mb-3">
             Paste the full AI reply here. Markdown code fences (` ```json … ``` `) are stripped automatically.
           </p>
 
@@ -678,14 +678,14 @@ function QuizConfig({ words, structures = [], onStart }) {
             onChange={e => { setJsonPaste(e.target.value); setParseError(''); }}
             rows={9}
             placeholder={`Paste the AI response here, e.g.:\n[\n  {\n    "question": "Từ nào có nghĩa là 'nộp chính thức'?",\n    "options": ["submit", "dismiss", "acquire", "negotiate"],\n    "answerIndex": 0,\n    "explanation": "'Submit' means to hand something in officially.",\n    "wordEnglish": "submit"\n  }\n]`}
-            className="w-full bg-slate-900/60 border border-slate-600 rounded-xl px-4 py-3 text-white text-xs font-mono placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors resize-y min-h-[160px]"
+            className="w-full vm-input rounded-xl px-4 py-3 text-xs font-mono resize-y min-h-[160px]"
           />
 
           {/* Parse error */}
           {parseError && (
-            <div className="flex items-start gap-2 mt-3 bg-rose-500/10 border border-rose-500/30 rounded-xl px-4 py-3">
-              <AlertCircle size={14} className="text-rose-400 shrink-0 mt-0.5" />
-              <p className="text-rose-300 text-xs leading-relaxed">{parseError}</p>
+            <div className="flex items-start gap-2 mt-3 bg-rose-500/12 border border-rose-400/35 rounded-xl px-4 py-3 animate-fade-in">
+              <AlertCircle size={14} className="text-rose-300 shrink-0 mt-0.5" />
+              <p className="text-rose-200 text-xs leading-relaxed">{parseError}</p>
             </div>
           )}
 
@@ -694,7 +694,7 @@ function QuizConfig({ words, structures = [], onStart }) {
             id="start-quiz-btn"
             onClick={handleStart}
             disabled={!jsonPaste.trim()}
-            className="mt-4 w-full flex items-center justify-center gap-2 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-base transition-all duration-200 shadow-xl shadow-indigo-500/20"
+            className="vm-btn vm-btn-violet mt-4 w-full flex items-center justify-center gap-2 py-4 disabled:opacity-40 disabled:cursor-not-allowed rounded-2xl font-bold text-base"
           >
             <ClipboardPaste size={20} /> 🚀 Start Quiz
           </button>
@@ -710,10 +710,10 @@ function QuizConfig({ words, structures = [], onStart }) {
 const OPTION_LABELS = ['A', 'B', 'C', 'D'];
 
 function optionClass(idx, answered, correctIndex, selected) {
-  if (!answered)              return 'bg-slate-700/60 border-slate-600 text-white hover:border-indigo-500 hover:bg-slate-700';
-  if (idx === correctIndex)   return 'bg-emerald-500/20 border-emerald-500 text-emerald-300';
-  if (idx === selected)       return 'bg-rose-500/20    border-rose-500    text-rose-300';
-  return 'bg-slate-700/30 border-slate-700 text-slate-500 cursor-not-allowed';
+  if (!answered)              return 'bg-[#121c33]/85 border-slate-400/20 text-white hover:border-indigo-400/70 hover:bg-[#192646]';
+  if (idx === correctIndex)   return 'bg-emerald-500/18 border-emerald-400 text-emerald-200 shadow-lg shadow-emerald-500/15';
+  if (idx === selected)       return 'bg-rose-500/18    border-rose-400    text-rose-200 shadow-lg shadow-rose-500/15';
+  return 'bg-slate-900/50 border-slate-400/15 text-slate-400 cursor-not-allowed opacity-70';
 }
 
 /** Look up display-only notes without changing option or answer text. */
@@ -1016,44 +1016,44 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
   }
 
   return (
-    <div className="animate-fade-in max-w-2xl mx-auto">
+    <div className="vm-page-enter max-w-2xl mx-auto">
       {/* Progress */}
       <div className="mb-6">
-        <div className="flex items-center justify-between text-sm text-slate-400 mb-2">
-          <span className="font-medium text-white">
+        <div className="flex items-center justify-between text-sm text-slate-300 mb-2">
+          <span className="font-semibold text-white tabular-nums">
             Question {Math.min(queueIndex + 1, originalCount)}{' '}
-            <span className="text-slate-500">/ {originalCount}</span>
+            <span className="text-slate-400">/ {originalCount}</span>
           </span>
-          <span>{Math.round(progress)}% done</span>
+          <span className="tabular-nums">{Math.round(progress)}% done</span>
         </div>
-        <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+        <div className="w-full h-2.5 bg-slate-900/90 rounded-full overflow-hidden ring-1 ring-white/5">
           <div
-            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 progress-fill"
+            className="h-full bg-gradient-to-r from-indigo-500 via-violet-500 to-teal-400 progress-fill rounded-full"
             style={{ width: `${progress}%` }}
           />
         </div>
       </div>
 
       {/* Question card — Listening & Typing shows the image immediately */}
-      <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6 mb-5 shadow-xl">
+      <div className="vm-card rounded-2xl p-6 mb-5">
         <div className={`flex gap-5 ${isDictation && showVisual ? 'flex-col sm:flex-row' : ''}`}>
 
           {/* Left: question text + explanation */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-3">
               <Brain size={15} className="text-indigo-400" />
-              <span className="text-indigo-400 text-xs font-semibold uppercase tracking-wider">Question</span>
+              <span className="text-indigo-300 text-xs font-semibold uppercase tracking-wider">Question</span>
             </div>
             <p className="text-white text-xl font-semibold leading-relaxed">{q.question}</p>
 
             {/* Explanation appears below the question on the left */}
             {answered && q.explanation && (
-              <div className="mt-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl px-4 py-3 animate-fade-in">
-                <p className="text-slate-300 text-sm leading-relaxed">
-                  <span className="text-indigo-400 font-semibold">💡 </span>
+              <div className="mt-4 bg-indigo-500/12 border border-indigo-400/25 rounded-xl px-4 py-3 animate-fade-in">
+                <p className="text-slate-200 text-sm leading-relaxed">
+                  <span className="text-indigo-300 font-semibold">💡 </span>
                   {q.explanation}
                   {mode === 'structure' && q.trapPoint && (
-                    <span className="block mt-2 text-amber-300"><strong>Điểm bẫy: </strong>{q.trapPoint}</span>
+                    <span className="block mt-2 text-amber-200"><strong>Điểm bẫy: </strong>{q.trapPoint}</span>
                   )}
                 </p>
               </div>
@@ -1062,7 +1062,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
 
           {/* Right: vocabulary image — visible immediately in Listening & Typing */}
           {isDictation && showVisual && (
-            <div className="animate-fade-in sm:w-56 sm:shrink-0 rounded-2xl overflow-hidden border border-slate-700/50 shadow-lg relative">
+            <div className="animate-fade-in sm:w-56 sm:shrink-0 rounded-2xl overflow-hidden border border-slate-400/20 shadow-lg relative">
               {imageUrl ? (
                 <img
                   src={imageUrl}
@@ -1073,9 +1073,9 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
               ) : (
                 <WordInitialTile word={q.wordEnglish} className="w-full h-48 sm:h-full" />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#070b14]/80 via-transparent to-transparent" />
               <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
-                <Volume2 size={13} className="text-white/80" />
+                <Volume2 size={13} className="text-white/85" />
                 <span className="text-white font-bold text-sm drop-shadow">
                   {q.wordEnglish}
                   <QuizAnnotation english={q.wordEnglish} words={words} />
@@ -1095,10 +1095,10 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
               id={`option-${idx}`}
               onClick={() => handleSelect(idx)}
               disabled={answered}
-              className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all duration-200 text-left
+              className={`vm-btn w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left
                 ${optionClass(idx, answered, q.correctIndex, selected)}`}
             >
-              <span className="shrink-0 w-8 h-8 rounded-lg bg-black/20 flex items-center justify-center font-bold text-sm">
+              <span className="shrink-0 w-8 h-8 rounded-lg bg-slate-950/50 ring-1 ring-white/10 flex items-center justify-center font-bold text-sm">
                 {OPTION_LABELS[idx]}
               </span>
               <span className="font-medium flex-1">
@@ -1106,10 +1106,10 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
                 <QuizAnnotation english={opt} words={words} />
               </span>
               {answered && idx === q.correctIndex && (
-                <CheckCircle size={18} className="ml-auto text-emerald-400 shrink-0" />
+                <CheckCircle size={18} className="ml-auto text-emerald-300 shrink-0 vm-scale-in" />
               )}
               {answered && idx === selected && idx !== q.correctIndex && (
-                <XCircle size={18} className="ml-auto text-rose-400 shrink-0" />
+                <XCircle size={18} className="ml-auto text-rose-300 shrink-0 vm-scale-in" />
               )}
             </button>
           ))}
@@ -1125,23 +1125,23 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
               id="dictation-play-btn"
               onClick={handleDictationPlay}
               disabled={dictAnswered}
-              className="flex items-center gap-2 px-5 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-sm transition-all duration-200 shadow-lg shadow-indigo-500/20"
+              className="vm-btn vm-btn-primary flex items-center gap-2 px-5 py-3 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-semibold text-sm"
             >
               <Headphones size={17} />
               {playCount === 0 ? 'Play Word' : `Play Again (×${playCount})`}
             </button>
             {!dictAnswered && (
-              <span className="text-slate-500 text-xs">
+              <span className="text-slate-400 text-xs">
                 Audio repeats automatically; Play Again replays immediately.
               </span>
             )}
           </div>
           {/* The answer is visible immediately so learners can listen and type it. */}
           {!dictAnswered && (
-            <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-2 animate-fade-in">
-              <AlertCircle size={14} className="text-amber-400 shrink-0" />
-              <span className="text-amber-300 text-sm">
-                Answer: <strong className="text-amber-200">
+            <div className="flex items-center gap-2 bg-amber-500/12 border border-amber-400/35 rounded-xl px-4 py-2.5 animate-fade-in">
+              <AlertCircle size={14} className="text-amber-300 shrink-0" />
+              <span className="text-amber-200 text-sm">
+                Answer: <strong className="text-amber-100">
                   {q.wordEnglish}
                   <QuizAnnotation english={q.wordEnglish} words={words} />
                 </strong>
@@ -1164,21 +1164,20 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
               autoCorrect="off"
               autoCapitalize="off"
               spellCheck={false}
-              className={`flex-1 min-w-0 bg-slate-900/60 border rounded-xl px-4 py-3 text-white text-sm font-mono placeholder-slate-600
-                focus:outline-none transition-colors
+              className={`flex-1 min-w-0 vm-input rounded-xl px-4 py-3 text-sm font-mono
                 ${
                   dictAnswered
                     ? dictCorrect
-                      ? 'border-emerald-500 bg-emerald-500/10'
-                      : 'border-rose-500 bg-rose-500/10'
-                    : 'border-slate-600 focus:border-purple-500'
+                      ? 'border-emerald-400 bg-emerald-500/12'
+                      : 'border-rose-400 bg-rose-500/12'
+                    : ''
                 }`}
             />
             <button
               id="dictation-submit-btn"
               onClick={handleDictationSubmit}
               disabled={!typedAnswer.trim() || dictAnswered}
-              className="flex items-center gap-1.5 px-5 py-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl font-semibold text-sm transition-all duration-200"
+              className="vm-btn vm-btn-violet flex items-center gap-1.5 px-5 py-3 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl font-semibold text-sm"
             >
               <Send size={15} /> Submit
             </button>
@@ -1186,7 +1185,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
               id="dictation-iknowit-btn"
               onClick={handleIKnowIt}
               disabled={dictAnswered}
-              className="flex items-center gap-1.5 px-5 py-3 bg-transparent border-2 border-slate-600 hover:border-slate-400 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 rounded-xl font-semibold text-sm transition-all duration-200"
+              className="vm-btn flex items-center gap-1.5 px-5 py-3 bg-slate-900/70 border border-slate-400/30 hover:border-slate-300/60 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 rounded-xl font-semibold text-sm"
               title="Auto-skip and mark as correct"
             >
               <FastForward size={15} /> I Know It
@@ -1197,14 +1196,14 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
           {dictAnswered && (
             <div className={`flex items-center gap-2 rounded-xl px-4 py-3 animate-fade-in ${
               dictCorrect
-                ? 'bg-emerald-500/15 border border-emerald-500/30'
-                : 'bg-rose-500/15 border border-rose-500/30'
+                ? 'bg-emerald-500/15 border border-emerald-400/35'
+                : 'bg-rose-500/15 border border-rose-400/35'
             }`}>
               {dictCorrect
-                ? <CheckCircle size={16} className="text-emerald-400 shrink-0" />
-                : <XCircle    size={16} className="text-rose-400 shrink-0" />}
+                ? <CheckCircle size={16} className="text-emerald-300 shrink-0" />
+                : <XCircle    size={16} className="text-rose-300 shrink-0" />}
               <span className={`text-sm font-medium ${
-                dictCorrect ? 'text-emerald-300' : 'text-rose-300'
+                dictCorrect ? 'text-emerald-200' : 'text-rose-200'
               }`}>
                 {dictCorrect
                   ? 'Correct! 🎉'
@@ -1220,7 +1219,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
 
       {/* Auto-advancing spinner */}
       {answered && (
-        <div className="animate-fade-in flex items-center justify-center gap-2 py-2 text-slate-400 text-sm">
+        <div className="animate-fade-in flex items-center justify-center gap-2 py-2 text-slate-300 text-sm">
           <div className="w-4 h-4 border-2 border-slate-600 border-t-indigo-400 rounded-full animate-spin" />
           {queueIndex + 1 >= questionQueue.length
             ? 'Finishing quiz…'
@@ -1241,31 +1240,31 @@ function QuizResults({ results, onRestart, mode }) {
   const pct     = Math.round((correct / total) * 100);
 
   const grade =
-    pct >= 90 ? { label: 'Excellent!',  color: 'text-emerald-400', emoji: '🏆' } :
-    pct >= 70 ? { label: 'Good Job!',   color: 'text-indigo-400',  emoji: '👏' } :
-    pct >= 50 ? { label: 'Keep Going!', color: 'text-amber-400',   emoji: '💪' } :
-               { label: 'Try Again!',   color: 'text-rose-400',    emoji: '📚' };
+    pct >= 90 ? { label: 'Excellent!',  color: 'text-emerald-300', emoji: '🏆' } :
+    pct >= 70 ? { label: 'Good Job!',   color: 'text-indigo-300',  emoji: '👏' } :
+    pct >= 50 ? { label: 'Keep Going!', color: 'text-amber-300',   emoji: '💪' } :
+               { label: 'Try Again!',   color: 'text-rose-300',    emoji: '📚' };
 
   return (
-    <div className="animate-fade-in max-w-lg mx-auto text-center">
-      <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-8 mb-6">
+    <div className="vm-page-enter max-w-lg mx-auto text-center">
+      <div className="vm-card rounded-3xl p-8 mb-6 vm-scale-in">
         <div className="text-6xl mb-4">{grade.emoji}</div>
-        <h2 className={`text-3xl font-bold mb-2 ${grade.color}`}>{grade.label}</h2>
-        <p className="text-slate-400 mb-6">Quiz complete! Here's how you did:</p>
+        <h2 className={`text-3xl font-extrabold tracking-tight mb-2 ${grade.color}`}>{grade.label}</h2>
+        <p className="text-slate-300 mb-6">Quiz complete! Here's how you did:</p>
 
         <div className="flex items-center justify-center gap-8 mb-6">
           <div>
-            <p className="text-4xl font-black text-white">{correct}/{total}</p>
-            <p className="text-slate-400 text-sm mt-1">Correct</p>
+            <p className="text-4xl font-black text-white tabular-nums">{correct}/{total}</p>
+            <p className="text-slate-300 text-sm mt-1">Correct</p>
           </div>
-          <div className="w-px h-12 bg-slate-700" />
+          <div className="w-px h-12 bg-slate-400/20" />
           <div>
-            <p className={`text-4xl font-black ${grade.color}`}>{pct}%</p>
-            <p className="text-slate-400 text-sm mt-1">Accuracy</p>
+            <p className={`text-4xl font-black tabular-nums ${grade.color}`}>{pct}%</p>
+            <p className="text-slate-300 text-sm mt-1">Accuracy</p>
           </div>
         </div>
 
-        <div className="bg-slate-700/40 rounded-xl p-3 text-sm text-slate-400">
+        <div className="bg-slate-900/70 border border-slate-400/15 rounded-xl p-3.5 text-sm text-slate-300">
           <Zap size={14} className="inline text-indigo-400 mr-1.5" />
           {mode === 'structure' ? 'Tiến độ L1–L5 của cấu trúc được cập nhật theo câu trả lời.' : 'Word mastery levels &amp; streaks updated based on your answers.'}
         </div>
@@ -1274,7 +1273,7 @@ function QuizResults({ results, onRestart, mode }) {
       <button
         id="restart-quiz-btn"
         onClick={onRestart}
-        className="flex items-center justify-center gap-2 mx-auto px-8 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-semibold transition-colors shadow-lg shadow-indigo-500/20"
+        className="vm-btn vm-btn-primary flex items-center justify-center gap-2 mx-auto px-8 py-3.5 rounded-2xl font-semibold"
       >
         <RotateCcw size={16} /> Take Another Quiz
       </button>
