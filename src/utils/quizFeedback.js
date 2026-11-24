@@ -14,6 +14,10 @@ export const DEFAULT_FEEDBACK_MIN_MS = 1800;
 export const DEFAULT_FEEDBACK_IMAGE_MS = 1000;
 export const DEFAULT_FEEDBACK_MAX_MS = 4000;
 
+export function getFeedbackNowMs() {
+  return Date.now();
+}
+
 /**
  * Evaluate whether the quiz should advance now or how many ms to wait next.
  *

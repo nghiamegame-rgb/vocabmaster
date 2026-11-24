@@ -9,12 +9,17 @@ import { playAudio } from '../utils/audio';
 import { selectStructures } from '../utils/structureStorage';
 import { buildStructurePrompt, validateStructureQuestions } from '../utils/structureQuiz';
 import { parseResponse, quizCountIssue } from '../utils/quizParse';
+import { evaluateFeedbackAdvance, getFeedbackNowMs } from '../utils/quizFeedback';
 import { shuffle } from '../utils/wordSelection';
 import WordInitialTile from './WordInitialTile';
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                            */
 /* ------------------------------------------------------------------ */
+const FEEDBACK_MIN_MS   = 1800;
+const FEEDBACK_IMAGE_MS = 1000;
+const FEEDBACK_MAX_MS   = 4000;
+
 const QUESTION_COUNTS = [5, 10, 15, 20];
 const DIFFICULTIES    = ['Easy', 'Medium', 'Hard'];
 const LEVEL_PRIORITIES = [
@@ -774,6 +779,9 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
   const repeatTimerRef = useRef(null);
   const repeatGenerationRef = useRef(0);
   const advanceTimerRef = useRef(null);
+  const feedbackAudioRef = useRef(null);
+  const feedbackSessionRef = useRef(0);
+  const loadedImagesRef = useRef(new Set());
   const answeredRef = useRef(false);
 
   const isDictation = answerMode === 'dictation';
@@ -826,13 +834,39 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
     return stopRepeatingPlayback;
   }, [queueIndex, isDictation, dictAnswered, q?.wordEnglish]);
 
-  // Nothing from the current question may continue after the quiz unmounts.
-  useEffect(() => () => {
-    stopRepeatingPlayback();
+  // Preload current question's word image in Multiple Choice so it is instant on answer click.
+  useEffect(() => {
+    if (isDictation || !showVisual || !imageUrl) return;
+    if (loadedImagesRef.current.has(imageUrl)) return;
+    let active = true;
+    const img = new Image();
+    img.onload = () => {
+      if (active) loadedImagesRef.current.add(imageUrl);
+    };
+    img.onerror = () => {
+      if (active) loadedImagesRef.current.delete(imageUrl);
+    };
+    img.src = imageUrl;
+    if (img.complete && img.naturalWidth > 0) {
+      loadedImagesRef.current.add(imageUrl);
+    }
+    return () => { active = false; };
+  }, [isDictation, showVisual, imageUrl]);
+
+  function stopFeedback() {
+    feedbackSessionRef.current += 1;
     if (advanceTimerRef.current) {
       clearTimeout(advanceTimerRef.current);
       advanceTimerRef.current = null;
     }
+    feedbackAudioRef.current?.cancel();
+    feedbackAudioRef.current = null;
+  }
+
+  // Nothing from the current question may continue after the quiz unmounts.
+  useEffect(() => () => {
+    stopRepeatingPlayback();
+    stopFeedback();
   }, []);
 
   // Reset dictation state when question advances
@@ -950,27 +984,81 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
   }
 
   /**
-   * Advance to the next question after the feedback delay.
+   * Advance immediately to the next question (or finish the quiz).
    * Reads only from live refs — immune to stale-closure bugs.
+   */
+  function advanceNow() {
+    stopFeedback();
+    const liveQueue   = queueRef.current;
+    const liveIdx     = idxRef.current;
+    const liveResults = resultsRef.current;
+    const isLast      = liveIdx + 1 >= liveQueue.length;
+
+    if (isLast) {
+      onFinish(liveResults);
+    } else {
+      const nextIdx  = liveIdx + 1;
+      idxRef.current = nextIdx;
+      setQueueIndex(nextIdx);
+      setSelected(null);
+    }
+  }
+
+  /**
+   * Advance to the next question after the fixed feedback delay
+   * (used by Dictation and Structure modes).
    */
   function advanceAfterDelay() {
     if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
     advanceTimerRef.current = setTimeout(() => {
       advanceTimerRef.current = null;
-      const liveQueue   = queueRef.current;
-      const liveIdx     = idxRef.current;
-      const liveResults = resultsRef.current;
-      const isLast      = liveIdx + 1 >= liveQueue.length;
+      advanceNow();
+    }, FEEDBACK_MIN_MS);
+  }
 
-      if (isLast) {
-        onFinish(liveResults);
-      } else {
-        const nextIdx  = liveIdx + 1;
-        idxRef.current = nextIdx;
-        setQueueIndex(nextIdx);
-        setSelected(null);
+  /**
+   * Multiple Choice vocabulary feedback: speak the target word immediately
+   * inside the click gesture and advance only once minimum delay, audio end,
+   * and minimum image visibility are all satisfied (capped at FEEDBACK_MAX_MS).
+   */
+  function startMcFeedback(wordEnglish) {
+    stopFeedback();
+    const sessionId = feedbackSessionRef.current;
+    const startedAt = getFeedbackNowMs();
+    const imageShownAt = startedAt;
+    let audioEnded = false;
+
+    const scheduleAdvanceCheck = () => {
+      if (sessionId !== feedbackSessionRef.current) return;
+      const evaluation = evaluateFeedbackAdvance({
+        nowMs: getFeedbackNowMs(),
+        startedAtMs: startedAt,
+        imageShownAtMs: imageShownAt,
+        audioEnded,
+        minMs: FEEDBACK_MIN_MS,
+        imageMs: FEEDBACK_IMAGE_MS,
+        maxMs: FEEDBACK_MAX_MS,
+      });
+      if (evaluation.shouldAdvance) {
+        advanceNow();
+        return;
       }
-    }, 1800);
+      if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = setTimeout(() => {
+        advanceTimerRef.current = null;
+        scheduleAdvanceCheck();
+      }, evaluation.waitMs);
+    };
+
+    feedbackAudioRef.current = playWordAudio(wordEnglish, {
+      onEnd: () => {
+        if (sessionId !== feedbackSessionRef.current) return;
+        audioEnded = true;
+        scheduleAdvanceCheck();
+      },
+    });
+
+    scheduleAdvanceCheck();
   }
 
   function handleSelect(idx) {
@@ -979,7 +1067,11 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
     setSelected(idx);
     const isCorrect = idx === q.correctIndex;
     grade(isCorrect, q, resultsRef.current);
-    advanceAfterDelay();
+    if (!isDictation && showVisual) {
+      startMcFeedback(q.wordEnglish);
+    } else {
+      advanceAfterDelay();
+    }
   }
 
   // Dictation: play audio and count plays
