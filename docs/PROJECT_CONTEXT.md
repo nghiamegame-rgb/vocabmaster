@@ -1,5 +1,7 @@
 # VocabMaster — ngữ cảnh dự án
 
+**Cập nhật nhánh `fix/audit-2026-11` (2026-11-24, chưa deploy):** sửa 17 mục của [báo cáo phân tích](BAO-CAO-PHAN-TICH-WEB.md); chi tiết, test chứng minh và thứ tự triển khai ở [BAO-CAO-SUA-LOI.md](BAO-CAO-SUA-LOI.md) và HANDOFF mục 17. Tóm tắt các điểm làm thay đổi mô tả bên dưới: (1) `GRAMMAR_SYNC_SECRET` **bắt buộc** ở cả Vercel và Script Properties; proxy Grammar trả 503 `unconfigured` khi thiếu, không còn CORS `*`, timeout 25 s; chế độ nhập URL Apps Script trực tiếp không còn dùng được. (2) Tiến độ ôn câu Grammar lưu **mỗi mục một hàng ở sheet `Review`** (backup ở `ReviewBackup`); `Meta!B1` chỉ còn là dữ liệu cũ được đọc khi chưa có sheet Review, sau lần ghi đầu chứa dấu `migrated-to-Review-sheet`. (3) `useGrammarStore` tạo ở `App` và truyền xuống `Grammar` qua prop `grammarStore`, nên đồng bộ chạy cả khi đóng tab Grammar. (4) Bỏ lưu câu Grammar để lại **tombstone** `deletedAt`; merge giữ tombstone, UI chỉ dùng câu còn sống. (5) Smart Quiz và prompt Structures nhắm **VSTEP B1–B2** (mã chế độ `vstep`). Ngoài ra: ErrorBoundary, chuẩn hóa từ khi thêm/nhập (`vocabWord.js`), `parseResponse` chuyển sang `quizParse.js`, dọn backup IndexedDB (giữ ≥30 bản thường lệ gần nhất), bỏ ảnh dự phòng Unsplash (khung chữ cái `WordInitialTile`), `npm test`.
+
 **Chẩn đoán lỗi Ôn tập (bổ sung 2026-11-16):** console `Grammar review storage` và UI trả metadata operation/key/errorType, giữ cả lỗi ghi và lỗi hoàn nguyên; không log nội dung. Chưa xác định exception production. Retry sau rollback stats lỗi dùng state đã xác nhận để không cộng trùng trong cùng phiên; nếu rollback cũng lỗi cần giữ trang mở đến khi retry thành công (chưa có journal chống crash). Chi tiết HANDOFF mục 16.
 
 **Cập nhật Ôn tập Grammar 2026-11-16:** hai nút tự đánh giá đổi sang xám và `disabled` sau khi lưu local thành công. `GrammarReview` khóa bấm trùng bằng ref; `recordReview` trả `{ ok }`, ghi tiến độ + thống kê + pending trước khi công bố React state/replay sync. Lỗi ghi trả lại các khóa đã ghi trong thao tác, báo lỗi và mở thử lại; không coi màu xám là ACK cloud. Đã kiểm tra app thật trên Edge bằng dữ liệu thử cô lập, gồm quota/retry/reload. Chi tiết và giới hạn ở HANDOFF mục 16.
@@ -13,7 +15,7 @@ Khảo sát ngày **2026-11-02** (Asia/Saigon), commit tham chiếu `4a4aff09559
 ## 1. Mức độ xác minh
 
 - **Mã nguồn:** các mô tả chức năng, giao diện, dữ liệu và sync bên dưới được đối chiếu với mã hiện có. Đường dẫn kèm component/hàm là nơi tra cứu.
-- **Đã thực thi local:** 11 file test, lint và build; có test render React ra HTML tĩnh, mô phỏng hook/network/Apps Script. Chi tiết và giới hạn bằng chứng ở mục 8 và HANDOFF.
+- **Đã thực thi local:** 30 file test Node (`npm test`), 9 test trình duyệt, lint và build; có test render React ra HTML tĩnh, mô phỏng hook/network/Apps Script. Chi tiết và giới hạn bằng chứng ở mục 8 và HANDOFF.
 - **Chưa kiểm tra trong trình duyệt:** chưa mở phiên ứng dụng, chưa thao tác UI, nghe TTS, kiểm tra responsive hoặc LocalStorage thật. Bố cục mô tả bên dưới là từ JSX/CSS, không phải quan sát trực tiếp.
 - **Chưa xác minh bên ngoài:** endpoint đang chạy, phiên bản Apps Script/Vercel đã triển khai, quyền truy cập, dữ liệu thật và đồng bộ nhiều thiết bị. Không gọi endpoint production trong khảo sát.
 
@@ -27,11 +29,11 @@ VocabMaster hỗ trợ người học tiếng Anh dùng tiếng Việt tự xây
 | --- | --- | --- |
 | Grammar luyện mới | Câu hoàn chỉnh, phân tích ngữ pháp/đọc hiểu tiếng Việt; nhắm B1–B2 (khoảng 70% B1 / 30% B2; không cố ý đưa C1) | `Grammar.jsx` → `GrammarPractice`; `grammarPrompt.js::buildGrammarPrompt` |
 | Vocabulary, Flashcard, Listening | Công cụ từ vựng dùng chung, có thể học từ VSTEP do người dùng nhập; không thấy bộ từ VSTEP tích hợp | `Vocabulary`, `Flashcard`, `ListeningReview` |
-| Smart Quiz tiếng Việt → Anh | Prompt vẫn yêu cầu bối cảnh TOEIC | `Quiz.jsx::buildPrompt`, nhánh `vn` |
-| Smart Quiz tiếng Anh | TOEIC Part 5 điền chỗ trống | `Quiz.jsx::buildPrompt`, nhánh `toeic` |
-| Smart Quiz Grammar Structures | TOEIC Part 5 theo mẫu đã lưu, liên kết bằng ID | `structureQuiz.js::buildStructurePrompt` |
+| Smart Quiz tiếng Việt → Anh | Bối cảnh VSTEP B1–B2 (không vượt B2) | `Quiz.jsx::buildPrompt`, nhánh `vn` |
+| Smart Quiz tiếng Anh | Câu tiếng Anh điền chỗ trống mức VSTEP B1–B2 | `Quiz.jsx::buildPrompt`, nhánh `vstep` |
+| Smart Quiz Grammar Structures | Câu VSTEP B1–B2 theo mẫu đã lưu, liên kết bằng ID | `structureQuiz.js::buildStructurePrompt` |
 | Câu Grammar cũ | Giữ bản ghi A/B/C/D và lời giải TOEIC; hiển thị câu đã điền đáp án để đọc/ôn | `grammarSentence.js::getGrammarSentence`; `GrammarAnalysis` |
-| Nhãn cũ | Dashboard còn mẹo TOEIC Listening; `index.html` còn meta mô tả TOEIC | `Dashboard`, `index.html` |
+| Nhãn | Dashboard, `index.html`, tiêu đề Thống kê Grammar dùng VSTEP; chỉ khối "Lịch sử trắc nghiệm TOEIC cũ" giữ chữ TOEIC | `Dashboard`, `index.html`, `GrammarStats` |
 
 Chưa thấy module luyện thi VSTEP đầy đủ bốn kỹ năng, đề Reading theo passage, Writing/Speaking có chấm bài, thang điểm VSTEP hay đối chiếu đề thi chính thức trong cây nguồn đã đọc. Nhóm chủ đề Grammar là nhóm tự học, prompt cũng nói rõ không phải đề cương VSTEP chính thức. Đây là phạm vi triển khai hiện tại, không phải lộ trình đã được duyệt.
 
@@ -40,7 +42,7 @@ Chưa thấy module luyện thi VSTEP đầy đủ bốn kỹ năng, đề Readi
 Stack khai báo: React/React DOM 19, Vite 8, JavaScript/JSX ES modules, Tailwind CSS 4 qua plugin Vite, lucide-react. Lint dùng Oxlint. Không dùng router hay thư viện quản lý state ngoài React (`package.json`, `vite.config.js`, `.oxlintrc.json`).
 
 ```text
-index.html                       # root + src/main.jsx; metadata còn TOEIC
+index.html                       # root + src/main.jsx; lang="vi", meta VSTEP B1–B2
 src/
   main.jsx                       # createRoot, StrictMode, index.css
   App.jsx                        # activeTab, vocabFilter, 2 store ở cấp App
@@ -79,7 +81,7 @@ grammar-apps-script.js            # backend câu Grammar và Structures
 test/                            # 11 script test local
 ```
 
-Luồng state: `main.jsx` → `App`. `App` giữ `useVocabStore` và `useStructuresStore`, truyền state/action xuống qua props. Chỉ khi tab Grammar được render, `Grammar` mới mount `useGrammarStore`. Chuyển tab lớn unmount màn đang học, làm mất cấu hình/phiên tạm của màn; hai store cấp App còn sống. Chuyển subtab Grammar giữ batch ID/cấu hình ở `Grammar`, nhưng xóa session hiện tại (`setSession(null)`). Không có đường dẫn URL riêng hay khôi phục phiên học sau reload (`App`, `Grammar`).
+Luồng state: `main.jsx` (StrictMode + `ErrorBoundary`) → `App`. `App` giữ `useVocabStore`, `useStructuresStore` và `useGrammarStore` (từ 2026-11-24), truyền state/action xuống qua props; `Grammar` nhận store qua prop `grammarStore`, không tự tạo. Chuyển tab lớn unmount màn đang học, làm mất cấu hình/phiên tạm của màn; ba store cấp App còn sống. Chuyển subtab Grammar giữ batch ID/cấu hình ở `Grammar`, nhưng xóa session hiện tại (`setSession(null)`). Không có đường dẫn URL riêng hay khôi phục phiên học sau reload (`App`, `Grammar`).
 
 ## 4. Màn hình và luồng học
 
@@ -95,11 +97,11 @@ Bố cục từ mã: nền slate tối, thanh nav cố định phía trên, nộ
 
 - `Flashcard`: chọn Anh → Việt hoặc Việt → Anh, lọc cấp/loại và `Chỉ từ khó ⭐` (`#flashcard-hard-toggle`, giao chặt), lật thẻ rồi đánh dấu nhớ/cần ôn; mỗi đánh giá cập nhật Vocabulary nhưng giữ nguyên `hardMarked`. Ưu tiên cấp thấp rồi streak thấp, né tối đa 8 ID gần nhất nếu có thể. Không chọn trực tiếp bằng ngày đến hạn (`Flashcard::advanceToNext/handleNext`; `wordSelection.js::pickNextWord`).
 - `ListeningReview`: cần ít nhất 4 từ trong tập lọc (giao chặt giữa Level, Type, `Chỉ từ khó ⭐` `#lr-hard-toggle` và `Due for Review` `#lr-due-toggle`, không tự lùi về tập rộng hơn khi `< 4` từ khớp), tự phát âm từ mục tiêu, chọn một trong 4 thẻ ảnh hoặc gõ đúng từ; có nghe lại, gợi ý và bật/tắt nghĩa, bỏ qua. Gõ khớp sau trim/lowercase tự chấm đúng; chọn sai làm giảm cấp từ mục tiêu ngay. Nút tiếp/bỏ qua hoặc đổi bộ lọc giữa chừng không chấm câu đang dở. Điểm phiên ở component, không cộng `stats` Dashboard (`handleTypingChange`, `handleCardClick`, `handleNext`, `filteredPool`).
-- Audio: `audio.js::playAudio` ưu tiên giọng Web Speech en-US/en-GB, rate 0.9; dự phòng Google TTS. `ListeningReview::getImageUrl` và `QuizGame` dùng ảnh theo URL hoặc dịch vụ ảnh bên ngoài. Khả năng phát âm/tải ảnh thật chưa xác minh.
+- Audio: `audio.js::playAudio` ưu tiên giọng Web Speech en-US/en-GB, rate 0.9; dự phòng Google TTS. `ListeningReview` và `QuizGame` dùng ảnh theo `imageUrl`; từ không có ảnh hiện khung chữ cái đầu (`WordInitialTile`), không gọi dịch vụ ảnh bên ngoài. Khả năng phát âm/tải ảnh thật chưa xác minh.
 
 ### Smart Quiz
 
-`QuizConfig` chọn 5/10/15/20 câu, Easy/Medium/Hard, chế độ `vn`/`toeic`/`structure`. Với Vocabulary, chọn loại, cấp ưu tiên và tùy chọn `Chỉ từ khó ⭐` (`#quiz-hard-toggle`) theo phép giao chặt (không fallback về từ ngoài bộ lọc khi `< 4` từ), cùng chế độ trả lời trắc nghiệm hoặc nghe-gõ; cần ít nhất 4 từ khớp bộ lọc để copy prompt và bắt đầu. Khi `Chỉ từ khó ⭐` bật, `handleStart` kiểm tra các từ `wordEnglish` trong JSON dán vào phải thuộc tập từ khớp bộ lọc. Structures chọn mẫu đã lưu, không cần bốn từ Vocabulary; UI dùng trắc nghiệm cho nhánh này. Copy prompt sang AI → dán JSON → `parseResponse` → `QuizGame` → `QuizResults`.
+`QuizConfig` chọn 5/10/15/20 câu, Easy/Medium/Hard, chế độ `vn`/`vstep`/`structure`. Với Vocabulary, chọn loại, cấp ưu tiên và tùy chọn `Chỉ từ khó ⭐` (`#quiz-hard-toggle`) theo phép giao chặt (không fallback về từ ngoài bộ lọc khi `< 4` từ), cùng chế độ trả lời trắc nghiệm hoặc nghe-gõ; cần ít nhất 4 từ khớp bộ lọc để copy prompt và bắt đầu. Khi `Chỉ từ khó ⭐` bật, `handleStart` kiểm tra các từ `wordEnglish` trong JSON dán vào phải thuộc tập từ khớp bộ lọc. Structures chọn mẫu đã lưu, không cần bốn từ Vocabulary; UI dùng trắc nghiệm cho nhánh này. Copy prompt sang AI → dán JSON → `parseResponse` → `QuizGame` → `QuizResults`.
 
 Vocabulary chọn đáp án/gõ từ rồi chấm. Lần sai đầu chỉ gắn cảnh báo và chèn câu kiểm tra lại; chưa giảm cấp. Kiểm tra lại đúng tăng streak và sửa lượt sai trong tally; sai lần nữa mới giảm một cấp. Vì có kiểm tra lại, tally không nhất thiết tương ứng số câu ban đầu. Khi kết thúc, `handleFinish` cộng thống kê Vocabulary; bỏ phiên giữa chừng không tổng kết. Nhánh Structures ghi một sự kiện đúng/sai vào store Structures ngay mỗi đáp án, không dùng cơ chế tha lỗi này và không cộng stats Vocabulary (`QuizGame::grade`, `Quiz::handleFinish`).
 
@@ -191,11 +193,11 @@ ScriptLock bao GET/POST/pause/restore. Snapshot JSON bất biến trên Drive l�
 
 `grammarStorage.js::getGrammarCloudUrl` mặc định `/api/grammar-sync`; URL tùy chỉnh lưu local và **dùng chung cho Structures**. Chuỗi rỗng trở về default, không tắt cloud bằng cách xóa URL. Badge configured chỉ nói có URL, không chứng minh kết nối thành công.
 
-`useGrammarStore::syncFromCloud` tự GET khi mount module, đổi URL hoặc có sự kiện online; có nút Sync trong Cloud/thử lại. Chỉ ready để push sau GET hợp lệ. Merge giữ dữ liệu local hữu ích cả khi thiếu cờ pending cũ. Edit persist đồng bộ ngay, pending lưu bền; debounce 2,5 giây gửi `action: save`, `expectedRevision`, `savedQuestions`, `reviewProgress`. ACK phải có revision tăng đúng 1 và written khớp. Conflict → fetch/merge → thử POST lại một lần. Thay đổi trong request được replay, version check giữ pending cho sửa mới, session/endpoint check bỏ response cũ. Rời tab lớn unmount hook; mount lại tiếp tục từ cache/pending.
+`useGrammarStore::syncFromCloud` tự GET khi App mount, đổi URL hoặc có sự kiện online; có nút Sync trong Cloud/thử lại. Chỉ ready để push sau GET hợp lệ. Merge giữ dữ liệu local hữu ích cả khi thiếu cờ pending cũ. Edit persist đồng bộ ngay, pending lưu bền; debounce 2,5 giây gửi `action: save`, `expectedRevision`, `savedQuestions`, `reviewProgress`. ACK phải có revision tăng đúng 1 và written khớp. Conflict → fetch/merge → thử POST lại một lần. Thay đổi trong request được replay, version check giữ pending cho sửa mới, session/endpoint check bỏ response cũ. Store sống ở App nên rời tab Grammar không dừng đồng bộ. Ghi LocalStorage lỗi: không đổi ref/state, không đánh dấu pending, hiện `storageError`; không nhận revision cloud nếu chưa lưu được dữ liệu.
 
-`mergeSavedQuestions` union theo savedId, hardMarked OR, ưu tiên notes local không rỗng, savedAt sớm nhất; `mergeReviewProgress` lấy max level/counters/timestamps. Các sửa được replay trong request hiện tại có thể sống qua conflict, **nhưng chưa có tombstone/nhật ký sửa xuyên thiết bị cho câu Grammar**: merge sau này vẫn có thể khôi phục câu đã xóa, sao đã bỏ, ghi chú đã xóa hoặc cấp cao cũ. CAS tránh ghi revision cũ, không giải quyết triệt để ý nghĩa merge. Đẩy rỗng chỉ khi xóa câu cuối rõ ràng sau hydration mới đặt `confirmEmpty`.
+`mergeSavedQuestions` union theo savedId, hardMarked OR, ưu tiên notes local không rỗng, savedAt sớm nhất; `mergeReviewProgress` lấy max level/counters/timestamps. Các sửa được replay trong request hiện tại có thể sống qua conflict. **Câu đã xóa dùng tombstone** `deletedAt` (lấy max khi merge; tiến độ ôn của câu đã xóa bị bỏ), nên thiết bị cũ không làm câu sống lại; dữ liệu cũ không có tombstone đọc như trước. **Chưa có nhật ký sửa cho các trường khác**: merge vẫn có thể khôi phục sao đã bỏ, ghi chú đã xóa hoặc cấp cao cũ. CAS tránh ghi revision cũ. Vì câu đã xóa được gửi dạng tombstone, payload hiếm khi rỗng; `confirmEmpty` chỉ còn cho trường hợp thật sự không có bản ghi.
 
-`grammar-apps-script.js`: `doGet/doPost` có ScriptLock, validate v2/legacy, revision ở `Meta!A1`, review JSON ở `Meta!B1`, metadata C1:D1; câu lưu JSON từng hàng cột A trong `SavedQuestions`. `createBackup` giữ snapshot trước lần ghi gần nhất ở `Backup` rồi ghi câu/review và tăng revision. Không coi backup này là lịch sử nhiều phiên hay transaction tự rollback như Structures; nhánh Grammar không có journal tương đương Structures.
+`grammar-apps-script.js`: `doGet/doPost` có ScriptLock, validate v2/legacy, revision ở `Meta!A1`, metadata C1:D1; câu lưu JSON từng hàng cột A trong `SavedQuestions`. Tiến độ ôn lưu **mỗi mục một hàng ở sheet `Review`** (cột A savedId, cột B JSON) để tránh giới hạn 50.000 ký tự/ô; khi chưa có sheet Review thì đọc JSON cũ ở `Meta!B1`, lần ghi đầu tạo sheet Review rồi mới ghi dấu `migrated-to-Review-sheet` vào `Meta!B1` (bị ngắt giữa chừng vẫn đọc lại `Meta!B1`). Hàng Review hỏng chặn đọc/ghi. `createBackup` giữ câu/revision trước lần ghi gần nhất ở `Backup` và tiến độ cũ ở `ReviewBackup` rồi ghi câu/review và tăng revision. Không quay Apps Script về bản cũ sau khi đã chuyển (bản cũ chỉ đọc `Meta!B1`). Không coi backup này là lịch sử nhiều phiên hay transaction tự rollback như Structures; nhánh Grammar không có journal tương đương Structures.
 
 ### Structures — chung endpoint, riêng giao thức
 
@@ -207,13 +209,13 @@ Backend dùng sheet `Structures`, `StructuresBackup`, revision `Meta!E1`, journa
 
 ### Proxy và triển khai
 
-`api/grammar-sync.js::handler` chuyển tiếp GET/POST/OPTIONS, thêm secret từ env **server** `GRAMMAR_SYNC_SECRET`, upstream từ `GRAMMAR_APPS_SCRIPT_URL`; chuyển tiếp scope Structures. Apps Script `checkAuth` dùng Script Property secret nếu có; không đặt secret thì bỏ yêu cầu này. Proxy chưa có xác thực người dùng riêng và đặt CORS `*`; secret upstream không đồng nghĩa app có phân quyền người dùng.
+`api/grammar-sync.js::handler` chuyển tiếp GET/POST, thêm secret từ env **server** `GRAMMAR_SYNC_SECRET`, upstream từ `GRAMMAR_APPS_SCRIPT_URL`; chuyển tiếp scope Structures. **Cả hai env bắt buộc**: thiếu thì trả 503 `unconfigured`, không gọi upstream. Không đặt CORS (chỉ cùng origin), mọi fetch có `AbortSignal.timeout(25000)`, lỗi nội bộ không trả `err.message` cho trình duyệt. Apps Script `checkAuth` **từ chối mọi yêu cầu khi chưa đặt** Script Property `GRAMMAR_SYNC_SECRET`. Vì secret không thể nằm ở frontend, chế độ nhập URL Apps Script trực tiếp không còn đồng bộ được. Proxy vẫn chưa có xác thực người dùng riêng; secret upstream không đồng nghĩa app có phân quyền người dùng.
 
 Vite config chỉ có React/Tailwind, không có proxy `/api`. `npm run dev` và `preview` riêng không chạy Vercel function. Backend cũ có thể chưa hiểu v2/Structures; mã repo không chứng minh bản đang deploy. Triển khai Apps Script/Vercel là bước riêng cần người dùng cho phép, không nằm trong khảo sát này.
 
 ## 8. Chạy và kiểm tra
 
-Scripts thực tế (`package.json`): `npm run dev`, `npm run build`, `npm run lint`, `npm run preview`. Không có `npm test`. Dependency đã có trong workspace; không cài hoặc đổi dependency trong khảo sát. Môi trường thực thi kiểm tra: Node `v24.21.0`, npm `11.19.0`; đây là phiên bản quan sát, không phải yêu cầu tối thiểu đã chứng minh. Trên PowerShell có thể dùng `npm.cmd`.
+Scripts thực tế (`package.json`): `npm run dev`, `npm run build`, `npm run lint`, `npm run preview`, `npm test` (từ 2026-11-24: `test/run-node-tests.js` chạy lần lượt mọi `test/*.test.js` không cần trình duyệt, báo PASS/FAIL từng file). Dependency đã có trong workspace; không cài hoặc đổi dependency trong khảo sát. Môi trường thực thi kiểm tra: Node `v24.21.0`, npm `11.19.0`; đây là phiên bản quan sát, không phải yêu cầu tối thiểu đã chứng minh. Trên PowerShell có thể dùng `npm.cmd`.
 
 | Lệnh | Nội dung/bằng chứng |
 | --- | --- |
@@ -236,7 +238,7 @@ Scripts thực tế (`package.json`): `npm run dev`, `npm run build`, `npm run l
 | `node test/grammar-export-browser.test.js` | App/Edge tải XLSX thật, clipboard/manual fallback, stale/config/import/save/GET, cache trống/hỏng/không đọc được và viewport 1280/375/320px; cần Playwright/Edge + Python 3, network/storage cô lập |
 | `node test/vocab-star-browser.test.js` | App/Edge kiểm tra đánh dấu sao từ khó (`hardMarked`), bộ lọc `Khó ⭐` và `Chỉ từ khó ⭐` (giao chặt, trạng thái trống, bảo toàn sao sau sửa/chấm/export/import, chặn đề JSON không khớp) trên Vocabulary, Flashcard, Listening, Smart Quiz và viewport 1280/375/320px |
 
-Lần khảo sát: **cả 11 file exit 0**. `npm.cmd run lint` exit 0 nhưng còn cảnh báo unused, hook deps, set-state-in-effect, purity/refs…; không sửa vì chỉ bàn giao. Build exit 0 bằng `npm.cmd run build -- --outDir <thư-mục-tạm-mới>` để giữ `dist` hiện có; Vite báo outDir ngoài project không tự dọn và thông tin thời gian plugin. Không chạy dev server/browser.
+Từ 2026-11-24 có thêm test: `error-boundary`, `vocab-normalize`, `quiz-parse`, `navbar-a11y`, `word-initial-tile`, `grammar-security`, `grammar-review-sheet`, `vocab-backup-prune` (IndexedDB giả `test/helpers/fake-indexeddb.js`), `grammar-store-app`, `dead-code`, `vstep-labels`; `npm test` 30/30 đạt. Kết quả test trình duyệt xem BAO-CAO-SUA-LOI mục "Kiểm tra trình duyệt". Lần khảo sát 2026-11-02: **cả 11 file exit 0**. `npm.cmd run lint` exit 0 nhưng còn cảnh báo unused, hook deps, set-state-in-effect, purity/refs…; không sửa vì chỉ bàn giao. Build exit 0 bằng `npm.cmd run build -- --outDir <thư-mục-tạm-mới>` để giữ `dist` hiện có; Vite báo outDir ngoài project không tự dọn và thông tin thời gian plugin. Không chạy dev server/browser.
 
 Phụ thuộc ngoài lúc sử dụng: Google Sheets + Apps Script cho sync, Vercel/server có function nếu dùng proxy, Web Speech/Google TTS, URL ảnh và dịch vụ ảnh dự phòng, Google Fonts, AI chat do người dùng tự dùng. Build/test local không xác minh các dịch vụ này; không có service worker/offline app shell trong nguồn đã đọc. LocalStorage không thay thế bản sao lưu độc lập.
 
@@ -245,7 +247,7 @@ Phụ thuộc ngoài lúc sử dụng: Google Sheets + Apps Script cho sync, Ver
 Các điểm dưới đây được thấy trong mã; tác động production chưa thử:
 
 - Không nhập nhằng ba hệ L1–L5 và hai kiểu quiz. Dashboard accuracy chỉ từ Smart Quiz Vocabulary; Grammar hiểu/cần ôn là tự đánh giá, không phải điểm thi.
-- `Vocabulary::handleImport` gọi `addWord` nên **sinh lại ID và không phục hồi `lastReviewedDate`**; level/streak/createdAt/annotation được nhận nhưng đây không phải restore nguyên snapshot. Validation import khá nông, kiểm tra trùng dựa trên kho trước nhập; hook `addWord` dùng `Date.now()` cho ID. Rủi ro ID trùng khi thêm rất nhanh và trùng ngay trong cùng file cần kiểm tra nếu sửa import, không coi test hiện tại đã phủ hết.
+- `Vocabulary::handleImport` gọi `addWord` nên **sinh lại ID**; `addWord` và import dùng `vocabWord.js::normalizeWordInput` (level nguyên 1–5, streak ≥ 0, các trường chuỗi, ngày hợp lệ, đúng ràng buộc Apps Script Vocabulary) và báo số mục đã chỉnh; `lastReviewedDate` hợp lệ được giữ. Đây không phải restore nguyên snapshot. Kiểm tra trùng dựa trên kho trước nhập; ID là `crypto.randomUUID()`. Rủi ro ID trùng khi thêm rất nhanh và trùng ngay trong cùng file cần kiểm tra nếu sửa import, không coi test hiện tại đã phủ hết.
 - Vocabulary push đang chạy có guard bỏ lượt gọi mới; chưa thấy hàng đợi pending bền như Grammar hoặc cơ chế chắc chắn gửi tiếp mọi sửa trong lúc verify. Cần kiểm tra race/offline khi làm việc sync, tránh coi debounce là bảo đảm lưu.
 - Merge Vocabulary cloud-first có thể mất sửa local cho cùng từ; Grammar max/OR có thể đảo ý định xóa/giảm cấp. Giữ guard cloud rỗng/lỗi; không thử ghi/xóa production để kiểm chứng.
 - Storage getter thường fallback khi parse lỗi nhưng nhiều nơi không validate toàn bộ shape; setter LocalStorage có thể throw khi hết quota/bị chặn. Chỉ lịch sử prompt mới có fallback bộ nhớ rõ ràng. Không coi cache hỏng là cho phép xóa dữ liệu gốc.
