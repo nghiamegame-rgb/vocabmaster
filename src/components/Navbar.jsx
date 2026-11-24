@@ -62,44 +62,45 @@ function PushIndicator({ pushStatus }) {
   );
 }
 
-/* ── Toast banner ── */
-function SyncToast({ syncStatus, pushStatus, show }) {
-  // Compute which message to show
-  // Push errors take priority over sync state for the toast
-  const pushErrorActive = pushStatus === 'error';
+/* ── Sync status message (same rules and texts as the former floating toast) ── */
+const SYNC_MESSAGES = {
+  syncing:    { text: '☁️ Fetching fresh data from Google Sheets…', cls: 'text-indigo-200 bg-indigo-500/15 border-indigo-400/35' },
+  ok:         { text: '✅ Vocabulary synced successfully!',          cls: 'text-emerald-200 bg-emerald-500/15 border-emerald-400/35' },
+  error:      { text: '❌ Vocabulary gặp lỗi — xem chi tiết bên dưới.', cls: 'text-rose-200 bg-rose-500/15 border-rose-400/35' },
+  push_error: { text: '⚠️ Vocabulary chưa lưu/đồng bộ xong — xem chi tiết bên dưới.', cls: 'text-rose-200 bg-rose-500/15 border-rose-400/35' },
+};
 
-  const messages = {
-    syncing:    { text: '☁️ Fetching fresh data from Google Sheets…', cls: 'bg-indigo-600/90 border-indigo-400/40 text-white' },
-    ok:         { text: '✅ Vocabulary synced successfully!',          cls: 'bg-emerald-600/90 border-emerald-400/40 text-white' },
-    error:      { text: '❌ Vocabulary gặp lỗi — xem chi tiết bên dưới.', cls: 'bg-rose-600/90 border-rose-400/40 text-white' },
-    push_error: { text: '⚠️ Vocabulary chưa lưu/đồng bộ xong — xem chi tiết bên dưới.', cls: 'bg-rose-600/90 border-rose-400/40 text-white' },
-  };
+/** Which message to show: push errors take priority over the sync state. */
+function syncStatusMessage(syncStatus, pushStatus, show) {
+  if (pushStatus === 'error') return { key: 'push_error', ...SYNC_MESSAGES.push_error };
+  if (!show) return null;
+  const msg = SYNC_MESSAGES[syncStatus];
+  return msg ? { key: syncStatus, ...msg } : null;
+}
 
-  // Derive the display key
-  let key;
-  if (pushErrorActive) {
-    key = 'push_error';
-  } else if (!show) {
-    return null;
-  } else {
-    key = syncStatus;
-  }
-
-  const msg = messages[key];
-  if (!msg) return null;
-
+/**
+ * Small status chip inside the navbar row, left of the push indicator / Sync button.
+ * From md (768 px) it is visible; below md there is no room, so the same element stays
+ * screen-reader only (still a polite live region). Never covers the page content.
+ */
+function SyncStatusChip({ message }) {
   return (
     <div
-      className={`
-        fixed top-[72px] left-1/2 -translate-x-1/2 z-50
-        px-5 py-2.5 rounded-2xl border backdrop-blur-md shadow-[0_18px_42px_-10px_rgba(2,6,23,0.88)] text-sm font-semibold
-        vm-toast-enter max-w-[calc(100vw-2rem)] whitespace-normal sm:whitespace-nowrap
-        ${msg.cls}
-      `}
+      id="nav-sync-status"
       role="status"
       aria-live="polite"
+      className="sr-only md:not-sr-only md:flex md:min-w-0 md:shrink md:justify-end"
     >
-      {msg.text}
+      {message && (
+        <span
+          key={message.key}
+          data-sync-chip={message.key}
+          title={message.text}
+          className={`vm-scale-in block max-w-full truncate md:mx-1.5 px-2.5 py-1 rounded-xl border text-xs font-semibold leading-4 ${message.cls}`}
+        >
+          {message.text}
+        </span>
+      )}
     </div>
   );
 }
@@ -108,8 +109,10 @@ export default function Navbar({ activeTab, setActiveTab, syncStatus, pushStatus
   const sync = useSyncVisual(syncStatus);
   const SyncIcon = sync.Icon;
 
-  // Show toast whenever actively syncing, just finished (ok/error), or push failed
+  // Show the status message whenever actively syncing, just finished (ok/error), or push failed
   const showToast = syncStatus !== 'idle' || pushStatus === 'error';
+  const statusMessage = syncStatusMessage(syncStatus, pushStatus, showToast);
+  const syncTitle = 'Đọc Vocabulary mới nhất và thử gửi thay đổi đang chờ; không xóa cache';
 
   return (
     <>
@@ -121,12 +124,12 @@ export default function Navbar({ activeTab, setActiveTab, syncStatus, pushStatus
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 ring-1 ring-white/15 transition-transform duration-200 hover:scale-105">
                 <span className="text-white font-black text-sm">V</span>
               </div>
-              <span className="text-white font-bold text-lg tracking-tight hidden sm:block">
+              <span className="text-white font-bold text-lg tracking-tight hidden xl:block">
                 Vocab<span className="text-indigo-400">Master</span>
               </span>
             </div>
 
-            {/* Tabs */}
+            {/* Tabs (labels from lg: below that they do not fit beside the sync controls) */}
             <div className="flex items-center gap-0.5 sm:gap-1 flex-1">
               {tabs.map(({ id, label, Icon }) => (
                 <button
@@ -135,17 +138,20 @@ export default function Navbar({ activeTab, setActiveTab, syncStatus, pushStatus
                   aria-label={label}
                   onClick={() => setActiveTab(id)}
                   className={`
-                    vm-btn flex items-center gap-2 px-1.5 sm:px-3 py-2 rounded-xl text-sm font-medium
+                    vm-btn flex items-center gap-2 px-1.5 sm:px-3 py-2 rounded-xl text-sm font-medium shrink-0 whitespace-nowrap
                     ${activeTab === id
                       ? 'vm-btn-primary text-white'
                       : 'text-slate-300/85 hover:text-white hover:bg-slate-800/75'}
                   `}
                 >
                   <Icon size={16} />
-                  <span className="hidden sm:block">{label}</span>
+                  <span className="hidden lg:block">{label}</span>
                 </button>
               ))}
             </div>
+
+            {/* Sync status chip (md+ visible, screen-reader only on phones) */}
+            <SyncStatusChip message={statusMessage} />
 
             {/* Push indicator (auto-save status) */}
             <PushIndicator pushStatus={pushStatus} />
@@ -155,7 +161,7 @@ export default function Navbar({ activeTab, setActiveTab, syncStatus, pushStatus
               id="nav-sync-btn"
               onClick={onSync}
               disabled={syncStatus === 'syncing'}
-              title="Đọc Vocabulary mới nhất và thử gửi thay đổi đang chờ; không xóa cache"
+              title={statusMessage ? `${statusMessage.text} — ${syncTitle}` : syncTitle}
               className={`
                 vm-btn flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl text-xs font-semibold
                 border ml-1 sm:ml-2 shrink-0
@@ -172,9 +178,6 @@ export default function Navbar({ activeTab, setActiveTab, syncStatus, pushStatus
           </div>
         </div>
       </nav>
-
-      {/* Toast notification — rendered outside the nav so it sits below it */}
-      <SyncToast syncStatus={syncStatus} pushStatus={pushStatus} show={showToast} />
     </>
   );
 }
