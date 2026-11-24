@@ -6,6 +6,7 @@ import {
 import { playAudio } from '../utils/audio';
 import { isDueForReview } from '../hooks/useVocabStore';
 import { shuffle, buildListeningRound } from '../utils/wordSelection';
+import WordInitialTile from './WordInitialTile';
 
 /* ------------------------------------------------------------------ */
 /* Constants — mirrored from Vocabulary.jsx                             */
@@ -36,16 +37,6 @@ const LEVEL_BG = {
   4: 'bg-teal-500/80',
   5: 'bg-emerald-500/80',
 };
-
-/* ------------------------------------------------------------------ */
-/* Helpers                                                              */
-/* ------------------------------------------------------------------ */
-
-/** Resolve image URL for a word */
-function getImageUrl(word) {
-  if (word.imageUrl && word.imageUrl.trim()) return word.imageUrl.trim();
-  return `https://source.unsplash.com/featured/400x300/?${encodeURIComponent(word.english)}`;
-}
 
 /* ------------------------------------------------------------------ */
 /* FilterPills — shared pill-button row                                 */
@@ -86,6 +77,8 @@ function FilterPills({ options, active, onSelect, countFn, idPrefix }) {
 function ImageCard({ word, state, onClick, showMeaning, onToggleMeaning, index, isGlobal }) {
   const [imgLoaded, setImgLoaded] = useState(false);
   const [imgError,  setImgError]  = useState(false);
+  // Words without an image show a local initial-letter tile (no image service).
+  const imageUrl = word.imageUrl?.trim() || '';
 
   const borderClass =
     state === 'correct'  ? 'border-emerald-400 shadow-emerald-500/40 shadow-xl' :
@@ -113,9 +106,11 @@ function ImageCard({ word, state, onClick, showMeaning, onToggleMeaning, index, 
     >
       {/* Image area */}
       <div className="relative w-full aspect-[4/3] bg-slate-800">
-        {!imgError ? (
+        {!imageUrl ? (
+          <WordInitialTile word={word.english} className="absolute inset-0" />
+        ) : !imgError ? (
           <img
-            src={getImageUrl(word)}
+            src={imageUrl}
             alt={word.english}
             className={`w-full h-full object-cover transition-opacity duration-500 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
             onLoad={() => setImgLoaded(true)}
@@ -134,7 +129,7 @@ function ImageCard({ word, state, onClick, showMeaning, onToggleMeaning, index, 
         )}
 
         {/* Skeleton shimmer */}
-        {!imgLoaded && !imgError && (
+        {imageUrl && !imgLoaded && !imgError && (
           <div className="absolute inset-0 bg-slate-700 animate-pulse" />
         )}
 

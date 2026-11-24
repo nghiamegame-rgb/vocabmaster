@@ -10,6 +10,7 @@ import { selectStructures } from '../utils/structureStorage';
 import { buildStructurePrompt, validateStructureQuestions } from '../utils/structureQuiz';
 import { parseResponse, quizCountIssue } from '../utils/quizParse';
 import { shuffle } from '../utils/wordSelection';
+import WordInitialTile from './WordInitialTile';
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                            */
@@ -789,12 +790,9 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
     w => w.english.toLowerCase() === (q.wordEnglish || '').toLowerCase()
   );
 
-  // Determine image URL: use stored imageUrl or Unsplash fallback
-  const imageUrl = wordObj?.imageUrl
-    ? wordObj.imageUrl
-    : mode !== 'structure' && q.wordEnglish
-      ? `https://source.unsplash.com/featured/300x200/?${encodeURIComponent(q.wordEnglish)}`
-      : null;
+  // Stored imageUrl, otherwise a local initial-letter tile (no image service).
+  const imageUrl = wordObj?.imageUrl?.trim() || null;
+  const showVisual = mode !== 'structure' && Boolean(q.wordEnglish);
 
   function stopRepeatingPlayback() {
     repeatGenerationRef.current += 1;
@@ -1038,7 +1036,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
 
       {/* Question card — Listening & Typing shows the image immediately */}
       <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6 mb-5 shadow-xl">
-        <div className={`flex gap-5 ${isDictation && imageUrl ? 'flex-col sm:flex-row' : ''}`}>
+        <div className={`flex gap-5 ${isDictation && showVisual ? 'flex-col sm:flex-row' : ''}`}>
 
           {/* Left: question text + explanation */}
           <div className="flex-1 min-w-0">
@@ -1063,14 +1061,18 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
           </div>
 
           {/* Right: vocabulary image — visible immediately in Listening & Typing */}
-          {isDictation && imageUrl && (
+          {isDictation && showVisual && (
             <div className="animate-fade-in sm:w-56 sm:shrink-0 rounded-2xl overflow-hidden border border-slate-700/50 shadow-lg relative">
-              <img
-                src={imageUrl}
-                alt={q.wordEnglish}
-                className="w-full h-48 sm:h-full object-cover"
-                onError={e => { e.target.style.display = 'none'; }}
-              />
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt={q.wordEnglish}
+                  className="w-full h-48 sm:h-full object-cover"
+                  onError={e => { e.target.style.display = 'none'; }}
+                />
+              ) : (
+                <WordInitialTile word={q.wordEnglish} className="w-full h-48 sm:h-full" />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 via-transparent to-transparent" />
               <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
                 <Volume2 size={13} className="text-white/80" />
