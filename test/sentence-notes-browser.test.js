@@ -208,7 +208,9 @@ try {
   await page.getByRole('button', { name: /^Hiện ghi chú/ }).click();
   assert.ok(await area(first).locator('[data-sentence-note]').count());
   await page.getByRole('button', { name: 'Câu tiếp', exact: true }).click();
-  assert.equal(await area(second).locator('[data-sentence-note]').count(), 0, 'each new Review sentence hides notes');
+  assert.equal(await area(second).locator('[data-sentence-note="n2"]').isVisible(), true, 'Review preserves shown notes across next sentence');
+  await page.getByRole('button', { name: /^Ẩn ghi chú/ }).click();
+  assert.equal(await area(second).locator('[data-sentence-note]').count(), 0, 'manual hide conceals notes on current Review sentence');
   await note(second, 'gq_two', cpRange(second, 'local transport'), 'phương tiện địa phương');
   assert.equal(await area(second).locator('[data-sentence-note="n2"]').isVisible(), true, 'creation reveals existing notes too');
   await close();
