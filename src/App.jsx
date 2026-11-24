@@ -28,7 +28,6 @@ export default function App() {
     bulkUpdateLevel,
     recordQuizResult,
     syncStatus,
-    syncMode,
     pushStatus,
     syncFromCloud,
     syncNotice, syncPaused, pauseSync, resumeSync, exportSyncBackup,
@@ -47,7 +46,6 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={handleSetActiveTab}
         syncStatus={syncStatus}
-        syncMode={syncMode}
         pushStatus={pushStatus}
         onSync={syncFromCloud}
       />

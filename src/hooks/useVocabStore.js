@@ -50,7 +50,6 @@ export function useVocabStore() {
   const syncStatus = engine?.status === 'pushing' ? 'syncing' : engine?.status || 'error';
   const pushStatus = ['pushing', 'error'].includes(engine?.status) ? engine.status : 'idle';
   const cloudReadStatus = engine?.readStatus || 'error';
-  const syncMode = 'soft';
   async function exportSyncBackup() {
     const data = {};
     try {
@@ -177,11 +176,6 @@ export function useVocabStore() {
     catch (error) { setStatsError('Thống kê: ' + storageMessage(error)); }
   }
 
-  /** Additive import only. Whole-library replacement requires server generation change. */
-  async function importWords(wordList) {
-    for (const word of wordList) await addWord(word);
-  }
-
   return {
     words,
     dataLoadError: loadError,
@@ -194,7 +188,6 @@ export function useVocabStore() {
     cloudReadStatus,
     stats,
     syncStatus,
-    syncMode,
     pushStatus,
     addWord,
     deleteWord,
@@ -203,7 +196,6 @@ export function useVocabStore() {
     updateWordLevel,
     bulkUpdateLevel,
     recordQuizResult,
-    importWords,
     syncFromCloud,
   };
 }

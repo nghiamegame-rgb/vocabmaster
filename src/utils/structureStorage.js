@@ -2,7 +2,6 @@
 export const LS_STRUCTURES = 'vocabmaster_grammar_structures';
 
 export const STRUCTURE_REVIEW_INTERVALS = { 1: 1, 2: 3, 3: 7, 4: 14, 5: 30 };
-export const STRUCTURE_LEVEL_UP_THRESHOLD = { 1: 2, 2: 4, 3: 8, 4: 15 };
 
 export function getStructures() {
   try {
@@ -19,11 +18,6 @@ export function saveStructures(structures) {
 
 export function isStructureDue(structure) {
   return !structure?.nextReviewAt || Date.now() >= structure.nextReviewAt;
-}
-
-export function calcStructureNextReviewAt(level) {
-  const days = STRUCTURE_REVIEW_INTERVALS[level] ?? 1;
-  return Date.now() + days * 24 * 60 * 60 * 1000;
 }
 
 /** Weighted pool: L1/L2, wrong, and due structures are preferred. */
