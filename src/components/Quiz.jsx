@@ -768,6 +768,8 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
 
   const [selected,   setSelected]   = useState(null);
   const [results,    setResults]    = useState([]);
+  const [feedbackImageReady, setFeedbackImageReady] = useState(false);
+  const [feedbackImgError,   setFeedbackImgError]   = useState(false);
 
   // Dictation mode state
   const [typedAnswer,  setTypedAnswer]  = useState('');
@@ -1001,6 +1003,8 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
       idxRef.current = nextIdx;
       setQueueIndex(nextIdx);
       setSelected(null);
+      setFeedbackImageReady(false);
+      setFeedbackImgError(false);
     }
   }
 
@@ -1068,6 +1072,8 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
     const isCorrect = idx === q.correctIndex;
     grade(isCorrect, q, resultsRef.current);
     if (!isDictation && showVisual) {
+      setFeedbackImageReady(Boolean(imageUrl && loadedImagesRef.current.has(imageUrl)));
+      setFeedbackImgError(false);
       startMcFeedback(q.wordEnglish);
     } else {
       advanceAfterDelay();
@@ -1205,6 +1211,38 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
               )}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* ── Multiple-Choice Audio + Visual Feedback Overlay ── */}
+      {!isDictation && showVisual && answered && (
+        <div
+          id="quiz-mc-feedback-overlay"
+          aria-live="polite"
+          className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-3 pointer-events-none"
+        >
+          <div className="vm-feedback-in w-full max-w-[236px] sm:max-w-[256px] rounded-2xl overflow-hidden border border-slate-400/25 bg-[#0d1424]/95 shadow-[var(--shadow-floating)] ring-1 ring-white/10">
+            <div className="relative w-full h-[176px]">
+              {imageUrl && feedbackImageReady && !feedbackImgError ? (
+                <img
+                  src={imageUrl}
+                  alt={q.wordEnglish}
+                  className="w-full h-full object-cover"
+                  onError={() => setFeedbackImgError(true)}
+                />
+              ) : (
+                <WordInitialTile word={q.wordEnglish} className="w-full h-full" />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#070b14]/90 via-[#070b14]/25 to-transparent" />
+              <div className="absolute bottom-3 left-3 right-3 flex items-center gap-1.5">
+                <Volume2 size={14} className="text-indigo-300 shrink-0" />
+                <span className="text-white font-bold text-sm drop-shadow truncate">
+                  {q.wordEnglish}
+                  <QuizAnnotation english={q.wordEnglish} words={words} />
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

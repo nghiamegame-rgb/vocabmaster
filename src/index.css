@@ -262,6 +262,11 @@ body {
   to   { opacity: 1; transform: none; }
 }
 
+@keyframes vmFeedbackIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.95); }
+  to   { opacity: 1; transform: none; }
+}
+
 @keyframes vmSheen {
   from { transform: translateX(-100%); }
   to   { transform: translateX(220%); }
@@ -333,6 +338,7 @@ body {
   .vm-page-enter    { animation: fadeIn 240ms var(--ease-out-smooth) both; }
   .vm-toast-enter   { animation: vmToastIn 220ms var(--ease-out-smooth) both; }
   .vm-scale-in      { animation: vmScaleIn 200ms var(--ease-out-smooth) both; }
+  .vm-feedback-in   { animation: vmFeedbackIn 220ms var(--ease-out-smooth) both; }
   .vm-pulse-soft    { animation: vmPulseSoft 1.8s ease-in-out infinite; }
   .progress-fill    { animation: vmBarReveal 280ms var(--ease-out-smooth) both; }
 }
