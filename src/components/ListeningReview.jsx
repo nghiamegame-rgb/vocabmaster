@@ -3,7 +3,8 @@ import {
   Headphones, RotateCcw, Eye, EyeOff, Volume2,
   ChevronRight, Trophy, AlertCircle, CheckCircle2, XCircle, Clock, Star, Keyboard,
 } from 'lucide-react';
-import { playAudio } from '../utils/audio';
+import { speakWithSettings } from '../utils/voiceSpeech';
+import VoiceSettings from './VoiceSettings';
 import { readListeningAutofocus, writeListeningAutofocus, safeLocalStorage } from '../utils/listeningPrefs';
 import { isDueForReview } from '../hooks/useVocabStore';
 import { shuffle, buildListeningRound } from '../utils/wordSelection';
@@ -249,6 +250,7 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
   const advanceTimerRef = useRef(null);
   const answeredRef     = useRef(false);
   const filteredPoolRef = useRef([]);
+  const roundSeqRef     = useRef(0); // exam mode: one voice per round, kept on replay
 
   /* ── Derived: filtered vocabulary pool (strict intersection, no silent fallback) ── */
   const filteredPool = (() => {
@@ -294,6 +296,7 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
     }
     const r = buildListeningRound(pool, prevId);
     if (!r) return;
+    roundSeqRef.current += 1;
 
     answeredRef.current = false;
     setRound(r);
@@ -353,7 +356,7 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
       try { audioRef.current.cancel(); } catch { /* ignore */ }
     }
     setIsPlaying(true);
-    audioRef.current = playAudio(word);
+    audioRef.current = speakWithSettings(word, { itemKey: `listen:${roundSeqRef.current}` });
     setTimeout(() => setIsPlaying(false), 2000);
   }
 
@@ -538,6 +541,7 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
           <Keyboard size={14} className="shrink-0" />
           <span>Tự mở bàn phím: {autoFocusInput ? 'Bật' : 'Tắt'}</span>
         </button>
+        <VoiceSettings />
       </div>
 
       {source === 'dictation' && dictationStore ? (

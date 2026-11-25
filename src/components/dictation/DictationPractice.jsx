@@ -3,14 +3,13 @@ import {
   Play, Square, RotateCcw, Repeat, ChevronLeft, ChevronRight, Bookmark, BookmarkCheck,
   Eye, EyeOff, Volume2, Send, Eraser, Lightbulb, Keyboard, Languages, Gauge,
 } from 'lucide-react';
-import { playAudio } from '../../utils/audio';
+import { onSpeechInterrupt, speakWithSettings } from '../../utils/voiceSpeech';
 import { compareDictation, matchedWordIndexes, normalizeWord, tokenizeSentence } from '../../utils/dictationCheck';
 import { lessonProgress } from '../../utils/dictationModel';
 import { readDictationPrefs, writeDictationPrefs } from '../../utils/dictationStorage';
 import { readListeningAutofocus, writeListeningAutofocus, safeLocalStorage } from '../../utils/listeningPrefs';
 
-const SPEEDS = [0.75, 1, 1.25];
-const BASE_RATE = 0.9;
+const SPEEDS = [0.75, 1, 1.25]; // multipliers of the speed chosen in the voice settings
 const ANSWER_ID = 'dictation-answer';
 
 const DICTATION_SHORTCUTS = [
@@ -51,6 +50,8 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
   const [index, setIndex] = useState(0);
   const sentence = sentences[Math.min(index, Math.max(0, sentences.length - 1))] || null;
   const tokens = useMemo(() => tokenizeSentence(sentence?.english), [sentence]);
+  // Exam mode: replays and word chips of one sentence share its voice.
+  const voiceItem = sentence ? `sentence:${sentence.id}` : '';
 
   const [typed, setTyped] = useState('');
   const [revealed, setRevealed] = useState(() => new Set());
@@ -86,18 +87,19 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
     setIsPlaying(false);
   }, []);
 
-  const speak = useCallback(text => {
+  const speak = useCallback((text, itemKey) => {
     clearTimeout(loopTimerRef.current);
     try { handleRef.current?.cancel(); } catch { /* ignore */ }
     const token = Symbol('play');
     playingIdRef.current = token;
     setIsPlaying(true);
-    handleRef.current = playAudio(text, {
-      rate: BASE_RATE * prefsRef.current.speed,
+    handleRef.current = speakWithSettings(text, {
+      itemKey,
+      speed: prefsRef.current.speed,
       onEnd: () => {
         if (playingIdRef.current !== token) return;
         if (prefsRef.current.loop) {
-          loopTimerRef.current = setTimeout(() => { if (playingIdRef.current === token) speak(text); }, 800);
+          loopTimerRef.current = setTimeout(() => { if (playingIdRef.current === token) speak(text, itemKey); }, 800);
         } else {
           playingIdRef.current = null;
           setIsPlaying(false);
@@ -113,13 +115,15 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
     if (!sentence) return undefined;
     stop();
     const timers = [];
-    if (prefsRef.current.autoplay) timers.push(setTimeout(() => speak(sentence.english), 350));
+    if (prefsRef.current.autoplay) timers.push(setTimeout(() => speak(sentence.english, `sentence:${sentence.id}`), 350));
     if (autoFocusInput) timers.push(setTimeout(() => inputRef.current?.focus(), 60));
     return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sentenceId]);
 
   useEffect(() => () => stop(), [stop]);
+  // "Nghe thử" in the voice settings stops a running loop first.
+  useEffect(() => onSpeechInterrupt(stop), [stop]);
 
   const updatePrefs = patch => setPrefs(prev => {
     const next = { ...prev, ...patch };
@@ -158,7 +162,7 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
 
   function togglePlay() {
     if (!sentence) return;
-    if (isPlaying) stop(); else speak(sentence.english);
+    if (isPlaying) stop(); else speak(sentence.english, voiceItem);
   }
 
   // Clicking a word chip must not take the cursor out of the answer box.
@@ -170,7 +174,7 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
     if (next) inputRef.current?.focus(); else inputRef.current?.blur();
   }
 
-  actionsRef.current = { submit, hint, togglePlay, replay: () => sentence && speak(sentence.english), prev: () => goTo(index - 1), next: () => goTo(index + 1) };
+  actionsRef.current = { submit, hint, togglePlay, replay: () => sentence && speak(sentence.english, voiceItem), prev: () => goTo(index - 1), next: () => goTo(index + 1) };
 
   // Shortcuts: only modifier combos (no plain letters), ignored inside other fields.
   useEffect(() => {
@@ -244,7 +248,7 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
             >
               {isPlaying ? <Square size={18} /> : <Play size={20} className="ml-0.5" />}
             </button>
-            <button id="dictation-replay" type="button" onClick={() => speak(sentence.english)} className="vm-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-400/20 text-white">
+            <button id="dictation-replay" type="button" onClick={() => speak(sentence.english, voiceItem)} className="vm-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-400/20 text-white">
               <RotateCcw size={15} /> Nghe lại
             </button>
             <button
@@ -289,7 +293,7 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
         <section className="vm-card rounded-2xl p-4 sm:p-5 space-y-3 lg:col-start-2 lg:row-start-1 lg:row-span-2 min-w-0" aria-labelledby="dictation-answer-title">
           <div className="flex items-center justify-between gap-2">
             <h2 id="dictation-answer-title" className="text-xs font-bold uppercase tracking-wider text-indigo-200">Câu bạn nghe được</h2>
-            <button type="button" onClick={() => sentence && speak(sentence.english)} aria-label="Nghe câu" className="vm-btn p-2 rounded-xl text-indigo-200 hover:text-white hover:bg-slate-800/80">
+            <button type="button" onClick={() => sentence && speak(sentence.english, voiceItem)} aria-label="Nghe câu" className="vm-btn p-2 rounded-xl text-indigo-200 hover:text-white hover:bg-slate-800/80">
               <Volume2 size={16} />
             </button>
           </div>
@@ -364,7 +368,7 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
               const saved = store.isWordSaved(token.text);
               return (
                 <li key={i} data-chip-state="open" data-saved={saved ? 'true' : 'false'} className={`vm-scale-in flex items-center rounded-lg border text-sm ${saved ? 'bg-violet-500/25 border-violet-400/60 text-violet-100' : 'bg-slate-800/90 border-slate-400/25 text-white'}`}>
-                  <button type="button" onMouseDown={keepTyping} onClick={() => speak(token.text)} className="px-2 py-1 hover:text-indigo-200" title="Nghe từ này">{token.text}</button>
+                  <button type="button" onMouseDown={keepTyping} onClick={() => speak(token.text, voiceItem)} className="px-2 py-1 hover:text-indigo-200" title="Nghe từ này">{token.text}</button>
                   <button
                     type="button" onMouseDown={keepTyping} onClick={() => {
                       const status = store.toggleWord(token.text, sentence);

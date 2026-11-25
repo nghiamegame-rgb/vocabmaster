@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Volume2, ChevronRight, RotateCcw, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
-import { playAudio } from '../utils/audio';
+import { speakWithSettings } from '../utils/voiceSpeech';
 import { normalizeWord } from '../utils/dictationCheck';
 import { listenTotals } from '../utils/dictationSyncMerge';
 import { shuffle } from '../utils/wordSelection';
@@ -27,6 +27,8 @@ export default function DictationWordListening({ store, wrongOnly, autoFocusInpu
   const audioRef = useRef(null);
   const advanceRef = useRef(null);
   const current = pool.find(w => w.id === currentId) || null;
+  // Exam mode: a new round gets another voice, replays within it keep it.
+  const voiceItem = current ? `dictword:${round}:${current.id}` : '';
 
   const nextWord = useCallback(() => {
     clearTimeout(advanceRef.current);
@@ -53,16 +55,16 @@ export default function DictationWordListening({ store, wrongOnly, autoFocusInpu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [poolKey]);
 
-  const speak = useCallback(word => {
+  const speak = useCallback((word, itemKey) => {
     try { audioRef.current?.cancel(); } catch { /* ignore */ }
-    audioRef.current = playAudio(word);
+    audioRef.current = speakWithSettings(word, { itemKey });
     setPlayCount(c => c + 1);
   }, []);
 
   // Each new round: play the word, optionally focus the input.
   useEffect(() => {
     if (!current) return undefined;
-    const timers = [setTimeout(() => speak(current.word), 350)];
+    const timers = [setTimeout(() => speak(current.word, voiceItem), 350)];
     if (autoFocusInput) timers.push(setTimeout(() => inputRef.current?.focus(), 50));
     return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -115,7 +117,7 @@ export default function DictationWordListening({ store, wrongOnly, autoFocusInpu
             <p className="text-slate-300 text-xs uppercase tracking-wider font-semibold mb-1">Nghe và gõ lại từ</p>
             <p className="text-slate-300 italic text-sm">Bấm Nghe lại nếu chưa rõ{playCount > 1 ? ` (×${playCount - 1})` : ''}</p>
           </div>
-          <button id="lr-dictation-replay" type="button" onClick={() => speak(current.word)} className="vm-btn vm-btn-primary flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm shrink-0">
+          <button id="lr-dictation-replay" type="button" onClick={() => speak(current.word, voiceItem)} className="vm-btn vm-btn-primary flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm shrink-0">
             <Volume2 size={16} /> Nghe lại
           </button>
         </div>

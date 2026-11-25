@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Search, Volume2, Trash2, BookmarkCheck } from 'lucide-react';
-import { playAudio } from '../../utils/audio';
+import { speakWithSettings } from '../../utils/voiceSpeech';
 import { listenTotals } from '../../utils/dictationSyncMerge';
 
 export default function DictationWords({ store }) {
@@ -45,7 +45,7 @@ export default function DictationWords({ store }) {
                   {w.sentence && <p className="text-sm text-slate-300 mt-0.5 break-words">“{w.sentence}”</p>}
                   {w.lessonTitle && <p className="text-[11px] text-slate-500 mt-0.5">Bài: {w.lessonTitle}</p>}
                 </div>
-                <button type="button" onClick={() => playAudio(w.word)} aria-label={`Nghe từ ${w.word}`} className="vm-btn p-2 rounded-xl text-indigo-200 hover:text-white hover:bg-slate-800/80 shrink-0">
+                <button type="button" onClick={() => speakWithSettings(w.word, { itemKey: `word:${w.id}` })} aria-label={`Nghe từ ${w.word}`} className="vm-btn p-2 rounded-xl text-indigo-200 hover:text-white hover:bg-slate-800/80 shrink-0">
                   <Volume2 size={16} />
                 </button>
                 <button type="button" onClick={() => store.unsaveWord(w.id)} aria-label={`Xoá từ ${w.word}`} className="vm-btn p-2 rounded-xl text-rose-300 hover:text-rose-200 hover:bg-rose-500/15 shrink-0">

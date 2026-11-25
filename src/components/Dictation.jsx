@@ -4,6 +4,7 @@ import DictationPractice from './dictation/DictationPractice';
 import DictationWords from './dictation/DictationWords';
 import DictationLibrary from './dictation/DictationLibrary';
 import DictationSyncStatus from './dictation/DictationSyncStatus';
+import VoiceSettings from './VoiceSettings';
 
 const SECTIONS = [
   { id: 'practice', label: 'Luyện nghe', Icon: Headphones },
@@ -29,16 +30,19 @@ export default function Dictation({ store }) {
       {store.storageError && <p role="alert" className="px-4 py-3 rounded-xl bg-amber-500/12 border border-amber-400/30 text-amber-200 text-sm">{store.storageError}</p>}
       <DictationSyncStatus store={store} />
 
-      <div role="tablist" aria-label="Mục Dictation" className="flex items-center gap-1 bg-slate-950/60 border border-slate-400/15 rounded-xl p-1 w-fit max-w-full flex-wrap">
-        {SECTIONS.map(({ id, label, Icon }) => (
-          <button
-            key={id} id={`dictation-section-${id}`} role="tab" type="button" aria-selected={section === id} onClick={() => setSection(id)}
-            className={`vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium ${section === id ? 'bg-slate-700/90 text-white shadow-sm ring-1 ring-white/10' : 'text-slate-300 hover:text-white hover:bg-slate-800/60'}`}
-          >
-            <Icon size={14} /> {label}
-            {id === 'words' && <span className="text-xs opacity-70">({store.words.length})</span>}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center gap-3">
+        <div role="tablist" aria-label="Mục Dictation" className="flex items-center gap-1 bg-slate-950/60 border border-slate-400/15 rounded-xl p-1 w-fit max-w-full flex-wrap">
+          {SECTIONS.map(({ id, label, Icon }) => (
+            <button
+              key={id} id={`dictation-section-${id}`} role="tab" type="button" aria-selected={section === id} onClick={() => setSection(id)}
+              className={`vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium ${section === id ? 'bg-slate-700/90 text-white shadow-sm ring-1 ring-white/10' : 'text-slate-300 hover:text-white hover:bg-slate-800/60'}`}
+            >
+              <Icon size={14} /> {label}
+              {id === 'words' && <span className="text-xs opacity-70">({store.words.length})</span>}
+            </button>
+          ))}
+        </div>
+        <VoiceSettings />
       </div>
 
       {section === 'practice' && (
