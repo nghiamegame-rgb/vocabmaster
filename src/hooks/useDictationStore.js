@@ -1,24 +1,44 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { readDictationData, writeDictationData, getDictationDeviceId } from '../utils/dictationStorage';
 import {
   addLesson as addLessonTo, deleteLesson as deleteLessonFrom, recordSentenceResult as recordResultIn,
   saveWord as saveWordIn, unsaveWord as unsaveWordIn, recordWordListen as recordListenIn, lessonsOf,
 } from '../utils/dictationModel';
-import { liveRecords, mergeDictationData, validateDictationData } from '../utils/dictationSyncMerge';
+import { canonicalJson, liveRecords, mergeDictationData, validateDictationData } from '../utils/dictationSyncMerge';
+import { DICTATION_SYNC_URL, dictationSyncMessage, fetchDictationFromCloud, pushDictationToCloud } from '../utils/dictationCloud';
+
+const PUSH_DEBOUNCE_MS = 2500;
+const FOCUS_MIN_INTERVAL_MS = 30000;
 import { normalizeWord } from '../utils/dictationCheck';
 
 /**
  * Dictation store (lessons/sentences + personally saved words).
- * Lives in App so other tabs (Listening) can use the saved words.
- * Separate LocalStorage keys; never touches Vocabulary/Grammar/Structures.
+ * Lives in App so other tabs (Listening) can use the saved words and sync runs
+ * while the Dictation tab is closed. Separate LocalStorage keys; never touches
+ * Vocabulary/Grammar/Structures.
+ *
+ * Sync (same pattern as Structures): GET → merge → save locally → if the cloud
+ * lacks anything, POST the merged snapshot with CAS on the revision; one retry
+ * on conflict. Deletions are tombstones, so merging never revives them.
  */
-export function useDictationStore() {
+export function useDictationStore({ url = DICTATION_SYNC_URL } = {}) {
   const [initial] = useState(() => readDictationData());
   const [data, setData] = useState(initial.data);
   const [storageError, setStorageError] = useState(initial.error);
   const dataRef = useRef(initial.data);
   const lockedRef = useRef(Boolean(initial.error));
   const deviceId = useMemo(() => getDictationDeviceId(), []);
+  const [sync, setSync] = useState({ status: initial.error ? 'locked' : 'idle', message: '', lastSyncedAt: 0 });
+  const busyRef = useRef(false);
+  const timerRef = useRef(null);
+  const syncRef = useRef(null);
+  const sessionRef = useRef(0);
+  const lastAttemptRef = useRef(0);
+
+  const schedule = useCallback((delay = PUSH_DEBOUNCE_MS) => {
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => syncRef.current?.(), delay);
+  }, []);
 
   /** Persist first, publish after: a failed write never shows as saved. */
   const commit = useCallback(update => {
@@ -35,8 +55,81 @@ export function useDictationStore() {
     dataRef.current = next;
     setData(next);
     setStorageError('');
+    setSync(prev => ({ ...prev, status: busyRef.current ? prev.status : 'pending', message: '' }));
+    schedule();
     return next;
+  }, [schedule]);
+
+  /** Writes merged cloud data locally; false when the device storage refuses. */
+  const adopt = useCallback(next => {
+    if (canonicalJson(next) === canonicalJson(dataRef.current)) return true;
+    try { writeDictationData(next); } catch { return false; }
+    dataRef.current = next;
+    setData(next);
+    return true;
   }, []);
+
+  const syncNow = useCallback(async () => {
+    if (lockedRef.current || busyRef.current) return;
+    const session = sessionRef.current;
+    const active = () => session === sessionRef.current;
+    busyRef.current = true;
+    lastAttemptRef.current = Date.now();
+    clearTimeout(timerRef.current);
+    setSync(prev => ({ ...prev, status: 'syncing', message: '' }));
+    let outcome = { status: 'error', message: dictationSyncMessage('conflict') };
+    try {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const cloud = await fetchDictationFromCloud(url);
+        if (!active()) return;
+        if (!cloud.ok) {
+          outcome = { status: cloud.error === 'unconfigured' || cloud.error === 'no_backend' ? 'unconfigured' : 'error', message: dictationSyncMessage(cloud.error) };
+          return;
+        }
+        const merged = mergeDictationData(dataRef.current, cloud);
+        if (!adopt(merged)) { outcome = { status: 'error', message: 'Không lưu được dữ liệu tải về trên thiết bị (bộ nhớ đầy?).' }; return; }
+        if (canonicalJson(merged) === canonicalJson(mergeDictationData(cloud, {}))) {
+          outcome = { status: 'ok', message: '', lastSyncedAt: Date.now() };
+          return;
+        }
+        const result = await pushDictationToCloud(merged, cloud.revision, url);
+        if (!active()) return;
+        if (result.ok) {
+          // Edits made during the POST keep their own fetch/CAS cycle.
+          const changed = canonicalJson(dataRef.current) !== canonicalJson(merged);
+          outcome = { status: changed ? 'pending' : 'ok', message: '', lastSyncedAt: Date.now() };
+          if (changed) schedule();
+          return;
+        }
+        if (result.error !== 'conflict') { outcome = { status: 'error', message: dictationSyncMessage(result.error) }; return; }
+      }
+    } catch {
+      outcome = { status: 'error', message: dictationSyncMessage('network') };
+    } finally {
+      if (active()) {
+        busyRef.current = false;
+        setSync(prev => ({ status: outcome.status, message: outcome.message, lastSyncedAt: outcome.lastSyncedAt || prev.lastSyncedAt }));
+      }
+    }
+  }, [adopt, schedule, url]);
+
+  useEffect(() => {
+    syncRef.current = syncNow;
+    if (lockedRef.current) return undefined;
+    syncNow();
+    const online = () => syncNow();
+    const focus = () => { if (Date.now() - lastAttemptRef.current > FOCUS_MIN_INTERVAL_MS) syncNow(); };
+    window.addEventListener('online', online);
+    window.addEventListener('focus', focus);
+    const session = sessionRef, busy = busyRef, timer = timerRef;
+    return () => {
+      session.current++; // responses of this effect run are ignored from now on
+      busy.current = false;
+      clearTimeout(timer.current);
+      window.removeEventListener('online', online);
+      window.removeEventListener('focus', focus);
+    };
+  }, [syncNow]);
 
   const addLesson = useCallback((title, items) => {
     if (!Array.isArray(items) || items.length === 0) return { ok: false, error: 'Chưa có câu nào để tạo bài.' };
@@ -95,6 +188,7 @@ export function useDictationStore() {
   return {
     data, sentences, words, lessons, deviceId,
     storageError, locked: Boolean(initial.error),
+    syncStatus: sync.status, syncMessage: sync.message, lastSyncedAt: sync.lastSyncedAt, syncNow,
     addLesson, deleteLesson, recordSentenceResult,
     saveWord, unsaveWord, toggleWord, isWordSaved, recordWordListen,
     importBackup, exportBackup,

@@ -3,6 +3,7 @@ import { PenLine, Headphones, BookmarkCheck, Library } from 'lucide-react';
 import DictationPractice from './dictation/DictationPractice';
 import DictationWords from './dictation/DictationWords';
 import DictationLibrary from './dictation/DictationLibrary';
+import DictationSyncStatus from './dictation/DictationSyncStatus';
 
 const SECTIONS = [
   { id: 'practice', label: 'Luyện nghe', Icon: Headphones },
@@ -11,7 +12,7 @@ const SECTIONS = [
 ];
 
 /** Tab "Dictation" — luyện nghe chép chính tả. Store comes from App (useDictationStore). */
-export default function Dictation({ store, syncPanel = null, libraryActions = null }) {
+export default function Dictation({ store }) {
   const [section, setSection] = useState(() => (store.lessons.length ? 'practice' : 'library'));
   const [lessonId, setLessonId] = useState(null);
   const lesson = store.lessons.find(l => l.id === lessonId) || store.lessons[store.lessons.length - 1] || null;
@@ -26,7 +27,7 @@ export default function Dictation({ store, syncPanel = null, libraryActions = nu
       </div>
 
       {store.storageError && <p role="alert" className="px-4 py-3 rounded-xl bg-amber-500/12 border border-amber-400/30 text-amber-200 text-sm">{store.storageError}</p>}
-      {syncPanel}
+      <DictationSyncStatus store={store} />
 
       <div role="tablist" aria-label="Mục Dictation" className="flex items-center gap-1 bg-slate-950/60 border border-slate-400/15 rounded-xl p-1 w-fit max-w-full flex-wrap">
         {SECTIONS.map(({ id, label, Icon }) => (
@@ -49,7 +50,7 @@ export default function Dictation({ store, syncPanel = null, libraryActions = nu
       {section === 'words' && <DictationWords store={store} />}
       {section === 'library' && (
         <DictationLibrary
-          store={store} extraActions={libraryActions}
+          store={store}
           onPractice={id => { setLessonId(id); setSection('practice'); }}
         />
       )}
