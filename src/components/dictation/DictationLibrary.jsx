@@ -92,7 +92,7 @@ export default function DictationLibrary({ store, onPractice }) {
 
       <section className="vm-panel rounded-2xl p-4 sm:p-5 space-y-2" aria-labelledby="dictation-backup-title">
         <h2 id="dictation-backup-title" className="text-xs font-bold uppercase tracking-wider text-indigo-200">Sao lưu</h2>
-        <p className="text-xs text-slate-400">Bản sao .json gồm mọi bài và từ đã lưu (kể cả mục đã xoá). Nhập lại chỉ GỘP thêm, không xoá dữ liệu hiện có. File Excel có 2 sheet “Từ vựng” và “Câu hoàn chỉnh” (chỉ mục đang dùng).</p>
+        <p className="text-xs text-slate-400">Bản sao .json gồm mọi bài và từ đã lưu (kể cả mục đã xoá). Nhập lại chỉ GỘP thêm, không xoá dữ liệu hiện có. File Excel chỉ chứa các câu tiếng Anh, mỗi dòng một câu.</p>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={store.exportBackup} className="vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 border border-slate-400/20 text-white hover:bg-slate-700">
             <Download size={14} /> Xuất bản sao (.json)
@@ -102,7 +102,7 @@ export default function DictationLibrary({ store, onPractice }) {
             <input ref={fileRef} type="file" accept="application/json,.json" className="sr-only" onChange={e => importFile(e.target.files?.[0])} />
           </label>
           <button id="dictation-export-xlsx" type="button" onClick={async () => {
-            try { const r = await downloadDictationWorkbook(store.data); setMessage(`Đã xuất Excel: ${r.words} từ, ${r.sentences} câu.`); }
+            try { const r = await downloadDictationWorkbook(store.data); setMessage(r.sentences ? `Đã xuất Excel: ${r.sentences} câu.` : 'Chưa có câu nào để xuất.'); }
             catch { setMessage('Chưa xuất được file Excel.'); }
           }} className="vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600/80 border border-emerald-400/40 text-white hover:bg-emerald-500">
             <FileSpreadsheet size={14} /> Xuất Excel (.xlsx)

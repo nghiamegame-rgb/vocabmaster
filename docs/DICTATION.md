@@ -78,6 +78,8 @@ Không đụng các khóa Vocabulary/Grammar/Structures.
 
 **Sao lưu tay:** Thư viện bài → "Xuất bản sao (.json)" (gồm cả tombstone). "Nhập bản sao" chỉ **gộp** bằng phép hợp nhất ở trên, không xoá gì.
 
+**Xuất Excel** (`dictationExport.js`, nhánh `feat/export-sentences-only`): file để đưa chatbot đọc, **không phải bản sao lưu**. Đúng một sheet "Câu tiếng Anh", một cột A rộng 100, mỗi dòng một câu tiếng Anh; không tiêu đề, bản dịch, tên bài, ngày giờ, kết quả, từ đã lưu hay công thức. Chỉ câu đang dùng; lấy phần trước dấu `|`; bỏ câu trùng (sau khi cắt khoảng trắng, không phân biệt hoa/thường, giữ câu đầu tiên); thứ tự theo bài rồi theo vị trí câu. Xuống dòng/khoảng trắng thừa được gộp thành một khoảng trắng. Không có câu nào thì không tải file. Tên file `Dictation-YYYY-MM-DD.xlsx`. File trên Google Drive (đồng bộ) vẫn có tab "Từ vựng" và "Câu hoàn chỉnh" như cũ. Test: `dictation-export` (cần Python), `dictation-export-browser`.
+
 ## 7. Đồng bộ
 
 Theo mẫu Structures:
