@@ -186,3 +186,9 @@ Dùng chung cho **Dictation** (luyện câu, bấm từ, "Từ đã lưu") và *
 - Thống kê đúng/% tính trong lần mở màn này.
 
 **Test:** `dictation-practice` (Node), `dictation-word-practice-browser`.
+
+## 12. Prompt cho AI (Thư viện bài → Sao lưu)
+
+Nút "Sao chép prompt cho AI" chép nguyên văn `DICTATION_AI_PROMPT` (`src/utils/dictationAiPrompt.js` — sửa nội dung prompt ở đây) và báo "Đã sao chép prompt.". Trình duyệt không cho chép (hoặc không có clipboard, ví dụ mở bằng http trên điện thoại) thì hiện ô chỉ đọc đã chọn sẵn để tự chép. Quy trình: Xuất Excel (mục 6) → gửi file kèm prompt cho chatbot → dán khối kết quả `English sentence | Bản dịch tiếng Việt` vào "Nạp bài mới". App không gọi API AI và không tự kiểm tra câu mới có trùng câu cũ hay không.
+
+**Test:** `dictation-ai-prompt` (Node), `dictation-ai-prompt-browser`.

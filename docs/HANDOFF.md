@@ -7,7 +7,9 @@
 - Nhánh `feat/dictation-word-listening` tách từ `main` (`ab94f57`), chưa ghép/push/deploy.
 - **Phần A:** Dictation → Từ đã lưu có "Luyện nghe" (bố cục Listening Review, ô chữ) và "Danh sách". Tách phần lõi sang `src/components/listening/`; Listening Review dùng chung, hành vi không đổi (so sánh 18 trạng thái trước/sau; test cũ đạt). Chi tiết: [DICTATION.md](DICTATION.md) mục 11.
 - **Kiểm tra phần A:** `npm test` 41/41; lint **32** cảnh báo/0 lỗi (trước 34); build đạt, JS chính 541,25 kB, chunk Dictation 44 kB; trình duyệt 18/18. Sửa 2 test cũ (`dictation-browser`, `dictation-sync-browser`) để bấm "Danh sách" trước.
-- **Chưa kiểm chứng:** điện thoại thật, giọng thật, đồng bộ Sheet thật.
+- **Phần B:** nút "Sao chép prompt cho AI" ở Thư viện bài; nội dung ở `src/utils/dictationAiPrompt.js` (khớp nguyên văn yêu cầu). [DICTATION.md](DICTATION.md) mục 12.
+- **Kiểm tra sau phần B:** `npm test` 42/42; lint 32/0; build đạt, JS chính 541,26 kB, chunk Dictation 47,40 kB; trình duyệt 19/19.
+- **Chưa kiểm chứng:** điện thoại thật, giọng thật, đồng bộ Sheet thật, clipboard trên iPhone, chất lượng câu do chatbot viết.
 
 > **Cập nhật 2026-11-25 (tối):** `feat/dictation` **đã ghép vào `main`** (fast-forward `98b5ba3`) và đã push. Nhánh `feat/voice-picker` thêm chọn giọng đọc + Chế độ thi cho Dictation/Listening; xem mục 18. Chưa ghép, chưa push, chưa deploy.
 

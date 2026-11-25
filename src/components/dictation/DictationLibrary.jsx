@@ -1,8 +1,9 @@
-import { useMemo, useRef, useState } from 'react';
-import { Plus, Trash2, PlayCircle, Download, Upload, FileSpreadsheet } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Plus, Trash2, PlayCircle, Download, Upload, FileSpreadsheet, Copy } from 'lucide-react';
 import { parseLessonInput, MAX_TITLE_CHARS } from '../../utils/dictationParse';
 import { lessonProgress } from '../../utils/dictationModel';
 import { downloadDictationWorkbook } from '../../utils/dictationExport';
+import { DICTATION_AI_PROMPT } from '../../utils/dictationAiPrompt';
 
 export default function DictationLibrary({ store, onPractice }) {
   const [title, setTitle] = useState('');
@@ -11,6 +12,24 @@ export default function DictationLibrary({ store, onPractice }) {
   const [confirmId, setConfirmId] = useState(null);
   const fileRef = useRef(null);
   const parsed = useMemo(() => parseLessonInput(text), [text]);
+  // Result of "Sao chép prompt cho AI": null, { copied: true } or { copied: false } (copy by hand).
+  const [promptCopy, setPromptCopy] = useState(null);
+  const promptRef = useRef(null);
+
+  useEffect(() => {
+    if (!promptCopy || promptCopy.copied) return;
+    promptRef.current?.focus();
+    promptRef.current?.setSelectionRange(0, promptRef.current.value.length);
+  }, [promptCopy]);
+
+  async function copyPrompt() {
+    try {
+      await navigator.clipboard.writeText(DICTATION_AI_PROMPT);
+      setPromptCopy({ copied: true });
+    } catch {
+      setPromptCopy({ copied: false }); // no clipboard access: show it, already selected
+    }
+  }
 
   function addLesson() {
     if (!parsed.items.length) { setMessage('Hãy dán ít nhất một câu.'); return; }
@@ -107,7 +126,21 @@ export default function DictationLibrary({ store, onPractice }) {
           }} className="vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600/80 border border-emerald-400/40 text-white hover:bg-emerald-500">
             <FileSpreadsheet size={14} /> Xuất Excel (.xlsx)
           </button>
+          <button id="dictation-copy-prompt" type="button" onClick={copyPrompt} className="vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-500/20 border border-indigo-400/40 text-indigo-200 hover:bg-indigo-500/30">
+            <Copy size={14} /> Sao chép prompt cho AI
+          </button>
         </div>
+        <p className="text-[11px] text-slate-400">Xuất Excel → gửi file kèm prompt này cho chatbot → dán kết quả vào ô Nạp bài mới.</p>
+        {promptCopy?.copied && <p id="dictation-prompt-copied" role="status" className="text-sm text-emerald-300">Đã sao chép prompt.</p>}
+        {promptCopy && !promptCopy.copied && (
+          <label className="block space-y-1">
+            <span role="status" className="block text-xs text-amber-300">Trình duyệt không cho sao chép tự động. Prompt dưới đây đã được chọn sẵn, bạn hãy tự sao chép (Ctrl+C, hoặc nhấn giữ rồi chọn Sao chép).</span>
+            <textarea
+              id="dictation-ai-prompt" ref={promptRef} readOnly rows={10} value={DICTATION_AI_PROMPT}
+              className="w-full vm-input rounded-xl px-3 py-2 text-xs resize-y"
+            />
+          </label>
+        )}
       </section>
     </div>
   );

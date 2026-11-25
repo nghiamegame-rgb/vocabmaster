@@ -227,4 +227,6 @@ Tách từ `main` `98b5ba3` (độc lập với `feat/voice-picker`). Chỉ có 
 Tách từ `main` `ab94f57`. Chỉ có trên máy: **chưa push, chưa ghép**.
 
 - **Phần A:** Dictation → Từ đã lưu mở thẳng "Luyện nghe" (giống Listening Review, ô chỉ có chữ, lọc theo Tên bài / hay nghe sai / chưa luyện); danh sách cũ ở tab "Danh sách". Listening Review không đổi hành vi. Chi tiết: [DICTATION.md](DICTATION.md) mục 11.
+- **Phần B:** Thư viện bài có nút "Sao chép prompt cho AI" (nội dung ở `src/utils/dictationAiPrompt.js`).
+- Kiểm tra sau phần B (mới nhất): `npm test` 42/42, trình duyệt 19/19, lint 32/0, build đạt. Chưa thử trên điện thoại thật.
 - Kiểm tra sau phần A: `npm test` 41/41, trình duyệt 18/18 (thêm `dictation-word-practice-browser`), lint 32 cảnh báo/0 lỗi (mốc mới, đừng làm tăng), build JS chính ~541 kB + chunk Dictation ~44 kB.
