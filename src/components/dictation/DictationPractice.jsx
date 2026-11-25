@@ -286,7 +286,7 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
         </section>
 
         {/* ── Answer card ── */}
-        <section className="vm-card rounded-2xl p-4 sm:p-5 space-y-3 lg:col-start-2 lg:row-start-1 lg:row-span-3 min-w-0" aria-labelledby="dictation-answer-title">
+        <section className="vm-card rounded-2xl p-4 sm:p-5 space-y-3 lg:col-start-2 lg:row-start-1 lg:row-span-2 min-w-0" aria-labelledby="dictation-answer-title">
           <div className="flex items-center justify-between gap-2">
             <h2 id="dictation-answer-title" className="text-xs font-bold uppercase tracking-wider text-indigo-200">Câu bạn nghe được</h2>
             <button type="button" onClick={() => sentence && speak(sentence.english)} aria-label="Nghe câu" className="vm-btn p-2 rounded-xl text-indigo-200 hover:text-white hover:bg-slate-800/80">
@@ -404,7 +404,7 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
         </section>
 
         {/* ── Shortcuts ── */}
-        <section className="vm-panel rounded-2xl p-4 sm:p-5 lg:col-start-2 min-w-0" aria-labelledby="dictation-keys-title">
+        <section className="vm-panel rounded-2xl p-4 sm:p-5 lg:col-start-2 lg:row-start-3 min-w-0" aria-labelledby="dictation-keys-title">
           <h2 id="dictation-keys-title" className="text-xs font-bold uppercase tracking-wider text-indigo-200 mb-2">Phím tắt</h2>
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs">
             {DICTATION_SHORTCUTS.map(([keys, label]) => (

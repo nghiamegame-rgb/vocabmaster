@@ -55,7 +55,8 @@ export function useDictationStore({ url = DICTATION_SYNC_URL } = {}) {
     dataRef.current = next;
     setData(next);
     setStorageError('');
-    setSync(prev => ({ ...prev, status: busyRef.current ? prev.status : 'pending', message: '' }));
+    // Not set up yet: say so instead of promising an upload that cannot happen.
+    setSync(prev => (busyRef.current || prev.status === 'unconfigured' ? prev : { ...prev, status: 'pending', message: '' }));
     schedule();
     return next;
   }, [schedule]);
