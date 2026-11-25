@@ -101,6 +101,7 @@ export default function App() {
           <ListeningReview
             words={words}
             updateWordLevel={updateWordLevel}
+            dictationStore={dictationStore}
           />
         )}
         {activeTab === 'flashcard' && (

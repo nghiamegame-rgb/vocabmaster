@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import {
   Headphones, RotateCcw, Eye, EyeOff, Volume2,
   ChevronRight, Trophy, AlertCircle, CheckCircle2, XCircle, Clock, Star, Keyboard,
@@ -8,6 +8,8 @@ import { readListeningAutofocus, writeListeningAutofocus, safeLocalStorage } fro
 import { isDueForReview } from '../hooks/useVocabStore';
 import { shuffle, buildListeningRound } from '../utils/wordSelection';
 import WordInitialTile from './WordInitialTile';
+// Loaded only when the learner picks the Dictation source (keeps the main bundle small).
+const DictationWordListening = lazy(() => import('./DictationWordListening'));
 
 /* ------------------------------------------------------------------ */
 /* Constants — mirrored from Vocabulary.jsx                             */
@@ -212,7 +214,15 @@ function StatsBar({ score, total }) {
 /* ------------------------------------------------------------------ */
 /* Main Component                                                       */
 /* ------------------------------------------------------------------ */
-export default function ListeningReview({ words, updateWordLevel }) {
+export default function ListeningReview({ words, updateWordLevel, dictationStore = null }) {
+
+  /* ── Word source: main Vocabulary (unchanged behaviour) or saved Dictation words ── */
+  const [source, setSource] = useState('main'); // 'main' | 'dictation'
+  const [dictWrongOnly, setDictWrongOnly] = useState(false);
+  const [dictScore, setDictScore] = useState(0);
+  const [dictPlayed, setDictPlayed] = useState(0);
+  const dictInputRef = useRef(null);
+  const dictWordCount = dictationStore?.words.length ?? 0;
 
   /* ── Filter state ── */
   const [levelFilter, setLevelFilter] = useState(null);    // null = All Levels
@@ -415,8 +425,17 @@ export default function ListeningReview({ words, updateWordLevel }) {
     const next = !autoFocusInput;
     setAutoFocusInput(next);
     writeListeningAutofocus(safeLocalStorage(), next);
-    if (next) inputRef.current?.focus();
-    else inputRef.current?.blur(); // close the on-screen keyboard if it is open
+    const target = source === 'dictation' ? dictInputRef.current : inputRef.current;
+    if (next) target?.focus();
+    else target?.blur(); // close the on-screen keyboard if it is open
+  }
+
+  function chooseSource(next) {
+    if (next === source) return;
+    // Stop the main round's pending advance/audio so it cannot play over the other mode.
+    clearAdvanceTimer();
+    stopCurrentAudio();
+    setSource(next);
   }
 
   /* ── Toggle global meaning visibility (persists across questions) ── */
@@ -479,9 +498,28 @@ export default function ListeningReview({ words, updateWordLevel }) {
         </p>
       </div>
 
+      {/* ── Source picker (only when the Dictation store is available) ── */}
+      {dictationStore && (
+        <div className="mb-4 flex flex-wrap items-center gap-2" role="group" aria-label="Nguồn từ">
+          <span className="text-slate-300 text-xs font-semibold uppercase tracking-wider">Nguồn</span>
+          <div className="flex items-center gap-1 bg-slate-950/60 border border-slate-400/15 rounded-xl p-1 max-w-full flex-wrap">
+            {[['main', 'Từ vựng chính'], ['dictation', `Từ chép chính tả (${dictWordCount})`]].map(([value, label]) => (
+              <button
+                key={value} id={`lr-source-${value}`} type="button" aria-pressed={source === value} onClick={() => chooseSource(value)}
+                className={`vm-btn px-3 py-1.5 rounded-lg text-xs font-medium ${source === value
+                  ? 'bg-slate-700/90 text-white shadow-sm ring-1 ring-white/10'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'}`}
+              >{label}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── Stats bar + auto-open keyboard toggle ── */}
       <div className="mb-5 flex flex-wrap items-center gap-3">
-        <StatsBar score={score} total={totalPlayed} />
+        {source === 'dictation'
+          ? <StatsBar score={dictScore} total={dictPlayed} />
+          : <StatsBar score={score} total={totalPlayed} />}
         <button
           id="lr-autofocus-toggle"
           type="button"
@@ -502,6 +540,27 @@ export default function ListeningReview({ words, updateWordLevel }) {
         </button>
       </div>
 
+      {source === 'dictation' && dictationStore ? (
+        <>
+          {/* Dictation words: Level/Type/Hard/Due filters do not apply */}
+          <div className="vm-panel rounded-2xl p-4 sm:p-5 mb-6 flex items-center justify-between gap-3">
+            <span className="text-slate-200 text-xs font-semibold">Chỉ từ hay sai (đã từng nghe sai)</span>
+            <button
+              id="lr-dictation-wrong-toggle" type="button" onClick={() => setDictWrongOnly(v => !v)} aria-pressed={dictWrongOnly}
+              aria-label="Chỉ từ hay sai"
+              className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${dictWrongOnly ? 'bg-rose-500 shadow-sm shadow-rose-500/40' : 'bg-slate-600'}`}
+            >
+              <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-200 ${dictWrongOnly ? 'translate-x-4' : 'translate-x-0.5'}`} />
+            </button>
+          </div>
+          <Suspense fallback={<p className="text-slate-300 text-sm" role="status">Đang tải…</p>}>
+          <DictationWordListening
+            store={dictationStore} wrongOnly={dictWrongOnly} autoFocusInput={autoFocusInput} inputRef={dictInputRef}
+            onResult={ok => { setDictPlayed(t => t + 1); if (ok) setDictScore(v => v + 1); }}
+          />
+          </Suspense>
+        </>
+      ) : (<>
       {/* ── Filter panel ── */}
       <div className="vm-panel rounded-2xl p-4 sm:p-5 mb-6 space-y-3.5">
         {/* Level filter */}
@@ -794,6 +853,7 @@ export default function ListeningReview({ words, updateWordLevel }) {
           </div>
         </>
       )}
+      </>)}
     </div>
   );
 }

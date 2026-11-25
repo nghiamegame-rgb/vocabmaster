@@ -119,6 +119,38 @@ try {
   await page.getByText('Không có từ khớp').waitFor();
   await page.locator('#dictation-word-search').fill('');
 
+  // ── Listening → source "Từ chép chính tả": hear the saved word, type it ──
+  await page.locator('#nav-tab-listening').click();
+  await page.locator('#lr-level-all').waitFor();
+  assert.equal(await page.locator('#lr-source-main').getAttribute('aria-pressed'), 'true', 'main vocabulary stays the default');
+  assert.match(await page.locator('#lr-source-dictation').innerText(), /Từ chép chính tả \(1\)/);
+  await page.locator('#lr-source-dictation').click();
+  await page.locator('#lr-dictation-input').waitFor();
+  for (const hidden of ['#lr-level-all', '#lr-type-all', '#lr-hard-toggle', '#lr-due-toggle']) {
+    assert.equal(await page.locator(hidden).count(), 0, `${hidden} hidden for Dictation words`);
+  }
+  await page.waitForFunction(() => window.__spoken.at(-1)?.text === 'weather');
+  await page.locator('#lr-dictation-input').fill('whether');
+  await page.keyboard.press('Enter');
+  await page.locator('#lr-dictation-feedback').waitFor();
+  assert.match(await page.locator('#lr-dictation-feedback').innerText(), /Chưa đúng — đáp án: weather/);
+  await page.keyboard.press('Enter'); // next word (the only one again)
+  await page.locator('#lr-dictation-feedback').waitFor({ state: 'detached' });
+  await page.locator('#lr-dictation-input').pressSequentially('Weather');
+  await page.getByText('Chính xác!').waitFor(); // auto-submits on the exact word
+  await page.getByText('2 played', { exact: true }).waitFor(); // Dictation stats: 1 correct of 2
+  assert.equal(await page.getByText('50%', { exact: true }).count(), 1);
+  await page.locator('#lr-dictation-wrong-toggle').click();
+  await page.locator('#lr-dictation-input').waitFor(); // the word was heard wrong once, so it stays in the pool
+  const listened = await page.evaluate(() => JSON.parse(localStorage.getItem('vocabmaster_dictation_data')).words.find(w => w.id === 'weather').listen);
+  assert.deepEqual(Object.values(listened), [{ correct: 1, wrong: 1 }]);
+  assert.equal(await page.evaluate(() => localStorage.getItem('vocabmaster_words')), vocabBefore, 'main vocabulary (levels, streaks, review dates) untouched');
+  await page.locator('#lr-source-main').click();
+  await page.locator('#lr-level-all').waitFor();
+  await page.locator('#nav-tab-dictation').click();
+  await page.locator('#dictation-section-words').click();
+  assert.match(await page.locator('#dictation-word-weather').innerText(), /nghe đúng 1 · sai 1/);
+
   // ── Reload keeps everything; vocabulary store untouched ──
   await page.reload();
   await page.locator('#nav-tab-dictation').click();
@@ -148,6 +180,6 @@ try {
     assert.ok(overflow <= 0, `${width}px overflow ${overflow}`);
   }
   assert.deepEqual(errors, []);
-  console.log('PASS: Dictation tab — paste lesson, typing opens words, save word, hint, submit/compare, grid, shortcuts, saved words, reload, delete, no overflow.');
+  console.log('PASS: Dictation tab — paste lesson, typing opens words, save word, hint, submit/compare, grid, shortcuts, saved words, Listening with saved words (main vocabulary untouched), reload, delete, no overflow.');
   await context.close();
 } finally { await browser?.close(); await server.close(); }
