@@ -1,5 +1,7 @@
 # Bàn giao workspace VocabMaster
 
+> **Cập nhật 2026-11-25 (chiều):** nhánh `feat/dictation` thêm tab Dictation (chép chính tả), đồng bộ Google Sheet riêng và nguồn "Từ chép chính tả" trong Listening. Xem [DICTATION.md](DICTATION.md), [DICTATION-SETUP.md](DICTATION-SETUP.md) và TRANG-THAI-DU-AN mục 3b. Chưa ghép `main`, chưa deploy, đồng bộ thật chưa thử.
+
 > **Lưu ý 2026-11-25:** tình hình mới nhất (các nhánh đã ghép vào `main` và push, theme, quiz đọc từ + ảnh, giữ ghi chú Ôn tập, việc còn mở) nằm ở [TRANG-THAI-DU-AN.md](TRANG-THAI-DU-AN.md). Dòng "Chưa push/deploy" ngay dưới chỉ đúng cho thời điểm 24/11 chiều.
 
 **Cập nhật 2026-11-24 — nhánh `fix/audit-2026-11`: sửa 17 mục của báo cáo phân tích; xem mục 17. Chưa push/deploy.**
