@@ -140,7 +140,7 @@ Theo mẫu Structures:
 - Chỉ gọi `recordWordListen(id, đúng/sai)`, tức là cộng `listen[deviceId]` trên bản ghi từ Dictation. Không gọi `updateWordLevel`, không đổi `vocabmaster_words`, L1–L5 hay ngày ôn (test `dictation-browser` kiểm tra).
 - "Chỉ từ hay sai" lấy các từ có tổng `wrong > 0`.
 
-## 10. Giọng đọc và Chế độ thi (nhánh `feat/voice-picker`, 25/11/2026)
+## 10. Giọng đọc và Chế độ thi (từ nhánh `feat/voice-picker`, đã vào `main`)
 
 Dùng chung cho **Dictation** (luyện câu, bấm từ, "Từ đã lưu") và **Listening** (cả hai nguồn). Flashcard, Vocabulary và Smart Quiz **không đổi**: vẫn gọi `playAudio` với giọng en-US mặc định, tốc độ 0.9. Test trên giả lập, **chưa nghe thử giọng thật trên điện thoại/Safari/Firefox**.
 
@@ -164,3 +164,25 @@ Dùng chung cho **Dictation** (luyện câu, bấm từ, "Từ đã lưu") và *
 **Giới hạn:** giọng và chất lượng phụ thuộc máy/trình duyệt (điện thoại có bộ giọng khác máy tính); giọng "Online/Natural" cần mạng; câu rất dài với giọng Google của Chrome có thể bị ngắt giữa chừng (hiện tượng đã biết của Chrome, **chưa kiểm chứng** trên máy này). Nếu giọng chưa kịp nạp ở lần đọc đầu tiên thì lần đó dùng Google dự phòng.
 
 **Test:** `voice-selection`, `voice-prefs` (Node); `voice-settings-browser` (trình duyệt, danh sách giọng giả).
+
+## 11. Luyện nghe từ đã lưu ("Từ đã lưu" → "Luyện nghe", nhánh `feat/dictation-word-listening`)
+
+"Từ đã lưu" có 2 tab con: **Luyện nghe** (mặc định) và **Danh sách** (tìm kiếm, nghe, xoá như trước).
+
+**Bố cục giống Listening Review:** thống kê đúng/%/đã chơi, "Tự mở bàn phím" (dùng chung cài đặt), "Giọng đọc", khung câu hỏi có Replay + ô gõ tự nộp, lưới 2 cột, Skip/Next Word. Ô đáp án chỉ có chữ; không ảnh, không cấp độ, không nút mắt.
+
+**Phần lõi dùng chung** (`src/components/listening/`): `useListeningGame.js` (vòng chơi, đọc, chấm, tự chuyển sau 1,5 s, gõ đúng tự nộp), `useAutoFocusPref.js`, `ListeningParts.jsx`. `ListeningReview.jsx` dùng chung các phần này; hành vi Listening đã được so sánh trước/sau (18 trạng thái giống hệt). Nguồn "Từ chép chính tả" của Listening (`DictationWordListening.jsx`) không đổi.
+
+**Quy tắc** (`dictationPractice.js`, `DictationWordPractice.jsx`):
+
+- Nguồn: từ đã lưu đang dùng.
+- Mỗi từ trong nhóm lọc được hỏi một lần trước khi lặp lại; không hỏi một từ hai lần liên tiếp (khi có từ 2 từ).
+- Đáp án nhiễu: tối đa 3, không trùng đáp án và không trùng nhau (so theo quy tắc chấm ở mục 3); lấy trong nhóm lọc trước, thiếu thì lấy từ đã lưu khác. Có dưới 4 từ đã lưu thì ít ô hơn; chỉ 1 từ thì ô duy nhất chính là đáp án.
+- Gõ: không phân biệt hoa/thường, dấu câu, kiểu dấu nháy. Gõ sai không bị nộp (giống Listening).
+- Lọc: "Tên bài", "Chỉ từ hay nghe sai" (tổng sai > 0), "Chưa luyện" (chưa có lần đúng/sai). Lọc không có dữ liệu thì ẩn (đang bật thì vẫn hiện để tắt). Lọc kết hợp là giao nhau; hết từ khớp thì có nút "Bỏ bộ lọc". Câu vừa trả lời làm rỗng nhóm vẫn hiện kết quả 1,5 s.
+- Trả lời → `store.recordWordListen` (cùng cơ chế lưu và đồng bộ ở mục 6–7; không đổi cấu trúc dữ liệu hay Sheet). Chỉ cộng cho từ được hỏi.
+- Giọng: `speakWithSettings` với `itemKey` `dictword-list:<số câu>` (Chế độ thi: mỗi câu một giọng, Replay giữ giọng).
+- Phím: không có phím tắt riêng; Enter trên ô đáp án đang chọn.
+- Thống kê đúng/% tính trong lần mở màn này.
+
+**Test:** `dictation-practice` (Node), `dictation-word-practice-browser`.

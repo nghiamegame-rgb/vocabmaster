@@ -85,6 +85,7 @@ try {
   await B.page.locator('#dictation-counter').waitFor();
   assert.equal(await B.page.locator('#dictation-cell-1').getAttribute('data-status'), 'correct');
   await B.page.locator('#dictation-section-words').click();
+  await B.page.locator('#dictation-words-view-list').click();
   await B.page.locator('#dictation-word-hello').waitFor();
   await B.page.getByRole('button', { name: 'Xoá từ Hello' }).click();
   await B.page.getByText('Chưa có từ nào.', { exact: false }).waitFor();
@@ -93,6 +94,7 @@ try {
 
   // ── Device A (stale copy still showing the word) syncs: the deletion wins ──
   await A.page.locator('#dictation-section-words').click();
+  await A.page.locator('#dictation-words-view-list').click();
   await A.page.locator('#dictation-word-hello').waitFor();
   await A.page.locator('#dictation-sync-now').click();
   await A.page.getByText('Chưa có từ nào.', { exact: false }).waitFor();

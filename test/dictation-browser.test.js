@@ -112,6 +112,7 @@ try {
 
   // ── Saved words ──
   await page.locator('#dictation-section-words').click();
+  await page.locator('#dictation-words-view-list').click(); // practice is the default view
   await page.locator('#dictation-word-weather').waitFor();
   assert.match(await page.locator('#dictation-word-weather').innerText(), /The weather is nice today\./);
   assert.match(await page.locator('#dictation-word-weather').innerText(), /Bài: Bài thử/);
@@ -149,6 +150,7 @@ try {
   await page.locator('#lr-level-all').waitFor();
   await page.locator('#nav-tab-dictation').click();
   await page.locator('#dictation-section-words').click();
+  await page.locator('#dictation-words-view-list').click(); // practice is the default view
   assert.match(await page.locator('#dictation-word-weather').innerText(), /nghe đúng 1 · sai 1/);
 
   // ── Reload keeps everything; vocabulary store untouched ──

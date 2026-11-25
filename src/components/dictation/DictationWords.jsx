@@ -1,9 +1,41 @@
 import { useMemo, useState } from 'react';
-import { Search, Volume2, Trash2, BookmarkCheck } from 'lucide-react';
+import { Search, Volume2, Trash2, BookmarkCheck, Headphones, List } from 'lucide-react';
 import { speakWithSettings } from '../../utils/voiceSpeech';
 import { listenTotals } from '../../utils/dictationSyncMerge';
+import VoiceSettings from '../VoiceSettings';
+import DictationWordPractice from './DictationWordPractice';
 
+const VIEWS = [
+  { id: 'listen', label: 'Luyện nghe', Icon: Headphones },
+  { id: 'list', label: 'Danh sách', Icon: List },
+];
+
+/** "Từ đã lưu": listening practice (default) or the searchable list. */
 export default function DictationWords({ store }) {
+  const [view, setView] = useState('listen');
+
+  return (
+    <div className={view === 'listen' ? 'max-w-2xl mx-auto space-y-5' : 'space-y-4'}>
+      <div className="flex flex-wrap items-center gap-3">
+        <div role="tablist" aria-label="Cách xem từ đã lưu" className="flex items-center gap-1 bg-slate-950/60 border border-slate-400/15 rounded-xl p-1 w-fit max-w-full flex-wrap">
+          {VIEWS.map(({ id, label, Icon }) => (
+            <button
+              key={id} id={`dictation-words-view-${id}`} role="tab" type="button" aria-selected={view === id} onClick={() => setView(id)}
+              className={`vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium ${view === id ? 'bg-slate-700/90 text-white shadow-sm ring-1 ring-white/10' : 'text-slate-300 hover:text-white hover:bg-slate-800/60'}`}
+            >
+              <Icon size={14} /> {label}
+            </button>
+          ))}
+        </div>
+        {/* In practice the voice button sits in the stats row, like Listening Review. */}
+        {view === 'list' && <VoiceSettings />}
+      </div>
+      {view === 'listen' ? <DictationWordPractice store={store} /> : <DictationWordList store={store} />}
+    </div>
+  );
+}
+
+function DictationWordList({ store }) {
   const [query, setQuery] = useState('');
   const words = useMemo(() => {
     const q = query.trim().toLowerCase();

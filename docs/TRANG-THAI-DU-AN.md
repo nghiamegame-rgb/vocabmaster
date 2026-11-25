@@ -1,6 +1,6 @@
 # VocabMaster — Trạng thái dự án (bàn giao cho AI/agent phiên sau)
 
-**Cập nhật lần cuối: 2026-11-25 buổi tối (giờ Việt Nam).** File này mô tả tình hình *hiện tại* của dự án sau hai phiên làm việc dài (24/11 và đêm 24→25/11). Nếu nó mâu thuẫn với `docs/HANDOFF.md`, `docs/PROJECT_CONTEXT.md` hay `docs/QUIZ-FEEDBACK.md`, **file này và mã nguồn thật thắng** (các file kia có chỗ đã cũ, xem mục 11).
+**Cập nhật lần cuối: 2026-11-25 đêm (giờ Việt Nam).** File này mô tả tình hình *hiện tại* của dự án sau hai phiên làm việc dài (24/11 và đêm 24→25/11). Nếu nó mâu thuẫn với `docs/HANDOFF.md`, `docs/PROJECT_CONTEXT.md` hay `docs/QUIZ-FEEDBACK.md`, **file này và mã nguồn thật thắng** (các file kia có chỗ đã cũ, xem mục 11).
 
 ## 0. Người dùng và cách làm việc
 
@@ -14,13 +14,14 @@
 - Ngày 24/11 đã hoàn thành và ghép vào `main`: (1) 17 mục sửa lỗi theo báo cáo phân tích; (2) triển khai Vercel + Apps Script; (3) nâng cấp giao diện "Midnight Indigo & Glass Slate" kèm hiệu ứng; (4) Smart Quiz Multiple Choice tự đọc từ đúng và hiện ảnh; (5) chuyển khung ảnh vào trong thẻ câu hỏi; (6) Grammar → Ôn tập giữ trạng thái "Hiện ghi chú" khi sang câu tiếp.
 - Không có việc dở dang về mã. Việc còn mở chủ yếu là việc người dùng tự làm (mục 9) và vài điều chưa được xác minh (mục 10).
 - **Ngày 25/11 (đã ghép vào `main`, đã push, người dùng báo web chạy chuẩn):** nút "Tự mở bàn phím" ở Listening và chip thông báo đồng bộ trong thanh menu (mục 3a); phân tích quy mô/chi phí khi lên ~5.000 từ (mục 14).
-- **Ngày 25/11 (tối), nhánh `feat/voice-picker` — chỉ có trên máy, CHƯA push, CHƯA ghép:** chọn giọng đọc, tốc độ và "Chế độ thi (giọng ngẫu nhiên)" cho Dictation + Listening. Xem mục 3c.
+- **Ngày 25/11 (đêm), nhánh `feat/dictation-word-listening` — chỉ có trên máy, chưa push/ghép:** luyện nghe từ đã lưu ngay trong Dictation và nút sao chép prompt cho AI. Xem mục 17.
+- **Ngày 25/11 (tối), `feat/voice-picker` và `feat/export-sentences-only` — đã ghép vào `main` (`ab94f57`, 21:39) và push (trạng thái Vercel chưa kiểm tra):** chọn giọng đọc, tốc độ và "Chế độ thi (giọng ngẫu nhiên)" cho Dictation + Listening. Xem mục 3c.
 - **Ngày 25/11 (chiều), `feat/dictation` — đã ghép vào `main` (fast-forward `98b5ba3`, 20:50) và đã push (trạng thái Vercel chưa kiểm tra):** tab mới **Dictation** (luyện nghe chép chính tả), đồng bộ Google Sheet riêng (người dùng tự cài theo `docs/DICTATION-SETUP.md`), Listening thêm nguồn "Từ chép chính tả". Xem mục 3b.
 - **Gợi ý bắt đầu ngày mai:** xem mục 15. Chưa có việc nào được người dùng giao sẵn.
 
 ## 2. Trạng thái git và triển khai
 
-Đọc từ `git` tối 25/11: `main` = `origin/main` = `98b5ba3` (ghép fast-forward `feat/dictation` lúc 20:50). Nhánh đang làm việc: `feat/voice-picker` (tách từ `98b5ba3`).
+Đọc từ `git` đêm 25/11: `main` = `origin/main` = `ab94f57` (ghép `feat/voice-picker` rồi `feat/export-sentences-only` lúc 21:38–21:39). Nhánh đang làm việc: `feat/dictation-word-listening` (tách từ `ab94f57`).
 
 Bảng dưới là ảnh chụp cũ lúc ~01:15 ngày 25/11:
 
@@ -71,7 +72,7 @@ Tách từ `main` `f4e19dd`; 3 commit mã + 1 commit tài liệu. Chi tiết k�
 3. **Listening** (commit `743efbc`): chọn "Nguồn: Từ vựng chính | Từ chép chính tả"; nguồn mới ẩn bộ lọc Level/Type/Khó/Due, đọc từ đơn, gõ lại, "Chỉ từ hay sai"; chỉ cộng bộ đếm nghe trên từ Dictation, không đụng Vocabulary/L1–L5.
 4. Bundle chính 509 → 529 kB (gzip 152 → 159 kB); tab Dictation và phần nghe từ Dictation là chunk tải lười riêng (35 kB + 5 kB).
 
-## 3c. Việc ngày 25/11 (tối) — nhánh `feat/voice-picker`
+## 3c. Việc ngày 25/11 (tối) — nhánh `feat/voice-picker` (đã vào `main`)
 
 Tách từ `main` `98b5ba3`. Chưa push, chưa ghép, chưa deploy. Chi tiết: [DICTATION.md](DICTATION.md) mục 10.
 
@@ -120,6 +121,7 @@ Chỉ áp dụng cho **Multiple Choice của từ vựng** (không áp dụng Li
 - **Thanh menu gần kín chỗ**: từ 25/11 (nhánh `feat/dictation`) có 7 tab; chữ trên tab chỉ hiện từ `xl` (1280 px), dưới 360 px lề tab là `px-1`. Thêm tab hay chữ vào navbar thì chạy lại `navbar-sync-chip-browser` (đo tràn ngang ở 1280/1024/768/640/375/320 px).
 - **Python cho test Excel**: `grammar-export` và `grammar-export-browser` gọi lệnh `python`. Ngày 25/11 lệnh `python` trên máy trỏ vào lối tắt Microsoft Store (chưa cài) nên hai test này hỏng vì môi trường; Python thật cài qua `uv` (`py` chạy được). Khi chạy test, thêm thư mục của `py -c "import sys,os;print(os.path.dirname(sys.executable))"` vào đầu PATH.
 - **Listening tự focus ô gõ (khi bật) sẽ cuộn trang** tới ô gõ; test đo bố cục cần `scrollTo(0, 0)` trước.
+- **Phần lõi Listening dùng chung** (`src/components/listening/`): đổi `useListeningGame`/`ListeningParts` là đổi cả Listening Review lẫn Dictation → Từ đã lưu; chạy `listening-autofocus-browser`, `voice-settings-browser`, `vocab-star-browser`, `dictation-word-practice-browser`. Vòng chơi phân biệt bằng `round.key`, không có thì bằng id từ đúng (Listening giữ cách cũ).
 - **Đọc giọng**: Dictation/Listening gọi `speakWithSettings` (`voiceSpeech.js`); chỗ khác gọi thẳng `playAudio` và phải giữ nguyên hành vi (giọng en-US mặc định, 0.9). `speechSynthesis` giả trong test cũ không có `addEventListener`; `audio.js` chỉ dùng `onvoiceschanged` (một chủ sở hữu) — muốn nghe thay đổi thì `subscribeVoices`.
 - **`.vm-page-enter` dùng `transform`**, nên phần tử `position: fixed` bên trong sẽ neo theo nó chứ không theo cửa sổ. Đây là lý do overlay quiz bị lệch trên điện thoại và đã bỏ overlay.
 - **Không đổi layout/DOM của khối gạch chân và ghi chú Grammar**: `sentenceGeometry.js`, `UnderlinedSentence.jsx`, `SentenceNoteEditor.jsx`, `UnderlineToolbar.jsx`, `GrammarReadingNotes.jsx` đo hình học DOM thật; chỉ sửa logic/state, không đổi cấu trúc.
@@ -129,7 +131,7 @@ Chỉ áp dụng cho **Multiple Choice của từ vựng** (không áp dụng Li
 ## 8. Chạy và kiểm tra
 
 - Lệnh: `npm.cmd run dev` · `npm.cmd run build` · `npm.cmd run lint` · `npm.cmd test`.
-- **`npm test`** chạy **39 file test Node** trên `feat/voice-picker` (37 trên `main`), không cần trình duyệt, không có framework, qua `test/run-node-tests.js`. Lần cuối ghi nhận (25/11 tối, `feat/voice-picker`, có Python trong PATH): 39/39 đạt.
+- **`npm test`** chạy **file test Node** không cần trình duyệt, không có framework, qua `test/run-node-tests.js` (40 trên `main`; xem mục 17 cho nhánh đang làm). Cần Python trong PATH.
 - **Test trình duyệt (Playwright + Edge headless) KHÔNG nằm trong `npm test`** — chạy riêng từng file `node test/<tên>.test.js`. Hiện có 16 trên `feat/voice-picker`: `grammar-corpus-browser`, `grammar-export-browser`, `grammar-review-browser`, `grammar-topic-browser`, `sentence-notes-browser`, `underline-rendering`, `vocab-quota-browser`, `vocab-star-browser`, `vocab-sync-browser`, `quiz-feedback-browser`, `grammar-review-notes-persist-browser`, `listening-autofocus-browser`, `navbar-sync-chip-browser`, `dictation-browser`, `dictation-sync-browser`, `voice-settings-browser`. Lần cuối Claude Code chạy (25/11 tối): 16/16 đạt. Cách thiết lập Playwright: HANDOFF (cài vào thư mục TEMP, không vào repo).
 - **Lint**: 0 lỗi, 34 cảnh báo (mốc cơ sở; đừng làm tăng). **Build** (`feat/voice-picker`): JS chính ~540 kB + chunk Dictation ~36 kB, CSS ~108 kB (Vite cảnh báo vượt 500 kB, đã biết).
 - Test Grammar/annotation dùng mô phỏng; "pass" không chứng minh sync thật.
@@ -145,7 +147,8 @@ Chỉ áp dụng cho **Multiple Choice của từ vựng** (không áp dụng Li
 6. ~~Ghép nhánh `fix/listening-autofocus-sync-toast`~~ — đã ghép và push (25/11 01:04).
 7. ~~Commit bản cập nhật tài liệu~~: các sửa đổi ~01:15 của file này đã được commit cùng tài liệu Dictation trên nhánh `feat/dictation` (sẽ vào `main` khi ghép).
 8. Dictation: ~~ghép vào `main` và push~~ (xong 25/11). Còn: tự cài đồng bộ theo `docs/DICTATION-SETUP.md` (Sheet, Apps Script, Script Property, 2 biến Vercel, redeploy) — chưa biết đã làm chưa; thử trên điện thoại.
-9. Giọng đọc: ghép `feat/voice-picker` vào `main`, push, rồi nghe thử giọng thật trên máy tính và điện thoại (đặc biệt Chế độ thi).
+9. Giọng đọc: ~~ghép và push~~ (xong 25/11). Còn: nghe thử giọng thật trên máy tính và điện thoại (đặc biệt Chế độ thi).
+10. Ghép `feat/dictation-word-listening` vào `main`, push, rồi thử luyện nghe từ đã lưu trên điện thoại.
 
 ## 10. Chưa xác minh / rủi ro đã chấp nhận
 
@@ -218,3 +221,10 @@ Tách từ `main` `98b5ba3` (độc lập với `feat/voice-picker`). Chỉ có 
 - Kiểm tra trên nhánh này: `npm test` 38/38 (thêm `dictation-export`, cần Python), trình duyệt 16/16 (thêm `dictation-export-browser`), lint 34/0, build đạt.
 - Chưa mở file bằng Excel/Google Sheets thật.
 - Việc người dùng: ghép nhánh vào `main` và push.
+
+## 17. Ngày 25/11 (đêm) — nhánh `feat/dictation-word-listening`
+
+Tách từ `main` `ab94f57`. Chỉ có trên máy: **chưa push, chưa ghép**.
+
+- **Phần A:** Dictation → Từ đã lưu mở thẳng "Luyện nghe" (giống Listening Review, ô chỉ có chữ, lọc theo Tên bài / hay nghe sai / chưa luyện); danh sách cũ ở tab "Danh sách". Listening Review không đổi hành vi. Chi tiết: [DICTATION.md](DICTATION.md) mục 11.
+- Kiểm tra sau phần A: `npm test` 41/41, trình duyệt 18/18 (thêm `dictation-word-practice-browser`), lint 32 cảnh báo/0 lỗi (mốc mới, đừng làm tăng), build JS chính ~541 kB + chunk Dictation ~44 kB.

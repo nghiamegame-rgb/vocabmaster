@@ -42,7 +42,8 @@ export default function Dictation({ store }) {
             </button>
           ))}
         </div>
-        <VoiceSettings />
+        {/* "Từ đã lưu" places its own voice button. */}
+        {section !== 'words' && <VoiceSettings />}
       </div>
 
       {section === 'practice' && (

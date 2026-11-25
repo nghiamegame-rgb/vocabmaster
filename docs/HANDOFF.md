@@ -1,5 +1,14 @@
 # Bàn giao workspace VocabMaster
 
+> **Cập nhật 2026-11-25 (đêm):** `feat/voice-picker` và `feat/export-sentences-only` **đã ghép vào `main`** (`ab94f57`) và đã push. Nhánh `feat/dictation-word-listening` (chưa ghép/push) xem mục 20.
+
+## 20. Luyện nghe từ đã lưu trong Dictation + prompt cho AI — 2026-11-25
+
+- Nhánh `feat/dictation-word-listening` tách từ `main` (`ab94f57`), chưa ghép/push/deploy.
+- **Phần A:** Dictation → Từ đã lưu có "Luyện nghe" (bố cục Listening Review, ô chữ) và "Danh sách". Tách phần lõi sang `src/components/listening/`; Listening Review dùng chung, hành vi không đổi (so sánh 18 trạng thái trước/sau; test cũ đạt). Chi tiết: [DICTATION.md](DICTATION.md) mục 11.
+- **Kiểm tra phần A:** `npm test` 41/41; lint **32** cảnh báo/0 lỗi (trước 34); build đạt, JS chính 541,25 kB, chunk Dictation 44 kB; trình duyệt 18/18. Sửa 2 test cũ (`dictation-browser`, `dictation-sync-browser`) để bấm "Danh sách" trước.
+- **Chưa kiểm chứng:** điện thoại thật, giọng thật, đồng bộ Sheet thật.
+
 > **Cập nhật 2026-11-25 (tối):** `feat/dictation` **đã ghép vào `main`** (fast-forward `98b5ba3`) và đã push. Nhánh `feat/voice-picker` thêm chọn giọng đọc + Chế độ thi cho Dictation/Listening; xem mục 18. Chưa ghép, chưa push, chưa deploy.
 
 > **Cập nhật 2026-11-25 (chiều):** nhánh `feat/dictation` thêm tab Dictation (chép chính tả), đồng bộ Google Sheet riêng và nguồn "Từ chép chính tả" trong Listening. Xem [DICTATION.md](DICTATION.md), [DICTATION-SETUP.md](DICTATION-SETUP.md) và TRANG-THAI-DU-AN mục 3b. Chưa ghép `main`, chưa deploy, đồng bộ thật chưa thử.
