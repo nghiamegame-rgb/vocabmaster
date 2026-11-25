@@ -35,7 +35,8 @@ for sheet in workbook.find('m:sheets', ns):
             elif typ == 'inlineStr': value = ''.join(c.find('m:is', ns).itertext())
             cells.append({'ref': c.get('r'), 'type': typ, 'value': value})
         rows.append(cells)
-    result.append({'name': sheet.get('name'), 'rows': rows, 'formulas': len(xml.findall('.//m:f', ns))})
+    columns = [{'min': c.get('min'), 'max': c.get('max'), 'width': c.get('width')} for c in xml.findall('m:cols/m:col', ns)]
+    result.append({'name': sheet.get('name'), 'rows': rows, 'formulas': len(xml.findall('.//m:f', ns)), 'columns': columns})
 print(json.dumps({'sheets': result, 'parts': z.namelist()}))
 `], { input: bytes, maxBuffer: 20 * 1024 * 1024 }).toString());
 }

@@ -1,43 +1,60 @@
-// Excel export of Dictation data (2 sheets), same library as grammarExport.js.
-import { liveRecords, listenTotals, totalCount } from './dictationSyncMerge.js';
+// Excel export of Dictation sentences, made to be read by a chatbot: ONE sheet,
+// ONE column, one English sentence per row and nothing else (no header, dates,
+// lesson names, translations or results). It is not a backup — the .json export is.
+// Same library as grammarExport.js.
+import { lessonsOf } from './dictationModel.js';
 
-const date = ms => (ms ? new Date(ms).toLocaleString('vi-VN') : '');
+export const EXPORT_SHEET_NAME = 'Câu tiếng Anh';
+export const EXPORT_COLUMN_WIDTH = 100;
 
-/** Rows (header first) for the two sheets; only live (not deleted) records. */
-export function buildDictationExportRows(data) {
-  const words = [['Từ', 'Câu gốc', 'Tên bài', 'Ngày lưu', 'Nghe đúng', 'Nghe sai'],
-    ...liveRecords(data.words).map(w => {
-      const t = listenTotals(w);
-      return [w.word, w.sentence || '', w.lessonTitle || '', date(w.savedAt), t.correct, t.wrong];
-    })];
-  const sentences = [['Tên bài', 'Thứ tự', 'Câu tiếng Anh', 'Bản dịch tiếng Việt', 'Kết quả gần nhất', 'Số lần thử', 'Cập nhật'],
-    ...liveRecords(data.sentences).map(s => [
-      s.lessonTitle, s.order + 1, s.english, s.vietnamese || '',
-      s.lastResult === 'correct' ? 'Đúng' : s.lastResult === 'wrong' ? 'Sai' : 'Chưa làm',
-      totalCount(s.attempts), date(Math.max(s.updatedAt || 0, s.lastResultAt || 0)),
-    ])];
-  return { words, sentences };
+// Characters XML cannot hold would make Excel reject the whole file.
+const isXmlChar = char => {
+  const point = char.codePointAt(0);
+  if (point < 32) return point === 9 || point === 10 || point === 13;
+  return !(point >= 0xd800 && point <= 0xdfff) && point !== 0xfffe && point !== 0xffff;
+};
+
+const toOneLine = text => Array.from(text, char => (isXmlChar(char) ? char : ' ')).join('').replace(/\s+/g, ' ').trim();
+
+/**
+ * English sentences to export: sentences in use (not deleted), lesson by lesson in
+ * their position order, only the part before "|", one line each, without repeats
+ * (compared trimmed and ignoring upper/lower case; the first one is kept).
+ */
+export function buildDictationExportSentences(data) {
+  const seen = new Set();
+  const sentences = [];
+  for (const lesson of lessonsOf(data)) {
+    for (const sentence of lesson.sentences) {
+      const english = toOneLine(String(sentence.english ?? '').split('|')[0]);
+      const key = english.toLowerCase();
+      if (!english || seen.has(key)) continue;
+      seen.add(key);
+      sentences.push(english);
+    }
+  }
+  return sentences;
 }
 
-export async function downloadDictationWorkbook(data) {
+export async function createDictationWorkbook(sentences) {
   const { default: writeExcelFile } = await import('write-excel-file/universal');
-  const rows = buildDictationExportRows(data);
-  const toSheet = (name, table, widths) => ({
-    sheet: name,
-    data: table.map((row, r) => row.map(value => (r === 0
-      ? { value: String(value), type: String, fontWeight: 'bold' }
-      : typeof value === 'number' ? { value, type: Number } : { value: String(value), type: String, wrap: true }))),
-    columns: widths.map(width => ({ width })),
-    stickyRowsCount: 1,
-  });
-  const blob = await writeExcelFile([
-    toSheet('Từ vựng', rows.words, [18, 60, 24, 20, 10, 10]),
-    toSheet('Câu hoàn chỉnh', rows.sentences, [24, 8, 70, 60, 16, 10, 20]),
-  ]).toBlob();
+  return writeExcelFile([{
+    sheet: EXPORT_SHEET_NAME,
+    // String cells: a sentence starting with "=" stays text, never a formula.
+    data: sentences.map(value => [{ value, type: String }]),
+    columns: [{ width: EXPORT_COLUMN_WIDTH }],
+  }]).toBlob();
+}
+
+/** Downloads the file. With no sentence to export, nothing is downloaded. */
+export async function downloadDictationWorkbook(data) {
+  const sentences = buildDictationExportSentences(data);
+  if (!sentences.length) return { sentences: 0 };
+  const blob = await createDictationWorkbook(sentences);
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url; link.download = `Dictation-${new Date().toISOString().slice(0, 10)}.xlsx`;
   document.body.appendChild(link); link.click(); link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 60000);
-  return { words: rows.words.length - 1, sentences: rows.sentences.length - 1 };
+  return { sentences: sentences.length };
 }
