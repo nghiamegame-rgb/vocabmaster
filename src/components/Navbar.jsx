@@ -1,4 +1,4 @@
-import { LayoutDashboard, BookOpen, Brain, Headphones, RefreshCw, Layers, BookOpenCheck, CloudOff, CloudUpload } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Brain, Headphones, RefreshCw, Layers, BookOpenCheck, CloudOff, CloudUpload, PenLine } from 'lucide-react';
 
 const tabs = [
   { id: 'dashboard',  label: 'Dashboard', Icon: LayoutDashboard },
@@ -7,6 +7,7 @@ const tabs = [
   { id: 'quiz',       label: 'Smart Quiz', Icon: Brain },
   { id: 'listening',  label: 'Listening',  Icon: Headphones },
   { id: 'grammar',    label: 'Grammar',    Icon: BookOpenCheck },
+  { id: 'dictation',  label: 'Dictation',  Icon: PenLine },
 ];
 
 /** Sync button visual state for the current Vocabulary sync status. */
@@ -129,7 +130,7 @@ export default function Navbar({ activeTab, setActiveTab, syncStatus, pushStatus
               </span>
             </div>
 
-            {/* Tabs (labels from lg: below that they do not fit beside the sync controls) */}
+            {/* Tabs (labels from xl: with 7 tabs they do not fit beside the sync controls below 1280px) */}
             <div className="flex items-center gap-0.5 sm:gap-1 flex-1">
               {tabs.map(({ id, label, Icon }) => (
                 <button
@@ -138,14 +139,14 @@ export default function Navbar({ activeTab, setActiveTab, syncStatus, pushStatus
                   aria-label={label}
                   onClick={() => setActiveTab(id)}
                   className={`
-                    vm-btn flex items-center gap-2 px-1.5 sm:px-3 py-2 rounded-xl text-sm font-medium shrink-0 whitespace-nowrap
+                    vm-btn flex items-center gap-2 px-1 min-[360px]:px-1.5 sm:px-3 py-2 rounded-xl text-sm font-medium shrink-0 whitespace-nowrap
                     ${activeTab === id
                       ? 'vm-btn-primary text-white'
                       : 'text-slate-300/85 hover:text-white hover:bg-slate-800/75'}
                   `}
                 >
                   <Icon size={16} />
-                  <span className="hidden lg:block">{label}</span>
+                  <span className="hidden xl:block">{label}</span>
                 </button>
               ))}
             </div>

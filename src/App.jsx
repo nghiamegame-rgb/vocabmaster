@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import Navbar          from './components/Navbar';
 import Dashboard       from './components/Dashboard';
 import Vocabulary      from './components/Vocabulary';
@@ -9,6 +9,10 @@ import Grammar         from './components/Grammar';
 import { useVocabStore } from './hooks/useVocabStore';
 import { useStructuresStore } from './hooks/useStructuresStore';
 import { useGrammarStore } from './hooks/useGrammarStore';
+import { useDictationStore } from './hooks/useDictationStore';
+
+// Loaded on first open so the main bundle does not grow.
+const Dictation = lazy(() => import('./components/Dictation'));
 
 export default function App() {
   const [activeTab,   setActiveTab]   = useState('dashboard');
@@ -35,6 +39,8 @@ export default function App() {
   const structureStore = useStructuresStore();
   // Lives at App level (like Structures) so Grammar sync also runs while the Grammar tab is closed.
   const grammarStore = useGrammarStore();
+  // Dictation (chép chính tả): separate store; Listening uses its saved words.
+  const dictationStore = useDictationStore();
 
   function handleSetActiveTab(tab) {
     setActiveTab(tab);
@@ -112,6 +118,11 @@ export default function App() {
             vocabSyncStatus={vocabCloudReadStatus}
             vocabDataLoadError={vocabDataLoadError}
           />
+        )}
+        {activeTab === 'dictation' && (
+          <Suspense fallback={<p className="text-slate-300 text-sm" role="status">Đang tải Dictation…</p>}>
+            <Dictation store={dictationStore} />
+          </Suspense>
         )}
       </main>
     </div>

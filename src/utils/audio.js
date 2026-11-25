@@ -57,13 +57,14 @@ if ('speechSynthesis' in window) {
  * @param {string} text
  * @returns {{ cancel: () => void }}
  */
-function _googleTTS(text, onEnd) {
+function _googleTTS(text, onEnd, playbackRate = 1) {
   const url =
     'https://translate.google.com/translate_tts' +
     '?ie=UTF-8&client=tw-ob&tl=en-US&q=' +
     encodeURIComponent(text);
 
   const audio = new Audio(url);
+  if (playbackRate !== 1) audio.playbackRate = playbackRate;
   if (onEnd) audio.onended = onEnd;
   audio.play().catch(() => {/* network blocked — silent failure */});
   return {
@@ -83,9 +84,10 @@ function _googleTTS(text, onEnd) {
  * Play the given English text using the best available TTS method.
  *
  * @param {string} text  — English word or phrase to speak
+ * @param {{ onEnd?: () => void, rate?: number }} [options] — rate defaults to 0.9 (speech rate)
  * @returns {{ cancel: () => void }}  — call `.cancel()` to stop playback early
  */
-export function playAudio(text, { onEnd } = {}) {
+export function playAudio(text, { onEnd, rate = 0.9 } = {}) {
   if (!text || !text.trim()) return { cancel: () => {} };
 
   // ── Primary: Web Speech API ────────────────────────────────────────────────
@@ -97,7 +99,7 @@ export function playAudio(text, { onEnd } = {}) {
     let fallbackHandle = null;
     utt.voice = _cachedVoice;
     utt.lang  = _cachedVoice.lang;  // 'en-US' or 'en-GB'
-    utt.rate  = 0.9;                // slightly slower for TOEIC learners
+    utt.rate  = rate;               // default 0.9: slightly slower for learners
 
     // If the utterance errors mid-play, fall back silently to Google TTS.
     // Do not report an end for the canceled utterance; the fallback owns it.
@@ -105,7 +107,7 @@ export function playAudio(text, { onEnd } = {}) {
       if (canceled || event?.error === 'canceled' || event?.error === 'interrupted') return;
       fallbackHandle = _googleTTS(text, () => {
         if (!canceled) onEnd?.();
-      });
+      }, rate / 0.9);
     };
     if (onEnd) utt.onend = onEnd;
 
@@ -123,5 +125,5 @@ export function playAudio(text, { onEnd } = {}) {
   // Reached when: Web Speech API unsupported, or no English voice cached yet.
   // For the "no voice yet" case (Chrome on first render), this gives immediate
   // audio while the voice list loads in the background for subsequent calls.
-  return _googleTTS(text, onEnd);
+  return _googleTTS(text, onEnd, rate / 0.9);
 }
