@@ -9,6 +9,7 @@ Trạng thái: nhánh `feat/dictation` (25/11/2026). Đồng bộ mới chỉ đ
 | Tab, tải lười | `src/components/Dictation.jsx`, `src/components/dictation/DictationPractice.jsx`, `DictationWords.jsx`, `DictationLibrary.jsx`, `DictationSyncStatus.jsx` |
 | Listening (nguồn "Từ chép chính tả", tải lười) | `src/components/DictationWordListening.jsx`; nút chọn nguồn trong `ListeningReview.jsx` |
 | Store (tạo ở `App.jsx`) | `src/hooks/useDictationStore.js` |
+| Giọng đọc (dùng chung với Listening, mục 10) | `src/components/VoiceSettings.jsx`, `src/hooks/useVoices.js`, `src/utils/voiceSelection.js`, `voicePrefs.js`, `voiceSpeech.js` |
 | Hàm thuần | `dictationCheck.js` (chấm câu), `dictationParse.js` (tách câu, đọc bài dán), `dictationModel.js` (sửa dữ liệu), `dictationSyncMerge.js` (kiểm tra + hợp nhất), `dictationStorage.js` (LocalStorage), `dictationCloud.js` (gọi proxy), `dictationExport.js` (Excel) |
 | Máy chủ | `api/dictation-sync.js` (proxy Vercel), `dictation-apps-script.js` (Apps Script riêng) |
 | Test | Node: `dictation-check`, `dictation-parse`, `dictation-model`, `dictation-backend` (+ `test/helpers/dictation-backend.js`). Trình duyệt: `dictation-browser`, `dictation-sync-browser` |
@@ -69,7 +70,8 @@ Mỗi lần sửa: ghi LocalStorage trước, thành công mới cập nhật gi
 |---|---|
 | `vocabmaster_dictation_data` | `{ schema: 1, sentences, words }`. Nếu hỏng thì **khoá ghi và khoá đồng bộ**, không ghi đè |
 | `vocabmaster_dictation_device` | `deviceId` |
-| `vocabmaster_dictation_prefs` | tốc độ, tự phát, lặp, hiện bản dịch (riêng thiết bị, không đồng bộ) |
+| `vocabmaster_dictation_prefs` | tốc độ (hệ số 0.75/1/1.25 nhân vào tốc độ ở mục 10), tự phát, lặp, hiện bản dịch (riêng thiết bị, không đồng bộ) |
+| `vocabmaster_voice_prefs` | giọng đã chọn, tốc độ cơ bản, Chế độ thi (mục 10; riêng thiết bị, không đồng bộ) |
 | `vocabmaster_listening_autofocus` | dùng chung với Listening (`listeningPrefs.js`) |
 
 Không đụng các khóa Vocabulary/Grammar/Structures.
@@ -135,3 +137,28 @@ Theo mẫu Structures:
 
 - Chỉ gọi `recordWordListen(id, đúng/sai)`, tức là cộng `listen[deviceId]` trên bản ghi từ Dictation. Không gọi `updateWordLevel`, không đổi `vocabmaster_words`, L1–L5 hay ngày ôn (test `dictation-browser` kiểm tra).
 - "Chỉ từ hay sai" lấy các từ có tổng `wrong > 0`.
+
+## 10. Giọng đọc và Chế độ thi (nhánh `feat/voice-picker`, 25/11/2026)
+
+Dùng chung cho **Dictation** (luyện câu, bấm từ, "Từ đã lưu") và **Listening** (cả hai nguồn). Flashcard, Vocabulary và Smart Quiz **không đổi**: vẫn gọi `playAudio` với giọng en-US mặc định, tốc độ 0.9. Test trên giả lập, **chưa nghe thử giọng thật trên điện thoại/Safari/Firefox**.
+
+**File**
+
+- `voiceSelection.js` — hàm thuần: lọc giọng `en*`, xếp hạng, nhãn, giọng mặc định, tìm giọng đã lưu, nhóm giọng cho Chế độ thi, bốc ngẫu nhiên (`createExamRotation`), `planSpeech`.
+- `voicePrefs.js` — đọc/ghi khóa `vocabmaster_voice_prefs` = `{ voiceURI, name, rate, examMode }`. Lưu theo `voiceURI` + `name`, không theo số thứ tự. Giá trị hỏng/không đọc được → mặc định. Không đồng bộ, không backup.
+- `voiceSpeech.js` — `speakWithSettings(text, { itemKey, speed, onEnd })`, `previewVoice()`; ghi lỗi thì giữ cài đặt trong phiên.
+- `audio.js` — `playAudio(text, { onEnd, rate = 0.9, voice })`: `voice` là tuỳ chọn mới; không truyền thì như cũ. Không đặt `pitch`. Thêm `listSystemVoices`, `subscribeVoices`, `subscribeSpeechEngine` (biết đang dùng giọng máy hay Google dự phòng).
+- `VoiceSettings.jsx` — nút "Giọng đọc" mở khung ngay trong trang (không phải overlay `fixed`): chọn giọng, "Nghe thử", thanh tốc độ 0.8–1.1, công tắc Chế độ thi.
+
+**Quy tắc**
+
+- Nhãn dạng "Microsoft Zira (Mỹ)". Giọng có chữ Natural/Online (Edge) đứng đầu; giọng "đồ chơi" của Apple (Zarvox, Bells, Eddy…) đứng cuối và **không** vào Chế độ thi.
+- Giọng mặc định giữ quy tắc cũ: en-US đầu tiên, rồi en-GB, rồi giọng `en` bất kỳ. Giọng đã lưu không có trên máy → dùng mặc định, không báo lỗi, không ghi đè lựa chọn đã lưu.
+- Chế độ thi: nhóm giọng en-US/GB/AU/CA/IN (nếu dưới 2 giọng thì lấy mọi giọng tiếng Anh thường). `itemKey` khác → giọng khác giọng liền trước (khi có ≥ 2) và tốc độ lệch ngẫu nhiên tối đa ±0.05 (không quá 1.1). `itemKey` giống (nghe lại, bấm từ trong câu) → giữ giọng và tốc độ.
+- `itemKey`: Dictation `sentence:<id>` và `word:<id>`; Listening `listen:<số vòng>` và `dictword:<vòng>:<id>`. Quay lại một câu cũ được coi là lượt nghe mới.
+- Không có giọng tiếng Anh nào (hoặc giọng máy lỗi) → Google Translate TTS (1 giọng): Chế độ thi không áp dụng và có ghi chú; ô chọn giọng bị khoá khi máy không có giọng.
+- Danh sách giọng nạp bất đồng bộ: nghe `voiceschanged` và đọc lại sau 0/250/1000/2500 ms; sau 2,5 s vẫn trống thì báo "không có giọng đọc".
+
+**Giới hạn:** giọng và chất lượng phụ thuộc máy/trình duyệt (điện thoại có bộ giọng khác máy tính); giọng "Online/Natural" cần mạng; câu rất dài với giọng Google của Chrome có thể bị ngắt giữa chừng (hiện tượng đã biết của Chrome, **chưa kiểm chứng** trên máy này). Nếu giọng chưa kịp nạp ở lần đọc đầu tiên thì lần đó dùng Google dự phòng.
+
+**Test:** `voice-selection`, `voice-prefs` (Node); `voice-settings-browser` (trình duyệt, danh sách giọng giả).

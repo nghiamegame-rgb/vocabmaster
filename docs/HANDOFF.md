@@ -1,8 +1,18 @@
 # Bàn giao workspace VocabMaster
 
+> **Cập nhật 2026-11-25 (tối):** `feat/dictation` **đã ghép vào `main`** (fast-forward `98b5ba3`) và đã push. Nhánh `feat/voice-picker` thêm chọn giọng đọc + Chế độ thi cho Dictation/Listening; xem mục 18. Chưa ghép, chưa push, chưa deploy.
+
 > **Cập nhật 2026-11-25 (chiều):** nhánh `feat/dictation` thêm tab Dictation (chép chính tả), đồng bộ Google Sheet riêng và nguồn "Từ chép chính tả" trong Listening. Xem [DICTATION.md](DICTATION.md), [DICTATION-SETUP.md](DICTATION-SETUP.md) và TRANG-THAI-DU-AN mục 3b. Chưa ghép `main`, chưa deploy, đồng bộ thật chưa thử.
 
 > **Lưu ý 2026-11-25:** tình hình mới nhất (các nhánh đã ghép vào `main` và push, theme, quiz đọc từ + ảnh, giữ ghi chú Ôn tập, việc còn mở) nằm ở [TRANG-THAI-DU-AN.md](TRANG-THAI-DU-AN.md). Dòng "Chưa push/deploy" ngay dưới chỉ đúng cho thời điểm 24/11 chiều.
+
+## 18. Chọn giọng đọc và Chế độ thi — 2026-11-25
+
+- Nhánh `feat/voice-picker` tách từ `main` (`98b5ba3`), chưa ghép/push/deploy. Chi tiết: [DICTATION.md](DICTATION.md) mục 10.
+- Nút "Giọng đọc" trong Dictation và Listening: chọn giọng tiếng Anh, "Nghe thử", tốc độ 0.8–1.1, Chế độ thi (giọng ngẫu nhiên mỗi câu; nghe lại giữ giọng). Cài đặt chỉ lưu trên từng máy (`vocabmaster_voice_prefs`).
+- `playAudio` chỉ thêm tuỳ chọn `voice`; Flashcard/Vocabulary/Smart Quiz không đổi. Tốc độ 0.75×/1×/1.25× của Dictation giờ nhân vào tốc độ đã chọn (mặc định 0.9 → như cũ).
+- **Kiểm tra:** `npm test` 39/39; lint 34 cảnh báo/0 lỗi (không đổi); build đạt, JS chính 529,38 → 539,96 kB (gzip 159,19 → 162,84 kB); trình duyệt 16/16 (thêm `voice-settings-browser`). Máy chạy test cần Python thật trong PATH cho 2 test Excel (TRANG-THAI mục 7).
+- **Chưa kiểm chứng:** giọng thật trên máy tính/điện thoại, giọng Edge Natural, Safari/Firefox.
 
 **Cập nhật 2026-11-24 — nhánh `fix/audit-2026-11`: sửa 17 mục của báo cáo phân tích; xem mục 17. Chưa push/deploy.**
 
