@@ -32,6 +32,15 @@
   Vocabulary không cần đổi Apps Script/proxy/env cho các sửa này.
 - **Giới hạn:** chưa kiểm tra Apps Script/Vercel/Sheets thật, Safari/Firefox hay thiết bị cảm ứng. Các mục 1–16 bên dưới là lịch sử; mô tả trái với mục này (secret tùy chọn, review ở `Meta!B1`, store Grammar mount trong tab, chưa có tombstone, prompt TOEIC) đã lỗi thời.
 
+**Cập nhật 2026-11-25 — Dictation: file Excel chỉ còn các câu tiếng Anh; xem mục 19.**
+
+## 19. Dictation: xuất Excel chỉ gồm câu tiếng Anh — 2026-11-25
+
+- Nhánh `feat/export-sentences-only` tách từ `main` (`98b5ba3`), chưa ghép/push/deploy; độc lập với `feat/voice-picker` (mục 18 nằm trên nhánh đó).
+- Nút "Xuất Excel (.xlsx)" (Dictation → Thư viện bài): một sheet "Câu tiếng Anh", một cột, mỗi dòng một câu đang dùng, không trùng; thông báo "Đã xuất Excel: N câu." hoặc "Chưa có câu nào để xuất." (không tải file). Chi tiết: [DICTATION.md](DICTATION.md) mục 6.
+- Không đổi: xuất/nhập bản sao .json, đồng bộ Google Sheet (proxy, Apps Script), Từ đã lưu, Luyện nghe.
+- **Kiểm tra trên nhánh này:** `npm test` 38/38; lint 34 cảnh báo/0 lỗi (không đổi); build đạt; trình duyệt 16/16 (thêm `dictation-export-browser`). Chưa mở file bằng Excel/Google Sheets thật. `test/helpers/inspect-xlsx.js` trả thêm độ rộng cột.
+
 **Cập nhật 2026-11-16 — sửa trạng thái nút và xử lý lỗi lưu trong Grammar → Ôn tập; xem mục 16. Chỉ sửa workspace, chưa commit/deploy.**
 
 ## 16. Grammar → Ôn tập: xác nhận lưu và màu nút — 2026-11-16

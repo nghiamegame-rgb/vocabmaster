@@ -194,3 +194,12 @@ Theo thứ tự hợp lý, chỉ làm khi người dùng đồng ý:
 2. Smart Quiz → Listening & Typing vẫn tự bật bàn phím mỗi câu: đề xuất dùng chung nút tắt với Listening (nhánh riêng, prompt cho Claude Code).
 3. Nếu người dùng thấy dữ liệu đang lớn lên nhanh: đo kích thước thật (mục 14), rồi cân nhắc cảnh báo gần giới hạn / nâng `MAX_QUESTIONS` / dọn snapshot Drive.
 4. Dọn các việc tay còn mở ở mục 9 (Apps Script rác, repo Private, Ctrl+F5 mọi thiết bị).
+
+## 16. Ngày 25/11 (đêm) — nhánh `feat/export-sentences-only`
+
+Tách từ `main` `98b5ba3` (độc lập với `feat/voice-picker`). Chỉ có trên máy: **chưa push, chưa ghép**.
+
+- Dictation → Thư viện bài → "Xuất Excel (.xlsx)": file chỉ còn **một sheet "Câu tiếng Anh", một cột, mỗi dòng một câu tiếng Anh** (bỏ câu đã xoá và câu trùng) để đưa chatbot đọc. Không có câu thì không tải file. Bản sao .json và tab trên Google Sheet không đổi.
+- Kiểm tra trên nhánh này: `npm test` 38/38 (thêm `dictation-export`, cần Python), trình duyệt 16/16 (thêm `dictation-export-browser`), lint 34/0, build đạt.
+- Chưa mở file bằng Excel/Google Sheets thật.
+- Việc người dùng: ghép nhánh vào `main` và push.
