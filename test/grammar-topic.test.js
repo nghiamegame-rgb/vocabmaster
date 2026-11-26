@@ -6,6 +6,8 @@ import { createServer } from 'vite';
 import { getSentenceTopicLabel } from '../src/utils/grammarTopic.js';
 import { TOPIC_LABELS } from '../src/utils/grammarPrompt.js';
 
+globalThis.window ??= {}; // audio.js (imported via GrammarReview -> VoiceSettings) checks 'speechSynthesis' in window
+
 test('classification follows stored topic and its existing Vietnamese mapping, independently of analysis focus', () => {
   for (const [topic, label] of Object.entries(TOPIC_LABELS)) {
     const question = Object.freeze({ topic, analysisTopic: topic === 'Mixed' ? 'Tenses' : 'Mixed' });

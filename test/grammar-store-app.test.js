@@ -11,6 +11,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
 
 globalThis.fetch = () => { throw new Error('Network must not be used'); };
+globalThis.window ??= {}; // audio.js (imported via GrammarReview -> VoiceSettings) checks 'speechSynthesis' in window
 // No localStorage on purpose: Grammar must not read storage or start a store itself.
 delete globalThis.localStorage;
 

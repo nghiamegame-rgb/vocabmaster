@@ -1,7 +1,11 @@
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Volume2 } from 'lucide-react';
 import { isGrammarDueForReview } from '../../utils/grammarStorage';
 import { getAvailableTopics } from '../../utils/grammarPrompt';
 import { getSentenceTopicLabel } from '../../utils/grammarTopic';
+import { getGrammarSentence } from '../../utils/grammarSentence';
+import { speakWithSettings } from '../../utils/voiceSpeech';
+import VoiceSettings from '../VoiceSettings';
 import GrammarSentenceCard from './GrammarAnalysis';
 
 export default function GrammarReview({ savedQuestions, reviewProgress, onRecordReview, onToggleHard, onQuickAdd, onUnderlineChange, underlines = {}, sentenceNotes, onNoteChange }) {
@@ -15,7 +19,15 @@ export default function GrammarReview({ savedQuestions, reviewProgress, onRecord
   const [stars, setStars] = useState({});
   const [notesShown, setNotesShown] = useState(false);
   const assessedIds = useRef(new Set());
+  const speechRef = useRef(null);
   const [reviewError, setReviewError] = useState('');
+
+  const stopSpeech = useCallback(() => {
+    try { speechRef.current?.cancel(); } catch { /* ignore */ }
+    speechRef.current = null;
+  }, []);
+
+  useEffect(() => () => stopSpeech(), [stopSpeech]);
   const filtered = savedQuestions.filter(q => (topic === 'All' || q.topic === topic) && (!starredOnly || q.hardMarked));
   const subsets = {
     due: filtered.filter(q => isGrammarDueForReview(reviewProgress[q.savedId])),
@@ -24,6 +36,7 @@ export default function GrammarReview({ savedQuestions, reviewProgress, onRecord
   };
   const understood = Object.values(assessments).filter(Boolean).length;
   function start() {
+    stopSpeech();
     assessedIds.current = new Set(); setReviewError('');
     setQueue([...subsets[reviewMode]].sort(() => Math.random() - 0.5));
     setCurrent(0); setAssessments({}); setStars({}); setNotesShown(false); setMode('session');
@@ -50,6 +63,7 @@ export default function GrammarReview({ savedQuestions, reviewProgress, onRecord
     }
   }
   function finish() {
+    stopSpeech();
     setMode('done');
   }
   if (mode === 'select') return <div className="space-y-5 vm-page-enter">
@@ -74,6 +88,12 @@ export default function GrammarReview({ savedQuestions, reviewProgress, onRecord
   </div>;
   const q = queue[current];
   const starred = stars[q.savedId] ?? q.hardMarked;
+  const sentenceText = getGrammarSentence(q).trim();
+  function speakSentence() {
+    if (!sentenceText) return;
+    stopSpeech();
+    speechRef.current = speakWithSettings(sentenceText, { itemKey: `grammar-review:${q.savedId}` });
+  }
   return <div className="space-y-4">
     <div className="flex items-center justify-between gap-3 text-sm text-slate-300">
       <span className="font-medium tabular-nums">Câu {current + 1}/{queue.length} · Ôn L{reviewProgress[q.savedId]?.level ?? 1}</span>
@@ -81,9 +101,25 @@ export default function GrammarReview({ savedQuestions, reviewProgress, onRecord
         onToggleHard?.(q.savedId); setStars(prev => ({ ...prev, [q.savedId]: !starred }));
       }}>{starred ? '★ Bỏ sao' : '☆ Đánh dấu sao'}</button>
     </div>
+    <div className="flex flex-wrap items-center gap-3">
+      {sentenceText && (
+        <button
+          id="grammar-review-speak"
+          type="button"
+          aria-label="Nghe câu"
+          onClick={speakSentence}
+          className="vm-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border bg-indigo-500/20 border-indigo-400/50 text-indigo-200 hover:bg-indigo-500/30"
+        >
+          <Volume2 size={14} className="shrink-0" />
+          <span>Nghe câu</span>
+        </button>
+      )}
+      <VoiceSettings />
+    </div>
     <GrammarSentenceCard key={current} question={q} onAssess={assess} assessed={assessments[current]} onQuickAdd={onQuickAdd}
       analysisTopic={topic === 'All' ? undefined : topic}
       onNext={() => {
+        stopSpeech();
         setReviewError('');
         if (current + 1 < queue.length) setCurrent(c => c + 1);
         else finish();
