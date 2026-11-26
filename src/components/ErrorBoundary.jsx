@@ -21,11 +21,11 @@ export default class ErrorBoundary extends Component {
     if (!this.state.hasError) return this.props.children;
     return (
       <div role="alert" className="vm-app-shell flex flex-col items-center justify-center gap-4 p-6 text-center">
-        <p className="text-lg text-slate-100">Có lỗi xảy ra, dữ liệu của bạn vẫn được giữ. Hãy tải lại trang</p>
+        <p className="sb-paper-note max-w-md px-5 py-4 text-lg font-semibold text-[#2b2a33]">Có lỗi xảy ra, dữ liệu của bạn vẫn được giữ. Hãy tải lại trang</p>
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="vm-btn vm-btn-primary px-5 py-2.5 rounded-xl font-semibold"
+          className="sb-btn-ink px-5 py-2.5 rounded-xl font-bold bg-[#c44d2a] text-white hover:bg-[#d9603b]"
         >Tải lại trang</button>
       </div>
     );

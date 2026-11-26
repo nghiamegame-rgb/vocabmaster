@@ -11,6 +11,8 @@
     "test": "node test/run-node-tests.js"
   },
   "dependencies": {
+    "@fontsource-variable/fraunces": "^5.3.0",
+    "@fontsource-variable/nunito": "^5.3.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "write-excel-file": "^4.1.1"

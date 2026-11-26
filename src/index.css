@@ -1,12 +1,30 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   VocabMaster Design System — Midnight Indigo & Glass Slate
-   Dark mode tokens, elevation hierarchy, WCAG AA contrast, GPU-only motion.
+   VocabMaster Design System — Storybook Map & Warm Paper (Phase 1)
+   Light paper-and-ink tokens, WCAG AA contrast, GPU-only motion,
+   plus .sb-legacy bridge for tabs not yet migrated.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @theme {
+  /* Storybook semantic palette */
+  --color-sb-paper: #f6efe2;
+  --color-sb-paper-card: #fbf7ee;
+  --color-sb-paper-warm: #f2e8d5;
+  --color-sb-paper-deep: #ece1cc;
+  --color-sb-ink: #2b2a33;
+  --color-sb-ink-soft: #575361;
+  --color-sb-terracotta: #d9603b;
+  --color-sb-terracotta-strong: #c44d2a;
+  --color-sb-forest: #3f7d58;
+  --color-sb-sky: #3a8fb7;
+  --color-sb-ochre: #e0a82e;
+  --color-sb-plum: #7a4e8c;
+  --color-sb-berry: #c8434e;
+  --color-sb-clay: #d97736;
+  --color-sb-lagoon: #216e6e;
+
+  /* Legacy tokens retained for unmigrated tabs inside .sb-legacy */
   --color-vm-canvas: #070b14;
   --color-vm-surface-1: #0d1424;
   --color-vm-surface-2: #131d33;
@@ -22,39 +40,82 @@
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /* Core palette (Midnight Indigo & Glass Slate) */
-  --bg-canvas: #070b14;
-  --bg-surface-1: #0d1424;
-  --bg-surface-2: #131d33;
-  --bg-surface-3: #1b2844;
-  --bg-glass: rgba(11, 17, 32, 0.84);
-  --bg-glass-card: rgba(15, 23, 42, 0.72);
-  --bg-input: rgba(11, 18, 34, 0.82);
+  /* Storybook Palette */
+  --sb-paper: #f6efe2;
+  --sb-paper-card: #fbf7ee;
+  --sb-paper-warm: #f2e8d5;
+  --sb-paper-deep: #ece1cc;
+  --sb-ink: #2b2a33;
+  --sb-ink-soft: #575361;
+  --sb-ink-faint: rgba(43, 42, 51, 0.16);
 
-  /* Text hierarchy (WCAG AA compliant on --bg-canvas and --bg-surface-2) */
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
+  --sb-terracotta: #d9603b;
+  --sb-terracotta-strong: #c44d2a;
+  --sb-terracotta-text: #a83b1c;
+  --sb-terracotta-soft: #fae3d7;
 
-  /* Borders */
-  --border-subtle: rgba(148, 163, 184, 0.14);
-  --border-default: rgba(148, 163, 184, 0.22);
-  --border-strong: rgba(148, 163, 184, 0.34);
-  --border-accent: rgba(129, 140, 248, 0.48);
+  --sb-forest: #3f7d58;
+  --sb-forest-text: #295a3d;
+  --sb-forest-soft: #ddeee2;
 
-  /* Semantic accents */
-  --primary: #6366f1;
-  --primary-hover: #7578f6;
-  --primary-dark: #4f46e5;
-  --violet: #8b5cf6;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #f43f5e;
-  --accent-ring: rgba(129, 140, 248, 0.78);
+  --sb-sky: #3a8fb7;
+  --sb-sky-strong: #277296;
+  --sb-sky-text: #1f5d7a;
+  --sb-sky-soft: #dceef6;
 
-  /* Elevation shadows */
+  --sb-ochre: #e0a82e;
+  --sb-ochre-text: #7d5608;
+  --sb-ochre-soft: #f8ecd0;
+
+  --sb-plum: #7a4e8c;
+  --sb-plum-text: #5e386e;
+  --sb-plum-soft: #ede1f2;
+
+  --sb-berry: #c8434e;
+  --sb-berry-text: #9e2a35;
+  --sb-berry-soft: #f9dfe1;
+
+  --sb-clay: #d97736;
+  --sb-clay-text: #9e4812;
+  --sb-clay-soft: #fae8d8;
+
+  --sb-lagoon: #216e6e;
+  --sb-lagoon-soft: #d9f0ef;
+
+  --sb-shadow-sm: 2px 2px 0 var(--sb-ink);
+  --sb-shadow-md: 4px 4px 0 var(--sb-ink);
+  --sb-shadow-lg: 6px 6px 0 var(--sb-ink);
+  --sb-ring: #c44d2a;
+
+  /* Default light surface mappings */
+  --bg-canvas: var(--sb-paper);
+  --bg-surface-1: var(--sb-paper-warm);
+  --bg-surface-2: var(--sb-paper-card);
+  --bg-surface-3: var(--sb-paper-deep);
+  --bg-glass: rgba(251, 247, 238, 0.94);
+  --bg-glass-card: var(--sb-paper-card);
+  --bg-input: #fffdf8;
+
+  --text-primary: var(--sb-ink);
+  --text-secondary: var(--sb-ink-soft);
+  --text-muted: #65606f;
+
+  --border-subtle: rgba(43, 42, 51, 0.14);
+  --border-default: rgba(43, 42, 51, 0.28);
+  --border-strong: var(--sb-ink);
+  --border-accent: var(--sb-terracotta-strong);
+
+  --primary: var(--sb-terracotta-strong);
+  --primary-hover: var(--sb-terracotta);
+  --primary-dark: #a83b1c;
+  --violet: var(--sb-plum);
+  --success: var(--sb-forest);
+  --warning: var(--sb-ochre);
+  --danger: var(--sb-berry);
+  --accent-ring: var(--sb-ring);
+
   --shadow-card: 0 8px 24px -8px rgba(2, 6, 23, 0.65), inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
   --shadow-card-hover: 0 14px 32px -10px rgba(2, 6, 23, 0.8), 0 0 0 1px rgba(129, 140, 248, 0.22), inset 0 1px 0 0 rgba(255, 255, 255, 0.07);
   --shadow-accent: 0 8px 20px -6px rgba(99, 102, 241, 0.42);
@@ -77,26 +138,26 @@
 }
 
 html {
-  background-color: var(--bg-canvas);
+  background-color: var(--sb-paper);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Nunito Variable', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   margin: 0;
   padding: 0;
-  background-color: var(--bg-canvas);
-  color: var(--text-primary);
+  background-color: var(--sb-paper);
+  color: var(--sb-ink);
   overflow-x: clip;
 }
 
-/* Ambient app backdrop (pseudo-element avoids layout impact and stays crisp) */
+/* Warm illustrated paper backdrop with subtle watercolor washes & paper grain */
 .vm-app-shell {
   position: relative;
   min-height: 100vh;
-  background-color: var(--bg-canvas);
-  color: var(--text-primary);
+  background-color: var(--sb-paper);
+  color: var(--sb-ink);
   isolation: isolate;
 }
 
@@ -106,19 +167,130 @@ body {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background:
-    radial-gradient(62rem 36rem at 12% -6%, rgba(99, 102, 241, 0.14), transparent 62%),
-    radial-gradient(50rem 32rem at 88% 2%, rgba(139, 92, 246, 0.10), transparent 60%),
-    radial-gradient(44rem 28rem at 50% 104%, rgba(45, 212, 191, 0.06), transparent 65%);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.035'/%3E%3C/svg%3E"),
+    radial-gradient(56rem 34rem at 8% -4%, rgba(224, 168, 46, 0.14), transparent 62%),
+    radial-gradient(48rem 30rem at 92% 6%, rgba(58, 143, 183, 0.11), transparent 60%),
+    radial-gradient(46rem 30rem at 52% 102%, rgba(63, 125, 88, 0.10), transparent 64%);
 }
 
 /* Accessible keyboard focus ring across all interactive elements */
 :is(button, a, input, select, textarea, summary, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid var(--sb-ring);
+  outline-offset: 2px;
+}
+
+/* ── Storybook Utility Classes ───────────────────────────────────────────── */
+.sb-font-display {
+  font-family: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
+}
+
+.sb-panel {
+  background-color: var(--sb-paper-warm);
+  border: 2px solid var(--sb-ink);
+  border-radius: 22px 24px 20px 23px;
+  box-shadow: var(--sb-shadow-md);
+}
+
+.sb-card {
+  background-color: var(--sb-paper-card);
+  border: 2px solid var(--sb-ink);
+  border-radius: 18px 20px 17px 21px;
+  box-shadow: var(--sb-shadow-md);
+  transition: transform var(--duration-normal) var(--ease-out-smooth),
+              box-shadow var(--duration-normal) var(--ease-out-smooth),
+              background-color var(--duration-normal) var(--ease-out-smooth);
+}
+
+.sb-card-interactive:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--sb-shadow-lg);
+}
+
+.sb-card-interactive:active {
+  transform: translate(2px, 2px);
+  box-shadow: var(--sb-shadow-sm);
+}
+
+.sb-sticker {
+  border: 2px solid var(--sb-ink);
+  box-shadow: var(--sb-shadow-sm);
+}
+
+.sb-btn-ink {
+  border: 2px solid var(--sb-ink);
+  box-shadow: 3px 3px 0 var(--sb-ink);
+  transition: transform var(--duration-fast) var(--ease-out-smooth),
+              box-shadow var(--duration-fast) var(--ease-out-smooth),
+              background-color var(--duration-fast) var(--ease-out-smooth),
+              color var(--duration-fast) var(--ease-out-smooth);
+}
+
+.sb-btn-ink:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--sb-ink);
+}
+
+.sb-btn-ink:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--sb-ink);
+}
+
+.sb-paper-note {
+  background-color: var(--sb-paper-card);
+  border: 2px solid var(--sb-ink);
+  border-radius: 16px 18px 15px 19px;
+  box-shadow: 3px 3px 0 var(--sb-ink);
+}
+
+/* ── Legacy Bridge (.sb-legacy) for tabs not yet migrated ──────────────────
+   Restores the previous dark palette inside an ink-framed container.
+   NOTE: Never apply transform, filter, backdrop-filter, contain:paint, or
+   overflow:hidden here so fixed Grammar popups stay anchored to the viewport. */
+.sb-legacy {
+  color-scheme: dark;
+  --bg-canvas: #070b14;
+  --bg-surface-1: #0d1424;
+  --bg-surface-2: #131d33;
+  --bg-surface-3: #1b2844;
+  --bg-glass: rgba(11, 17, 32, 0.84);
+  --bg-glass-card: rgba(15, 23, 42, 0.72);
+  --bg-input: rgba(11, 18, 34, 0.82);
+
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+
+  --border-subtle: rgba(148, 163, 184, 0.14);
+  --border-default: rgba(148, 163, 184, 0.22);
+  --border-strong: rgba(148, 163, 184, 0.34);
+  --border-accent: rgba(129, 140, 248, 0.48);
+
+  --primary: #6366f1;
+  --primary-hover: #7578f6;
+  --primary-dark: #4f46e5;
+  --violet: #8b5cf6;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #f43f5e;
+  --accent-ring: rgba(129, 140, 248, 0.78);
+
+  background-color: #070b14;
+  background-image:
+    radial-gradient(48rem 28rem at 12% 0%, rgba(99, 102, 241, 0.12), transparent 62%),
+    radial-gradient(40rem 24rem at 88% 4%, rgba(139, 92, 246, 0.09), transparent 60%);
+  color: #f8fafc;
+  border: 2px solid var(--sb-ink);
+  border-radius: 1.5rem;
+  box-shadow: var(--sb-shadow-lg);
+}
+
+.sb-legacy :is(button, a, input, select, textarea, summary, [role="button"], [tabindex]):focus-visible {
   outline: 2px solid var(--accent-ring);
   outline-offset: 2px;
 }
 
-/* Shared form input surface */
+/* Shared form input surface (kept for legacy tabs & shared controls) */
 .field {
   width: 100%;
   background: var(--bg-input);
@@ -147,7 +319,7 @@ body {
   outline-offset: 1px;
 }
 
-/* Shared surface & control utilities */
+/* Shared surface & control utilities (names preserved for existing tabs & tests) */
 .vm-panel {
   background: linear-gradient(180deg, rgba(19, 29, 51, 0.78) 0%, rgba(13, 20, 36, 0.86) 100%);
   border: 1px solid var(--border-subtle);
@@ -225,20 +397,20 @@ body {
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar (warm paper tone) */
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #0a101d;
+  background: var(--sb-paper-deep);
 }
 ::-webkit-scrollbar-thumb {
-  background: #273452;
+  background: #b9aa90;
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #6366f1;
+  background: var(--sb-terracotta-strong);
 }
 
 /* ── GPU-composited Keyframes (transform & opacity only) ────────────────── */
@@ -307,7 +479,7 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.22) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.28) 50%, transparent 100%);
   transform: translateX(-100%);
   animation: vmSheen 2.4s var(--ease-out-smooth) infinite;
 }
