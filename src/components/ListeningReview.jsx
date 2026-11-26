@@ -37,11 +37,11 @@ const TYPE_FILTER_OPTIONS = [
 
 /** Level badge background colours for the image card overlay */
 const LEVEL_BG = {
-  1: 'bg-rose-500/80',
-  2: 'bg-orange-500/80',
-  3: 'bg-amber-500/80',
-  4: 'bg-teal-500/80',
-  5: 'bg-emerald-500/80',
+  1: 'bg-[var(--sb-berry-btn)]',
+  2: 'bg-[var(--sb-clay-text)]',
+  3: 'bg-[var(--sb-ochre-text)]',
+  4: 'bg-[var(--sb-lagoon)]',
+  5: 'bg-[var(--sb-forest-btn)]',
 };
 
 /* ------------------------------------------------------------------ */
@@ -61,14 +61,14 @@ function FilterPills({ options, active, onSelect, countFn, idPrefix }) {
             className={`
               vm-btn flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium border
               ${isActive
-                ? 'vm-btn-primary border-indigo-400/40'
-                : 'bg-slate-900/75 text-slate-300 hover:bg-slate-800 hover:text-white border-slate-400/20'
+                ? 'vm-btn-primary border-[var(--sb-ink)]'
+                : 'bg-[var(--sb-paper-card)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)] border-[var(--sb-ink-border)]'
               }
             `}
           >
             {opt.icon && <span className="text-xs">{opt.icon}</span>}
             <span>{opt.label}</span>
-            <span className="ml-0.5 text-xs opacity-75">({count})</span>
+            <span className="ml-0.5 text-xs opacity-80">({count})</span>
           </button>
         );
       })}
@@ -86,14 +86,14 @@ function ImageCard({ word, state, onClick, showMeaning, onToggleMeaning, index, 
   const imageUrl = word.imageUrl?.trim() || '';
 
   const borderClass =
-    state === 'correct'  ? 'border-emerald-400 shadow-emerald-500/35 shadow-xl' :
-    state === 'wrong'    ? 'border-rose-400    shadow-rose-500/35    shadow-xl'  :
-    state === 'idle'     ? 'border-slate-400/20 hover:border-indigo-400/75' :
-    /* disabled */         'border-slate-400/15 opacity-50';
+    state === 'correct'  ? 'border-[var(--sb-forest)] shadow-[var(--sb-shadow-md)]' :
+    state === 'wrong'    ? 'border-[var(--sb-berry)]  shadow-[var(--sb-shadow-md)]' :
+    state === 'idle'     ? 'border-[var(--sb-ink)] hover:border-[var(--sb-terracotta-strong)]' :
+    /* disabled */         'border-[var(--sb-ink-border)] opacity-55';
 
   const ringOverlay =
-    state === 'correct' ? 'ring-4 ring-emerald-400/35' :
-    state === 'wrong'   ? 'ring-4 ring-rose-400/35'    : '';
+    state === 'correct' ? 'ring-4 ring-[var(--sb-forest)]/30' :
+    state === 'wrong'   ? 'ring-4 ring-[var(--sb-berry)]/30'  : '';
 
   return (
     <div
@@ -110,7 +110,7 @@ function ImageCard({ word, state, onClick, showMeaning, onToggleMeaning, index, 
       aria-label={`Choose ${word.english}`}
     >
       {/* Image area */}
-      <div className="relative w-full aspect-[4/3] bg-slate-900">
+      <div className="relative w-full aspect-[4/3] bg-[var(--sb-paper-deep)]">
         {!imageUrl ? (
           <WordInitialTile word={word.english} className="absolute inset-0" />
         ) : !imgError ? (
@@ -122,12 +122,12 @@ function ImageCard({ word, state, onClick, showMeaning, onToggleMeaning, index, 
             onError={() => { setImgError(true); setImgLoaded(true); }}
           />
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90 text-slate-300">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--sb-paper-deep)] text-[var(--sb-ink)]">
             <span className="text-4xl mb-2">📷</span>
-            <span className="text-xs text-center px-2">
+            <span className="text-xs text-center px-2 font-semibold">
               {word.english}
               {word.annotation?.trim() && (
-                <span className="ml-1 text-[10px] font-normal text-slate-400">({word.annotation.trim()})</span>
+                <span className="ml-1 text-[10px] font-normal text-[var(--sb-ink-soft)]">({word.annotation.trim()})</span>
               )}
             </span>
           </div>
@@ -139,46 +139,50 @@ function ImageCard({ word, state, onClick, showMeaning, onToggleMeaning, index, 
         )}
 
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#070b14]/85 via-[#070b14]/15 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--sb-ink)]/25 via-transparent to-transparent pointer-events-none" />
 
         {/* Level badge */}
         <span className={`
-          absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full text-white backdrop-blur-sm ring-1 ring-white/20
-          ${LEVEL_BG[word.level] ?? 'bg-slate-600/80'}
+          absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full text-white border border-[var(--sb-ink)]/30 shadow-sm
+          ${LEVEL_BG[word.level] ?? 'bg-[var(--sb-ink-soft)]'}
         `}>
           L{word.level}
         </span>
 
         {/* Result overlay icon */}
         {state === 'correct' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-emerald-500/20 vm-scale-in">
-            <CheckCircle2 size={56} className="text-emerald-300 drop-shadow-lg" />
+          <div className="absolute inset-0 flex items-center justify-center bg-[var(--sb-forest)]/25 vm-scale-in">
+            <span className="p-2.5 rounded-full bg-[var(--sb-forest-btn)] border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)] text-white">
+              <CheckCircle2 size={40} />
+            </span>
           </div>
         )}
         {state === 'wrong' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-rose-500/20 vm-scale-in">
-            <XCircle size={56} className="text-rose-300 drop-shadow-lg" />
+          <div className="absolute inset-0 flex items-center justify-center bg-[var(--sb-berry)]/25 vm-scale-in">
+            <span className="p-2.5 rounded-full bg-[var(--sb-berry-btn)] border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)] text-white">
+              <XCircle size={40} />
+            </span>
           </div>
         )}
       </div>
 
       {/* Bottom bar: meaning toggle */}
-      <div className="bg-[#0b1222]/95 px-3 py-2 flex items-center justify-between gap-2 border-t border-slate-400/10">
+      <div className="bg-[var(--sb-paper-card)] px-3 py-2 flex items-center justify-between gap-2 border-t-2 border-[var(--sb-ink)]">
         <div className="flex-1 min-w-0">
           {showMeaning ? (
-            <p className="text-indigo-200 text-xs font-medium truncate animate-fade-in">
+            <p className="text-[var(--sb-ink)] text-xs font-semibold truncate animate-fade-in">
               {word.vietnamese}
             </p>
           ) : (
-            <p className="text-slate-400 text-xs select-none">• • • • •</p>
+            <p className="text-[var(--sb-ink-soft)] text-xs select-none">• • • • •</p>
           )}
         </div>
         <button
           id={`toggle-meaning-${index}`}
           className={`shrink-0 p-1 rounded-lg transition-colors ${
             showMeaning
-              ? 'text-indigo-300 hover:text-indigo-200'
-              : 'text-slate-400 hover:text-indigo-300'
+              ? 'text-[var(--sb-terracotta-text)] hover:text-[var(--sb-terracotta-hover)]'
+              : 'text-[var(--sb-ink-soft)] hover:text-[var(--sb-terracotta-text)]'
           }`}
           onClick={e => { e.stopPropagation(); onToggleMeaning(); }}
           aria-label={showMeaning ? 'Hide all meanings' : 'Show all Vietnamese meanings'}
@@ -302,11 +306,11 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
 
       {/* ── Page header ── */}
       <div className="mb-6">
-        <h1 className="text-3xl font-extrabold tracking-tight text-white mb-1 flex items-center gap-3">
-          <Headphones size={28} className="text-indigo-400" />
+        <h1 className="sb-heading text-3xl font-extrabold tracking-tight text-[var(--sb-ink)] mb-1 flex items-center gap-3">
+          <Headphones size={28} className="text-[var(--sb-terracotta-strong)]" />
           Listening Review
         </h1>
-        <p className="text-slate-300 text-sm">
+        <p className="text-[var(--sb-ink-soft)] text-sm">
           Listen to the word and tap the matching image.
         </p>
       </div>
@@ -314,14 +318,14 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
       {/* ── Source picker (only when the Dictation store is available) ── */}
       {dictationStore && (
         <div className="mb-4 flex flex-wrap items-center gap-2" role="group" aria-label="Nguồn từ">
-          <span className="text-slate-300 text-xs font-semibold uppercase tracking-wider">Nguồn</span>
-          <div className="flex items-center gap-1 bg-slate-950/60 border border-slate-400/15 rounded-xl p-1 max-w-full flex-wrap">
+          <span className="text-[var(--sb-ink-soft)] text-xs font-semibold uppercase tracking-wider">Nguồn</span>
+          <div className="flex items-center gap-1 bg-[var(--sb-paper-deep)] border border-[var(--sb-ink-border)] rounded-xl p-1 max-w-full flex-wrap">
             {[['main', 'Từ vựng chính'], ['dictation', `Từ chép chính tả (${dictWordCount})`]].map(([value, label]) => (
               <button
                 key={value} id={`lr-source-${value}`} type="button" aria-pressed={source === value} onClick={() => chooseSource(value)}
-                className={`vm-btn px-3 py-1.5 rounded-lg text-xs font-medium ${source === value
-                  ? 'bg-slate-700/90 text-white shadow-sm ring-1 ring-white/10'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'}`}
+                className={`vm-btn px-3 py-1.5 rounded-lg text-xs font-semibold ${source === value
+                  ? 'bg-[var(--sb-paper-card)] text-[var(--sb-ink)] border border-[var(--sb-ink)] shadow-sm'
+                  : 'text-[var(--sb-ink-soft)] hover:text-[var(--sb-ink)] hover:bg-[var(--sb-paper-card)]/60'}`}
               >{label}</button>
             ))}
           </div>
@@ -341,16 +345,16 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
         <>
           {/* Dictation words: Level/Type/Hard/Due filters do not apply */}
           <div className="vm-panel rounded-2xl p-4 sm:p-5 mb-6 flex items-center justify-between gap-3">
-            <span className="text-slate-200 text-xs font-semibold">Chỉ từ hay sai (đã từng nghe sai)</span>
+            <span className="text-[var(--sb-ink)] text-xs font-semibold">Chỉ từ hay sai (đã từng nghe sai)</span>
             <button
               id="lr-dictation-wrong-toggle" type="button" onClick={() => setDictWrongOnly(v => !v)} aria-pressed={dictWrongOnly}
               aria-label="Chỉ từ hay sai"
-              className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${dictWrongOnly ? 'bg-rose-500 shadow-sm shadow-rose-500/40' : 'bg-slate-600'}`}
+              className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${dictWrongOnly ? 'bg-[var(--sb-berry-btn)]' : 'bg-[var(--sb-ink-soft)]'}`}
             >
               <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-200 ${dictWrongOnly ? 'translate-x-4' : 'translate-x-0.5'}`} />
             </button>
           </div>
-          <Suspense fallback={<p className="text-slate-300 text-sm" role="status">Đang tải…</p>}>
+          <Suspense fallback={<p className="text-[var(--sb-ink-soft)] text-sm" role="status">Đang tải…</p>}>
           <DictationWordListening
             store={dictationStore} wrongOnly={dictWrongOnly} autoFocusInput={autoFocusInput} inputRef={dictInputRef}
             onResult={ok => { setDictPlayed(t => t + 1); if (ok) setDictScore(v => v + 1); }}
@@ -362,7 +366,7 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
       <div className="vm-panel rounded-2xl p-4 sm:p-5 mb-6 space-y-3.5">
         {/* Level filter */}
         <div>
-          <p className="text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">
+          <p className="text-[var(--sb-ink-soft)] text-xs font-semibold uppercase tracking-wider mb-2">
             Level
           </p>
           <FilterPills
@@ -376,27 +380,27 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
 
         {/* Type filter */}
         <div>
-          <p className="text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">
+          <p className="text-[var(--sb-ink-soft)] text-xs font-semibold uppercase tracking-wider mb-2">
             Type
           </p>
           {/* Segmented tab style matching Vocabulary.jsx */}
-          <div className="flex items-center gap-1 bg-slate-950/60 border border-slate-400/15 rounded-xl p-1 w-fit max-w-full flex-wrap">
+          <div className="flex items-center gap-1 bg-[var(--sb-paper-deep)] border border-[var(--sb-ink-border)] rounded-xl p-1 w-fit max-w-full flex-wrap">
             {TYPE_FILTER_OPTIONS.map(opt => (
               <button
                 key={opt.value}
                 id={`lr-type-${opt.value.toLowerCase()}`}
                 onClick={() => setTypeFilter(opt.value)}
                 className={`
-                  vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
+                  vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
                   ${typeFilter === opt.value
-                    ? 'bg-slate-700/90 text-white shadow-sm ring-1 ring-white/10'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                    ? 'bg-[var(--sb-paper-card)] text-[var(--sb-ink)] border border-[var(--sb-ink)] shadow-sm'
+                    : 'text-[var(--sb-ink-soft)] hover:text-[var(--sb-ink)] hover:bg-[var(--sb-paper-card)]/60'
                   }
                 `}
               >
                 <span>{opt.icon}</span>
                 <span className="hidden sm:inline">{opt.label.split('(')[0].trim()}</span>
-                <span className="text-xs opacity-70">({typeCount(opt.value)})</span>
+                <span className="text-xs opacity-75">({typeCount(opt.value)})</span>
               </button>
             ))}
           </div>
@@ -405,9 +409,9 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
         {/* Difficult Words only toggle */}
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <Star size={14} className={hardOnly ? 'fill-amber-400 text-amber-400' : 'text-amber-400'} />
-            <span className="text-slate-200 text-xs font-semibold">Chỉ từ khó ⭐</span>
-            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/35">
+            <Star size={14} className={hardOnly ? 'fill-[var(--sb-ochre)] text-[var(--sb-ochre-text)]' : 'text-[var(--sb-ochre-text)]'} />
+            <span className="text-[var(--sb-ink)] text-xs font-semibold">Chỉ từ khó ⭐</span>
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[var(--sb-ochre-soft)] text-[var(--sb-ochre-text)] border border-[var(--sb-ochre-text)]/35">
               {hardCount} từ khó
             </span>
           </div>
@@ -416,7 +420,7 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
             type="button"
             onClick={() => setHardOnly(v => !v)}
             className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${
-              hardOnly ? 'bg-amber-500 shadow-sm shadow-amber-500/40' : 'bg-slate-600'
+              hardOnly ? 'bg-[var(--sb-ochre-text)]' : 'bg-[var(--sb-ink-soft)]'
             }`}
             title={hardOnly ? 'Hiện tất cả từ' : 'Chỉ luyện các từ đã đánh dấu sao khó'}
             aria-label="Chỉ từ khó ⭐"
@@ -433,9 +437,9 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
         {/* Due Today toggle */}
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <Clock size={14} className="text-amber-400" />
-            <span className="text-slate-300 text-xs font-semibold uppercase tracking-wider">Due for Review</span>
-            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/35">
+            <Clock size={14} className="text-[var(--sb-ochre-text)]" />
+            <span className="text-[var(--sb-ink-soft)] text-xs font-semibold uppercase tracking-wider">Due for Review</span>
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[var(--sb-ochre-soft)] text-[var(--sb-ochre-text)] border border-[var(--sb-ochre-text)]/35">
               {dueCount} due
             </span>
           </div>
@@ -444,7 +448,7 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
             type="button"
             onClick={() => setDueOnly(v => !v)}
             className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${
-              dueOnly ? 'bg-amber-500 shadow-sm shadow-amber-500/40' : 'bg-slate-600'
+              dueOnly ? 'bg-[var(--sb-ochre-text)]' : 'bg-[var(--sb-ink-soft)]'
             }`}
             title={dueOnly ? 'Show all words' : 'Show only words due for review'}
             aria-pressed={dueOnly}
@@ -460,15 +464,15 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
 
       {/* ── Not enough words for current filters ── */}
       {!hasEnoughWords ? (
-        <div className="flex items-start gap-3 bg-amber-500/12 border border-amber-400/35 rounded-2xl p-5 animate-fade-in">
-          <AlertCircle size={20} className="text-amber-300 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 bg-[var(--sb-ochre-soft)] border-2 border-[var(--sb-ink)] rounded-2xl p-5 animate-fade-in">
+          <AlertCircle size={20} className="text-[var(--sb-ochre-text)] shrink-0 mt-0.5" />
           <div>
-            <p className="text-amber-200 font-semibold mb-1">
+            <p className="text-[var(--sb-ink)] font-bold mb-1">
               {hardOnly
                 ? 'Chưa đủ từ khó ⭐ khớp bộ lọc hiện tại'
                 : 'Not enough words match these filters'}
             </p>
-            <p className="text-amber-200/85 text-sm leading-relaxed">
+            <p className="text-[var(--sb-ink-soft)] text-sm leading-relaxed">
               Cần ít nhất <strong>4 từ</strong> khớp bộ lọc để tạo câu hỏi nghe 4 lựa chọn.
               Hiện có <strong>{filteredPool.length}</strong> từ khớp{hardOnly ? ' (đang bật "Chỉ từ khó ⭐")' : ''}.
               Please select a category with at least <strong>4 words</strong> to play.
@@ -477,8 +481,8 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
         </div>
       ) : !round ? (
         /* ── Loading spinner ── */
-        <div className="flex items-center justify-center py-20 text-slate-300">
-          <div className="animate-spin mr-3 w-5 h-5 border-2 border-slate-600 border-t-indigo-400 rounded-full" />
+        <div className="flex items-center justify-center py-20 text-[var(--sb-ink-soft)]">
+          <div className="animate-spin mr-3 w-5 h-5 border-2 border-[var(--sb-ink-border)] border-t-[var(--sb-terracotta-strong)] rounded-full" />
           Loading…
         </div>
       ) : (
@@ -489,7 +493,7 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
             hint={<>
               {round.correct.english}
               {round.correct.annotation?.trim() && (
-                <span className="ml-1 text-xs font-normal text-slate-300">({round.correct.annotation.trim()})</span>
+                <span className="ml-1 text-xs font-normal text-[var(--sb-ink-soft)]">({round.correct.annotation.trim()})</span>
               )}
             </>}
             isPlaying={game.isPlaying}
@@ -510,13 +514,13 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
                 ? <>Excellent! +1 streak for <span className="underline underline-offset-2 ml-1">
                     {round.correct.english}
                     {round.correct.annotation?.trim() && (
-                      <span className="ml-1 text-xs font-normal text-slate-300">({round.correct.annotation.trim()})</span>
+                      <span className="ml-1 text-xs font-normal text-[var(--sb-ink-soft)]">({round.correct.annotation.trim()})</span>
                     )}
                   </span></>
                 : <>Wrong — streak reset. The answer was <span className="font-bold ml-1">
                     {round.correct.english}
                     {round.correct.annotation?.trim() && (
-                      <span className="ml-1 text-xs font-normal text-slate-300">({round.correct.annotation.trim()})</span>
+                      <span className="ml-1 text-xs font-normal text-[var(--sb-ink-soft)]">({round.correct.annotation.trim()})</span>
                     )}
                   </span></>
               }
@@ -551,8 +555,8 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
                 vm-btn flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold border
                 ${
                   isMeaningRevealed
-                    ? 'bg-indigo-500/20 border-indigo-400/50 text-indigo-200 hover:bg-indigo-500/30'
-                    : 'bg-slate-900/75 border-slate-400/20 text-slate-300 hover:text-white hover:border-slate-400/35'
+                    ? 'bg-[var(--sb-terracotta-soft)] border-[var(--sb-ink)] text-[var(--sb-terracotta-text)] hover:bg-[var(--sb-ochre-soft)]'
+                    : 'bg-[var(--sb-paper-card)] border-[var(--sb-ink-border)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)]'
                 }
               `}
             >
@@ -561,13 +565,13 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
             </button>
 
             {/* Target level hint */}
-            <div className="flex items-center gap-2 text-xs text-slate-300">
+            <div className="flex items-center gap-2 text-xs text-[var(--sb-ink-soft)]">
               <span>Target:</span>
-              <span className={`px-2 py-0.5 rounded-full font-bold text-white text-[11px] ${LEVEL_BG[round.correct.level] ?? 'bg-slate-600'}`}>
+              <span className={`px-2 py-0.5 rounded-full font-bold text-white text-[11px] ${LEVEL_BG[round.correct.level] ?? 'bg-[var(--sb-ink-soft)]'}`}>
                 L{round.correct.level}
               </span>
-              <span className="text-slate-500">·</span>
-              <span className="text-slate-300">{filteredPool.length} in pool</span>
+              <span className="text-[var(--sb-ink-soft)]">·</span>
+              <span className="text-[var(--sb-ink-soft)]">{filteredPool.length} in pool</span>
             </div>
           </div>
         </>

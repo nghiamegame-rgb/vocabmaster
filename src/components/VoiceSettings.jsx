@@ -43,15 +43,15 @@ export default function VoiceSettings() {
         aria-expanded={open} aria-controls="voice-settings-panel"
         title="Chọn giọng đọc, tốc độ và Chế độ thi"
         className={`vm-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border max-w-full ${open || settings.examMode
-          ? 'bg-indigo-500/20 border-indigo-400/50 text-indigo-200 hover:bg-indigo-500/30'
-          : 'bg-slate-900/75 border-slate-400/20 text-slate-300 hover:text-white hover:border-slate-400/35'}`}
+          ? 'bg-[var(--sb-terracotta-soft)] border-[var(--sb-ink)] text-[var(--sb-terracotta-text)] hover:bg-[var(--sb-ochre-soft)]'
+          : 'bg-[var(--sb-paper-card)] border-[var(--sb-ink-border)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)]'}`}
       >
         <Settings size={14} className="shrink-0" />
         <span>Giọng đọc{settings.examMode ? ' · Chế độ thi' : ''}</span>
       </button>
 
       {settings.examMode && googleFallback && (
-        <p id="voice-fallback-note" role="status" className="order-last basis-full text-xs text-amber-300">
+        <p id="voice-fallback-note" role="status" className="order-last basis-full text-xs font-semibold text-[var(--sb-ochre-text)]">
           Đang dùng giọng Google dự phòng (chỉ có 1 giọng) nên Chế độ thi không đổi giọng.
         </p>
       )}
@@ -60,7 +60,7 @@ export default function VoiceSettings() {
         <section id="voice-settings-panel" aria-label="Cài đặt giọng đọc" className="vm-panel vm-feedback-in order-last basis-full w-full min-w-0 rounded-2xl p-4 space-y-3 text-left">
           <div className="flex flex-col sm:flex-row sm:items-end gap-2">
             <label className="flex-1 min-w-0 block">
-              <span className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Giọng</span>
+              <span className="block text-xs font-semibold uppercase tracking-wider text-[var(--sb-ink-soft)] mb-1">Giọng</span>
               <select
                 id="voice-select" value={selectedIndex === -1 ? '' : String(selectedIndex)}
                 onChange={e => chooseVoice(e.target.value)} disabled={status !== 'ready'}
@@ -76,39 +76,39 @@ export default function VoiceSettings() {
           </div>
 
           <label className="block">
-            <span className="flex items-center justify-between text-xs font-semibold text-slate-200 mb-1">
+            <span className="flex items-center justify-between text-xs font-semibold text-[var(--sb-ink)] mb-1">
               <span>Tốc độ đọc</span>
-              <span id="voice-rate-value" className="tabular-nums text-indigo-200">{settings.rate.toFixed(2)}×</span>
+              <span id="voice-rate-value" className="tabular-nums text-[var(--sb-terracotta-text)] font-bold">{settings.rate.toFixed(2)}×</span>
             </span>
             <input
               id="voice-rate" type="range" min={VOICE_RATE_MIN} max={VOICE_RATE_MAX} step="0.05"
               value={settings.rate} onChange={e => update({ rate: Number(e.target.value) })}
-              className="w-full accent-indigo-500"
+              className="w-full accent-[var(--sb-terracotta-strong)]"
             />
           </label>
 
           <div className="flex items-center justify-between gap-3">
-            <span id="voice-exam-label" className="flex items-center gap-2 text-xs font-semibold text-slate-200 min-w-0">
-              <Shuffle size={14} className="text-indigo-300 shrink-0" /> Chế độ thi (giọng ngẫu nhiên)
+            <span id="voice-exam-label" className="flex items-center gap-2 text-xs font-semibold text-[var(--sb-ink)] min-w-0">
+              <Shuffle size={14} className="text-[var(--sb-terracotta-text)] shrink-0" /> Chế độ thi (giọng ngẫu nhiên)
             </span>
             <button
               id="voice-exam-toggle" type="button" role="switch" aria-checked={settings.examMode} aria-labelledby="voice-exam-label"
               onClick={() => update({ examMode: !settings.examMode })}
-              className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${settings.examMode ? 'bg-indigo-500 shadow-sm shadow-indigo-500/40' : 'bg-slate-600'}`}
+              className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${settings.examMode ? 'bg-[var(--sb-terracotta-strong)]' : 'bg-[var(--sb-ink-soft)]'}`}
             >
               <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-200 ${settings.examMode ? 'translate-x-4' : 'translate-x-0.5'}`} />
             </button>
           </div>
 
-          <div id="voice-settings-notes" className="text-[11px] leading-relaxed text-slate-400 space-y-1">
+          <div id="voice-settings-notes" className="text-[11px] leading-relaxed text-[var(--sb-ink-soft)] space-y-1">
             {status === 'loading' && <p role="status">Đang tải danh sách giọng…</p>}
-            {status === 'unavailable' && <p role="status" className="text-amber-300">Thiết bị này không có giọng đọc tiếng Anh, web đang dùng giọng Google dự phòng (chỉ 1 giọng) nên không chọn được giọng.</p>}
+            {status === 'unavailable' && <p role="status" className="font-semibold text-[var(--sb-ochre-text)]">Thiết bị này không có giọng đọc tiếng Anh, web đang dùng giọng Google dự phòng (chỉ 1 giọng) nên không chọn được giọng.</p>}
             {status === 'ready' && settings.examMode && (
               <p>{examCount === 1
                 ? 'Máy chỉ có 1 giọng tiếng Anh nên Chế độ thi dùng giọng này.'
                 : `Mỗi câu mới dùng một giọng ngẫu nhiên trong ${examCount} giọng; nghe lại thì giữ giọng. Giọng chọn ở trên chỉ dùng khi tắt Chế độ thi.`}</p>
             )}
-            {saveFailed && <p role="status" className="text-amber-300">Không lưu được cài đặt trên thiết bị này; chỉ dùng tới khi tải lại trang.</p>}
+            {saveFailed && <p role="status" className="font-semibold text-[var(--sb-ochre-text)]">Không lưu được cài đặt trên thiết bị này; chỉ dùng tới khi tải lại trang.</p>}
             <p>Áp dụng cho Dictation và Listening. Chỉ lưu trên thiết bị này.</p>
           </div>
         </section>

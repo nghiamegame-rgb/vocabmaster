@@ -93,9 +93,9 @@ export default function DictationWordListening({ store, wrongOnly, autoFocusInpu
 
   if (!pool.length) {
     return (
-      <div className="flex items-start gap-3 bg-amber-500/12 border border-amber-400/35 rounded-2xl p-5" id="lr-dictation-empty">
-        <AlertCircle size={20} className="text-amber-300 shrink-0 mt-0.5" />
-        <p className="text-amber-100 text-sm leading-relaxed">
+      <div className="flex items-start gap-3 bg-[var(--sb-ochre-soft)] border-2 border-[var(--sb-ink)] rounded-2xl p-5" id="lr-dictation-empty">
+        <AlertCircle size={20} className="text-[var(--sb-ochre-text)] shrink-0 mt-0.5" />
+        <p className="text-[var(--sb-ink)] text-sm leading-relaxed">
           {wrongOnly
             ? 'Chưa có từ nào bạn từng nghe sai. Tắt "Chỉ từ hay sai" để luyện tất cả từ đã lưu.'
             : 'Chưa có từ nào trong "Từ đã lưu" của Dictation. Vào tab Dictation, mở từ khi chép câu rồi bấm biểu tượng bookmark để lưu.'}
@@ -110,12 +110,12 @@ export default function DictationWordListening({ store, wrongOnly, autoFocusInpu
     <div className="space-y-4">
       <div className="vm-card rounded-2xl p-5 flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 bg-gradient-to-br from-violet-500 via-indigo-600 to-indigo-700 shadow-lg shadow-indigo-500/30 ring-1 ring-white/15">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 bg-gradient-to-br from-[var(--sb-terracotta-strong)] via-[var(--sb-terracotta)] to-[var(--sb-ochre)] border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)]">
             <Volume2 size={28} className="text-white" />
           </div>
           <div className="flex-1 text-center sm:text-left min-w-0">
-            <p className="text-slate-300 text-xs uppercase tracking-wider font-semibold mb-1">Nghe và gõ lại từ</p>
-            <p className="text-slate-300 italic text-sm">Bấm Nghe lại nếu chưa rõ{playCount > 1 ? ` (×${playCount - 1})` : ''}</p>
+            <p className="text-[var(--sb-ink-soft)] text-xs uppercase tracking-wider font-semibold mb-1">Nghe và gõ lại từ</p>
+            <p className="text-[var(--sb-ink-soft)] italic text-sm">Bấm Nghe lại nếu chưa rõ{playCount > 1 ? ` (×${playCount - 1})` : ''}</p>
           </div>
           <button id="lr-dictation-replay" type="button" onClick={() => speak(current.word, voiceItem)} className="vm-btn vm-btn-primary flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm shrink-0">
             <Volume2 size={16} /> Nghe lại
@@ -134,7 +134,7 @@ export default function DictationWordListening({ store, wrongOnly, autoFocusInpu
             placeholder="Gõ từ bạn nghe được…" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
             className="flex-1 min-w-0 vm-input rounded-xl px-4 py-2.5 text-base sm:text-sm"
           />
-          <button id="lr-dictation-check" type="button" onClick={() => (answer ? nextWord() : check())} className="vm-btn shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 border border-emerald-400/40">
+          <button id="lr-dictation-check" type="button" onClick={() => (answer ? nextWord() : check())} className="vm-btn shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-[var(--sb-forest-btn)] hover:bg-[var(--sb-forest-hover)] border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)]">
             {answer ? 'Từ tiếp' : 'Kiểm tra'}
           </button>
         </div>
@@ -142,20 +142,20 @@ export default function DictationWordListening({ store, wrongOnly, autoFocusInpu
 
       {answer && (
         <div id="lr-dictation-feedback" role="status" className={`vm-feedback-in flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3.5 rounded-2xl font-semibold text-sm ${answer === 'correct'
-          ? 'bg-emerald-500/15 border border-emerald-400/40 text-emerald-200'
-          : 'bg-rose-500/15 border border-rose-400/40 text-rose-200'}`}>
+          ? 'bg-[var(--sb-forest-soft)] border-2 border-[var(--sb-forest)] text-[var(--sb-forest-text)]'
+          : 'bg-[var(--sb-berry-soft)] border-2 border-[var(--sb-berry)] text-[var(--sb-berry-text)]'}`}>
           {answer === 'correct' ? <CheckCircle2 size={18} className="shrink-0" /> : <XCircle size={18} className="shrink-0" />}
           <span>{answer === 'correct' ? 'Chính xác!' : 'Chưa đúng — đáp án:'} <span className="underline underline-offset-2">{current.word}</span></span>
-          {current.sentence && <span className="w-full text-xs font-normal text-slate-300">“{current.sentence}”</span>}
+          {current.sentence && <span className="w-full text-xs font-normal text-[var(--sb-ink-soft)]">“{current.sentence}”</span>}
         </div>
       )}
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <button id="lr-dictation-next" type="button" onClick={nextWord} className="vm-btn flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-400/20 text-white">
+        <button id="lr-dictation-next" type="button" onClick={nextWord} className="vm-btn flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-[var(--sb-paper-card)] hover:bg-[var(--sb-paper-deep)] border-2 border-[var(--sb-ink)] text-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)]">
           {answer ? <><ChevronRight size={16} /> Từ tiếp</> : <><RotateCcw size={16} /> Bỏ qua</>}
         </button>
-        <span className="text-xs text-slate-300">
-          Từ này: nghe đúng {totals.correct} · sai {totals.wrong} · <span className="text-slate-400">{pool.length} từ trong nhóm</span>
+        <span className="text-xs text-[var(--sb-ink-soft)]">
+          Từ này: nghe đúng {totals.correct} · sai {totals.wrong} · <span className="text-[var(--sb-ink-soft)]">{pool.length} từ trong nhóm</span>
         </span>
       </div>
     </div>

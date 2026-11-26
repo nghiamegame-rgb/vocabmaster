@@ -9,17 +9,17 @@ export function StatsBar({ score, total }) {
   return (
     <div className="vm-panel inline-flex items-center gap-4 text-sm flex-wrap px-4 py-2.5 rounded-2xl">
       <div className="flex items-center gap-1.5">
-        <CheckCircle2 size={14} className="text-emerald-400" />
-        <span className="text-white font-semibold tabular-nums">{score}</span>
-        <span className="text-slate-300">correct</span>
+        <CheckCircle2 size={14} className="text-[var(--sb-forest-text)]" />
+        <span className="text-[var(--sb-ink)] font-bold tabular-nums">{score}</span>
+        <span className="text-[var(--sb-ink-soft)]">correct</span>
       </div>
-      <div className="h-4 w-px bg-slate-400/20" />
+      <div className="h-4 w-px bg-[var(--sb-ink-border)]" />
       <div className="flex items-center gap-1.5">
-        <Trophy size={14} className="text-indigo-400" />
-        <span className="text-indigo-300 font-semibold tabular-nums">{pct}%</span>
+        <Trophy size={14} className="text-[var(--sb-terracotta-text)]" />
+        <span className="text-[var(--sb-terracotta-text)] font-bold tabular-nums">{pct}%</span>
       </div>
-      <div className="h-4 w-px bg-slate-400/20" />
-      <span className="text-slate-300">{total} played</span>
+      <div className="h-4 w-px bg-[var(--sb-ink-border)]" />
+      <span className="text-[var(--sb-ink-soft)]">{total} played</span>
     </div>
   );
 }
@@ -37,8 +37,8 @@ export function AutoFocusToggle({ id, enabled, onToggle }) {
       className={`
         vm-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border max-w-full
         ${enabled
-          ? 'bg-indigo-500/20 border-indigo-400/50 text-indigo-200 hover:bg-indigo-500/30'
-          : 'bg-slate-900/75 border-slate-400/20 text-slate-300 hover:text-white hover:border-slate-400/35'}
+          ? 'bg-[var(--sb-terracotta-soft)] border-[var(--sb-ink)] text-[var(--sb-terracotta-text)] hover:bg-[var(--sb-ochre-soft)]'
+          : 'bg-[var(--sb-paper-card)] border-[var(--sb-ink-border)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)]'}
       `}
     >
       <Keyboard size={14} className="shrink-0" />
@@ -61,35 +61,35 @@ export function PromptCard({
         {/* Animated speaker */}
         <div className={`
           relative w-16 h-16 rounded-2xl flex items-center justify-center shrink-0
-          bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-700 shadow-lg shadow-indigo-500/30 ring-1 ring-white/15
+          bg-gradient-to-br from-[var(--sb-terracotta-strong)] via-[var(--sb-terracotta)] to-[var(--sb-ochre)] border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)]
           transition-transform duration-200
-          ${isPlaying ? 'scale-105 shadow-indigo-500/55' : ''}
+          ${isPlaying ? 'scale-105' : ''}
         `}>
           <Volume2
             size={28}
-            className={`text-white transition-opacity duration-200 ${isPlaying ? 'opacity-100' : 'opacity-80'}`}
+            className={`text-white transition-opacity duration-200 ${isPlaying ? 'opacity-100' : 'opacity-90'}`}
           />
           {isPlaying && (
-            <span className="absolute w-16 h-16 rounded-2xl border-2 border-indigo-300/45 animate-ping" />
+            <span className="absolute w-16 h-16 rounded-2xl border-2 border-[var(--sb-terracotta-strong)]/60 animate-ping" />
           )}
         </div>
 
         <div className="flex-1 text-center sm:text-left">
-          <p className="text-slate-300 text-xs uppercase tracking-wider font-semibold mb-1">
+          <p className="text-[var(--sb-ink-soft)] text-xs uppercase tracking-wider font-semibold mb-1">
             {label}
           </p>
           {/* Show the word as a hint after 4 listens */}
           {listenCount > 4 && !answered ? (
-            <p className="text-amber-300 font-bold text-lg animate-fade-in">
+            <p className="text-[var(--sb-ochre-text)] font-bold text-lg animate-fade-in">
               💡 Hint: <span className="underline underline-offset-4">
                 {hint}
               </span>
             </p>
           ) : (
-            <p className="text-white text-lg font-bold">
+            <p className="text-[var(--sb-ink)] text-lg font-bold">
               {isPlaying
-                ? <span className="text-indigo-300 vm-pulse-soft">♫ Playing audio…</span>
-                : <span className="text-slate-300 italic text-base">Tap Replay to hear again{listenCount > 0 ? ` (×${listenCount})` : ''}</span>
+                ? <span className="text-[var(--sb-terracotta-text)] vm-pulse-soft">♫ Playing audio…</span>
+                : <span className="text-[var(--sb-ink-soft)] italic text-base">Tap Replay to hear again{listenCount > 0 ? ` (×${listenCount})` : ''}</span>
               }
             </p>
           )}
@@ -124,7 +124,7 @@ export function PromptCard({
             spellCheck={false}
             className="flex-1 min-w-0 vm-input rounded-xl px-4 py-2.5 text-sm"
           />
-          <span className="text-slate-400 text-xs whitespace-nowrap shrink-0">auto-submits</span>
+          <span className="text-[var(--sb-ink-soft)] text-xs whitespace-nowrap shrink-0">auto-submits</span>
         </div>
       )}
     </div>
@@ -138,8 +138,8 @@ export function AnswerFeedback({ isCorrect, children }) {
       animate-fade-in mb-5 flex items-center gap-3 px-5 py-3.5 rounded-2xl
       font-semibold text-sm
       ${isCorrect
-        ? 'bg-emerald-500/15 border border-emerald-400/40 text-emerald-200'
-        : 'bg-rose-500/15    border border-rose-400/40    text-rose-200'
+        ? 'bg-[var(--sb-forest-soft)] border-2 border-[var(--sb-forest)] text-[var(--sb-forest-text)]'
+        : 'bg-[var(--sb-berry-soft)] border-2 border-[var(--sb-berry)] text-[var(--sb-berry-text)]'
       }
     `}>
       {isCorrect
@@ -162,8 +162,8 @@ export function SkipButton({ id, answered, onClick }) {
       onClick={onClick}
       className="
         vm-btn flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold
-        bg-slate-800 hover:bg-slate-700 border border-slate-400/20
-        text-white
+        bg-[var(--sb-paper-card)] hover:bg-[var(--sb-paper-deep)] border-2 border-[var(--sb-ink)]
+        text-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)]
       "
     >
       {answered
