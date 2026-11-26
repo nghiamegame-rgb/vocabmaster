@@ -4,6 +4,14 @@
 
 > **Cập nhật 2026-11-25 (đêm):** `feat/voice-picker` và `feat/export-sentences-only` **đã ghép vào `main`** (`ab94f57`) và đã push. Nhánh `feat/dictation-word-listening` sau đó cũng đã ghép (`652765f`) và push; xem mục 20.
 
+## 21. Dictation: chọn độ khó prompt AI A1–B2 + đơn giản hóa Từ đã lưu — 2026-11-26
+
+- Nhánh `feat/dictation-levels-simple-words` tách từ `main` (`15ccb24`), **chưa ghép/push/deploy**.
+- **Việc 1 (Prompt AI A1–B2):** `src/utils/dictationAiPrompt.js` thêm `DICTATION_LEVELS` (A1/A2/B1/B2, mặc định A2), `buildDictationAiPrompt(levelId)`, giữ `DICTATION_AI_PROMPT` tương thích; `DictationLibrary.jsx` thêm bộ chọn 4 nút cạnh nút copy, nhớ trên máy ở `vocabmaster_dictation_prompt_level` (không đồng bộ, không vào bản sao `.json`), cập nhật ô dự phòng ngay khi đổi mức.
+- **Việc 2 (Từ đã lưu chỉ gồm từ):** `saveWord` để rỗng `''` cho `sentenceId`/`sentence`/`lessonTitle` (giữ schema, không migrate từ cũ, không đổi Apps Script/Sheet — đã đối chiếu chỉ-đọc `dictationSyncMerge.js`, `dictationStorage.js`, `dictation-apps-script.js` đều chấp nhận chuỗi rỗng). `DictationWords.jsx` chuyển "Danh sách" sang lưới thẻ 2/3/4 cột chỉ có từ + nút nghe + nút xoá, tìm kiếm chỉ theo `word`. `DictationWordPractice.jsx` + `dictationPractice.js` bỏ bộ lọc "Tên bài", giữ "Chỉ từ hay nghe sai" và "Chưa luyện".
+- **Kiểm tra:** `npm.cmd run build` đạt (JS chính 541,22 kB, chunk Dictation 49,77 kB, CSS 108,85 kB); `npm.cmd run lint` 0 lỗi / 32 cảnh báo sẵn có; `npm.cmd test` **42/42** (có Python trong PATH); 7 test trình duyệt (`dictation-browser`, `dictation-sync-browser`, `dictation-word-practice-browser`, `dictation-ai-prompt-browser`, `dictation-export-browser`, `voice-settings-browser`, `navbar-sync-chip-browser`) **7/7** đạt.
+- **Chưa kiểm chứng:** điện thoại thật, giọng đọc thật, file Excel thật trong WPS/Excel, đồng bộ Google Sheet thật với bản ghi mới.
+
 ## 20. Luyện nghe từ đã lưu trong Dictation + prompt cho AI — 2026-11-25
 
 - Nhánh `feat/dictation-word-listening` tách từ `main` (`ab94f57`); **sau đó đã ghép vào `main` (fast-forward `652765f`) và deploy**.

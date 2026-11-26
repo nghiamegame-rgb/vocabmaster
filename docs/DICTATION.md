@@ -30,10 +30,11 @@ Snapshot `{ sentences, words }`. Bản ghi **không bao giờ bị xoá khỏi m
 **Từ đã lưu** (`words[]`):
 
 ```
-{ id /* = normalizeWord(word), chữ thường */, word /* dạng hiển thị */, sentenceId, sentence /* câu gốc */,
-  lessonTitle, savedAt, updatedAt, deletedAt?, listen?: { [deviceId]: { correct, wrong } } }
+{ id /* = normalizeWord(word), chữ thường */, word /* dạng hiển thị */, sentenceId /* '' ở bản ghi mới */, sentence /* '' ở bản ghi mới */,
+  lessonTitle /* '' ở bản ghi mới */, savedAt, updatedAt, deletedAt?, listen?: { [deviceId]: { correct, wrong } } }
 ```
 
+- Từ nhánh `feat/dictation-levels-simple-words` (26/11): từ lưu mới để rỗng `''` cho `sentenceId`, `sentence`, `lessonTitle` (giữ nguyên schema và cấu trúc Google Sheet, không cần đổi Apps Script). Từ cũ có sẵn câu gốc/tên bài không bị migrate hay xoá trường cũ; giao diện chỉ không hiển thị các trường đó.
 - Lưu lại một từ đã xoá dùng cùng `id`: bỏ `deletedAt`, tăng `updatedAt`, giữ bộ đếm `listen`.
 - `deviceId` là chuỗi ngẫu nhiên riêng của từng trình duyệt (`vocabmaster_dictation_device`).
 
@@ -71,6 +72,7 @@ Mỗi lần sửa: ghi LocalStorage trước, thành công mới cập nhật gi
 | `vocabmaster_dictation_data` | `{ schema: 1, sentences, words }`. Nếu hỏng thì **khoá ghi và khoá đồng bộ**, không ghi đè |
 | `vocabmaster_dictation_device` | `deviceId` |
 | `vocabmaster_dictation_prefs` | tốc độ (hệ số 0.75/1/1.25 nhân vào tốc độ ở mục 10), tự phát, lặp, hiện bản dịch (riêng thiết bị, không đồng bộ) |
+| `vocabmaster_dictation_prompt_level` | mức độ khó prompt AI đã chọn (`A1`/`A2`/`B1`/`B2`, mặc định `A2`; riêng thiết bị, không đồng bộ, không đưa vào bản sao `.json`) |
 | `vocabmaster_voice_prefs` | giọng đã chọn, tốc độ cơ bản, Chế độ thi (mục 10; riêng thiết bị, không đồng bộ) |
 | `vocabmaster_listening_autofocus` | dùng chung với Listening (`listeningPrefs.js`) |
 
@@ -167,7 +169,7 @@ Dùng chung cho **Dictation** (luyện câu, bấm từ, "Từ đã lưu") và *
 
 ## 11. Luyện nghe từ đã lưu ("Từ đã lưu" → "Luyện nghe", nhánh `feat/dictation-word-listening`)
 
-"Từ đã lưu" có 2 tab con: **Luyện nghe** (mặc định) và **Danh sách** (tìm kiếm, nghe, xoá như trước).
+"Từ đã lưu" có 2 tab con: **Luyện nghe** (mặc định) và **Danh sách** (lưới thẻ 2/3/4 cột chỉ gồm từ tiếng Anh + nút nghe + nút xoá; tìm kiếm chỉ lọc theo từ; ẩn câu gốc, tên bài và số lần nghe đúng/sai).
 
 **Bố cục giống Listening Review:** thống kê đúng/%/đã chơi, "Tự mở bàn phím" (dùng chung cài đặt), "Giọng đọc", khung câu hỏi có Replay + ô gõ tự nộp, lưới 2 cột, Skip/Next Word. Ô đáp án chỉ có chữ; không ảnh, không cấp độ, không nút mắt.
 
@@ -179,7 +181,7 @@ Dùng chung cho **Dictation** (luyện câu, bấm từ, "Từ đã lưu") và *
 - Mỗi từ trong nhóm lọc được hỏi một lần trước khi lặp lại; không hỏi một từ hai lần liên tiếp (khi có từ 2 từ).
 - Đáp án nhiễu: tối đa 3, không trùng đáp án và không trùng nhau (so theo quy tắc chấm ở mục 3); lấy trong nhóm lọc trước, thiếu thì lấy từ đã lưu khác. Có dưới 4 từ đã lưu thì ít ô hơn; chỉ 1 từ thì ô duy nhất chính là đáp án.
 - Gõ: không phân biệt hoa/thường, dấu câu, kiểu dấu nháy. Gõ sai không bị nộp (giống Listening).
-- Lọc: "Tên bài", "Chỉ từ hay nghe sai" (tổng sai > 0), "Chưa luyện" (chưa có lần đúng/sai). Lọc không có dữ liệu thì ẩn (đang bật thì vẫn hiện để tắt). Lọc kết hợp là giao nhau; hết từ khớp thì có nút "Bỏ bộ lọc". Câu vừa trả lời làm rỗng nhóm vẫn hiện kết quả 1,5 s.
+- Lọc: "Chỉ từ hay nghe sai" (tổng sai > 0), "Chưa luyện" (chưa có lần đúng/sai). Bộ lọc "Tên bài" đã bỏ từ nhánh `feat/dictation-levels-simple-words` vì từ không còn gắn với bài. Lọc không có dữ liệu thì ẩn (đang bật thì vẫn hiện để tắt). Lọc kết hợp là giao nhau; hết từ khớp thì có nút "Bỏ bộ lọc". Câu vừa trả lời làm rỗng nhóm vẫn hiện kết quả 1,5 s.
 - Trả lời → `store.recordWordListen` (cùng cơ chế lưu và đồng bộ ở mục 6–7; không đổi cấu trúc dữ liệu hay Sheet). Chỉ cộng cho từ được hỏi.
 - Giọng: `speakWithSettings` với `itemKey` `dictword-list:<số câu>` (Chế độ thi: mỗi câu một giọng, Replay giữ giọng).
 - Phím: không có phím tắt riêng; Enter trên ô đáp án đang chọn.
@@ -189,6 +191,6 @@ Dùng chung cho **Dictation** (luyện câu, bấm từ, "Từ đã lưu") và *
 
 ## 12. Prompt cho AI (Thư viện bài → Sao lưu)
 
-Nút "Sao chép prompt cho AI" chép nguyên văn `DICTATION_AI_PROMPT` (`src/utils/dictationAiPrompt.js` — sửa nội dung prompt ở đây) và báo "Đã sao chép prompt.". Trình duyệt không cho chép (hoặc không có clipboard, ví dụ mở bằng http trên điện thoại) thì hiện ô chỉ đọc đã chọn sẵn để tự chép. Quy trình: Xuất Excel (mục 6) → gửi file kèm prompt cho chatbot → dán khối kết quả `English sentence | Bản dịch tiếng Việt` vào "Nạp bài mới". App không gọi API AI và không tự kiểm tra câu mới có trùng câu cũ hay không.
+Cạnh nút "Sao chép prompt cho AI" có bộ chọn 4 mức độ khó **A1 | A2 | B1 | B2** (mặc định **A2**, lưu trên máy ở `vocabmaster_dictation_prompt_level`, không đồng bộ và không đưa vào bản sao `.json`). `src/utils/dictationAiPrompt.js` cung cấp `DICTATION_LEVELS`, `buildDictationAiPrompt(levelId)` (id lạ rơi về `A2`) và giữ `DICTATION_AI_PROMPT = buildDictationAiPrompt('A2')`. Nút "Sao chép prompt cho AI" chép đúng prompt của mức đang chọn và báo "Đã sao chép prompt.". Trình duyệt không cho chép (hoặc không có clipboard, ví dụ mở bằng http trên điện thoại) thì hiện ô chỉ đọc đã chọn sẵn để tự chép; đổi mức khi ô đang mở sẽ cập nhật nội dung ngay. Quy trình: Xuất Excel (mục 6) → gửi file kèm prompt này cho chatbot → dán khối kết quả `English sentence | Bản dịch tiếng Việt` vào "Nạp bài mới". App không gọi API AI và không tự kiểm tra câu mới có trùng câu cũ hay không.
 
 **Test:** `dictation-ai-prompt` (Node), `dictation-ai-prompt-browser`.
