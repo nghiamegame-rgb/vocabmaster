@@ -39,24 +39,24 @@ export default function GrammarCloudSettings({ onClose, onConfigChanged, syncSta
   return (
     <div className="vm-panel rounded-2xl p-5 space-y-4 animate-fade-in">
       <div className="flex items-center justify-between">
-        <h3 className="text-white font-semibold flex items-center gap-2">
-          <Cloud size={18} className="text-indigo-400" />
+        <h3 className="text-[var(--sb-ink)] font-bold flex items-center gap-2">
+          <Cloud size={18} className="text-[var(--sb-terracotta-strong)]" />
           Cài đặt Grammar Cloud Sync (Bảo mật & CAS)
         </h3>
         {onClose && (
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors text-sm p-1 rounded-lg">✕</button>
+          <button onClick={onClose} className="text-[var(--sb-ink-soft)] hover:text-[var(--sb-ink)] transition-colors text-sm p-1 rounded-lg">✕</button>
         )}
       </div>
 
       {/* Status badge */}
-      <div className={`flex flex-col gap-1 px-3.5 py-2.5 rounded-xl border text-sm ${
+      <div className={`flex flex-col gap-1 px-3.5 py-2.5 rounded-xl border-2 text-sm ${
         configured
           ? (syncStatus === 'error' || hasPending
-              ? 'bg-amber-500/12 border-amber-400/30 text-amber-200'
-              : 'bg-emerald-500/12 border-emerald-400/30 text-emerald-200')
-          : 'bg-slate-900/60 border-slate-400/20 text-slate-300'
+              ? 'bg-[var(--sb-ochre-soft)] border-[var(--sb-ochre)] text-[var(--sb-ochre-text)]'
+              : 'bg-[var(--sb-forest-soft)] border-[var(--sb-forest)] text-[var(--sb-forest-text)]')
+          : 'bg-[var(--sb-paper-deep)] border-[var(--sb-ink-border)] text-[var(--sb-ink)]'
       }`}>
-        <div className="flex items-center gap-2 font-medium">
+        <div className="flex items-center gap-2 font-semibold">
           {configured ? <Cloud size={15} /> : <HardDrive size={15} />}
           {configured
             ? (syncStatus === 'error'
@@ -71,7 +71,7 @@ export default function GrammarCloudSettings({ onClose, onConfigChanged, syncSta
             : '⚠️ Chưa kết nối — Dữ liệu chỉ lưu cục bộ trên trình duyệt (Local Only)'}
         </div>
         {configured && (
-          <p className="text-xs text-slate-300 pl-6">
+          <p className="text-xs text-[var(--sb-ink-soft)] pl-6">
             Bảo vệ bằng Compare-and-Swap (CAS) & LockService: Chống ghi đè khi nhiều thiết bị cùng dùng.
           </p>
         )}
@@ -80,13 +80,13 @@ export default function GrammarCloudSettings({ onClose, onConfigChanged, syncSta
       {/* URL input */}
       <div>
         <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
-          <label className="text-slate-300 text-xs font-medium">
+          <label className="text-[var(--sb-ink-soft)] text-xs font-semibold">
             Grammar Sync Endpoint URL
           </label>
           <button
             type="button"
             onClick={handleUseProxy}
-            className="text-xs text-indigo-300 hover:text-indigo-200 transition-colors flex items-center gap-1 font-medium"
+            className="text-xs text-[var(--sb-terracotta-text)] hover:text-[var(--sb-terracotta-hover)] transition-colors flex items-center gap-1 font-semibold"
           >
             <ShieldCheck size={13} /> Dùng Vercel Proxy (/api/grammar-sync)
           </button>
@@ -99,12 +99,12 @@ export default function GrammarCloudSettings({ onClose, onConfigChanged, syncSta
           className="w-full vm-input rounded-xl px-4 py-2.5 text-sm font-mono"
         />
         {error && (
-          <p className="text-rose-300 text-xs mt-1.5 flex items-center gap-1">
+          <p className="text-[var(--sb-berry-text)] font-semibold text-xs mt-1.5 flex items-center gap-1">
             <AlertCircle size={12} /> {error}
           </p>
         )}
-        <p className="text-slate-400 text-xs mt-1.5">
-          Khuyên dùng <code className="text-indigo-300 font-mono">/api/grammar-sync</code> khi deploy trên Vercel để bảo mật token bí mật hoàn toàn trên server.
+        <p className="text-[var(--sb-ink-soft)] text-xs mt-1.5">
+          Khuyên dùng <code className="text-[var(--sb-terracotta-text)] font-semibold font-mono">/api/grammar-sync</code> khi deploy trên Vercel để bảo mật token bí mật hoàn toàn trên server.
         </p>
       </div>
 
@@ -113,7 +113,7 @@ export default function GrammarCloudSettings({ onClose, onConfigChanged, syncSta
           onClick={() => handleSave()}
           className={`vm-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold ${
             saved
-              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/25'
+              ? 'bg-[var(--sb-forest-btn)] text-white border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)]'
               : 'vm-btn-violet'
           }`}
         >
@@ -125,16 +125,16 @@ export default function GrammarCloudSettings({ onClose, onConfigChanged, syncSta
           <button
             onClick={onSync}
             disabled={syncStatus === 'syncing'}
-            className={`vm-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border ${
+            className={`vm-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border-2 ${
               syncStatus === 'syncing'
-                ? 'bg-indigo-600/40 border-indigo-400/30 text-indigo-200 cursor-wait'
+                ? 'bg-[var(--sb-terracotta-soft)] border-[var(--sb-ink)] text-[var(--sb-terracotta-text)] cursor-wait'
                 : syncStatus === 'ok'
-                ? 'bg-emerald-500/18 border-emerald-400/30 text-emerald-300'
+                ? 'bg-[var(--sb-forest-soft)] border-[var(--sb-forest)] text-[var(--sb-forest-text)]'
                 : syncStatus === 'conflict'
-                ? 'bg-amber-500/18 border-amber-400/30 text-amber-300'
+                ? 'bg-[var(--sb-ochre-soft)] border-[var(--sb-ochre)] text-[var(--sb-ochre-text)]'
                 : syncStatus === 'error'
-                ? 'bg-rose-500/18 border-rose-400/30 text-rose-300'
-                : 'bg-slate-800/85 border-slate-400/20 text-slate-200 hover:text-white hover:bg-slate-700'
+                ? 'bg-[var(--sb-berry-soft)] border-[var(--sb-berry)] text-[var(--sb-berry-text)]'
+                : 'bg-[var(--sb-paper-card)] border-[var(--sb-ink-border)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)]'
             }`}
           >
             <RefreshCw size={14} className={syncStatus === 'syncing' ? 'animate-spin' : ''} />
@@ -148,16 +148,16 @@ export default function GrammarCloudSettings({ onClose, onConfigChanged, syncSta
 
         <button
           onClick={() => handleSave('')}
-          className="vm-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-slate-800/85 border border-slate-400/20 text-slate-300 hover:text-rose-300 hover:bg-rose-500/15"
+          className="vm-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-[var(--sb-paper-card)] border-2 border-[var(--sb-ink-border)] text-[var(--sb-ink)] hover:text-[var(--sb-berry-text)] hover:bg-[var(--sb-berry-soft)]"
         >
           Dùng mặc định
         </button>
       </div>
 
       {/* Security notice */}
-      <div className="border-t border-slate-400/15 pt-3 text-slate-300 text-xs space-y-1">
-        <p className="text-slate-200 font-medium flex items-center gap-1.5">
-          <ShieldCheck size={14} className="text-emerald-400" /> Cơ chế bảo mật & toàn vẹn dữ liệu:
+      <div className="border-t border-[var(--sb-ink-border)] pt-3 text-[var(--sb-ink-soft)] text-xs space-y-1">
+        <p className="text-[var(--sb-ink)] font-semibold flex items-center gap-1.5">
+          <ShieldCheck size={14} className="text-[var(--sb-forest-text)]" /> Cơ chế bảo mật & toàn vẹn dữ liệu:
         </p>
         <p>• <strong>Strict CAS</strong>: Máy chủ chỉ chấp nhận ghi khi revision khớp chính xác.</p>
         <p>• <strong>Smart Merge</strong>: Không bao giờ xóa đè mất câu hỏi khi có xung đột thiết bị.</p>

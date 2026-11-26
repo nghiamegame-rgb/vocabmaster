@@ -20,8 +20,8 @@ export default function GrammarQuiz({ questions, config, isQuestionSaved, onSave
     setFinished(true);
   }
   if (finished) return <div className="text-center py-12 space-y-4 vm-scale-in">
-    <h3 className="text-2xl text-white font-bold">Đã kết thúc luyện tập</h3>
-    <p className="text-slate-300">Đã xem phân tích {total}/{questions.length} câu.</p>
+    <h3 className="sb-heading text-2xl text-[var(--sb-ink)] font-bold">Đã kết thúc luyện tập</h3>
+    <p className="text-[var(--sb-ink-soft)]">Đã xem phân tích {total}/{questions.length} câu.</p>
     <button onClick={() => onFinish({ goBack: true })} className="vm-btn vm-btn-violet px-5 py-3 rounded-xl font-semibold">Tạo bộ câu mới</button>
   </div>;
 
@@ -32,9 +32,9 @@ export default function GrammarQuiz({ questions, config, isQuestionSaved, onSave
   const ulKey = savedRecord ? savedRecord.savedId : textKey(q.sentence);
 
   return <div className="space-y-4">
-    <div className="flex items-center justify-between gap-3 text-slate-300 text-sm">
-      <span className="font-medium tabular-nums">Câu {current + 1}/{questions.length} · Đã phân tích {total}</span>
-      <button className="vm-btn px-3.5 py-2 rounded-xl bg-slate-900/80 border border-amber-400/25 hover:border-amber-400/50 text-amber-300 font-medium" onClick={() => {
+    <div className="flex items-center justify-between gap-3 text-[var(--sb-ink-soft)] text-sm">
+      <span className="font-semibold tabular-nums">Câu {current + 1}/{questions.length} · Đã phân tích {total}</span>
+      <button className="vm-btn px-3.5 py-2 rounded-xl bg-[var(--sb-ochre-soft)] border-2 border-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)] text-[var(--sb-ochre-text)] font-semibold" onClick={() => {
         if (saved) {
           const record = savedQuestions.find(s => s.sentence?.trim().toLowerCase() === q.sentence.trim().toLowerCase());
           if (record) onUnsave(record.savedId);
@@ -48,10 +48,10 @@ export default function GrammarQuiz({ questions, config, isQuestionSaved, onSave
       sentenceNotes={sentenceNotes} onNoteChange={onNoteChange}
     />
     <div className="flex justify-between gap-3">
-      <button disabled={current === 0} onClick={() => navigate(current - 1)} className="vm-btn px-4 py-2 rounded-xl bg-slate-800/85 border border-slate-400/20 text-slate-200 hover:bg-slate-700 disabled:opacity-35">Câu trước</button>
+      <button disabled={current === 0} onClick={() => navigate(current - 1)} className="vm-btn px-4 py-2 rounded-xl bg-[var(--sb-paper-card)] border-2 border-[var(--sb-ink-border)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)] font-semibold disabled:opacity-40">Câu trước</button>
       <button onClick={() => current < questions.length - 1 ? navigate(current + 1) : finish()} className="vm-btn vm-btn-violet px-5 py-2 rounded-xl font-semibold">{current < questions.length - 1 ? 'Câu tiếp' : 'Kết thúc'}</button>
     </div>
     <div className="flex flex-wrap justify-center gap-2">{questions.map((_, i) => <button key={i} onClick={() => navigate(i)} aria-label={`Đến câu ${i + 1}`} aria-current={i === current ? 'step' : undefined}
-      className={`vm-btn w-8 h-8 rounded-full text-xs font-semibold text-white tabular-nums ${seen[i] ? 'bg-indigo-600 shadow-sm shadow-indigo-500/30' : 'bg-slate-800 border border-slate-400/20'} ${i === current ? 'ring-2 ring-violet-400 ring-offset-2 ring-offset-[#070b14]' : ''}`}>{i + 1}</button>)}</div>
+      className={`vm-btn w-8 h-8 rounded-full text-xs font-bold tabular-nums ${seen[i] ? 'bg-[var(--sb-terracotta-strong)] text-white border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)]' : 'bg-[var(--sb-paper-card)] text-[var(--sb-ink)] border-2 border-[var(--sb-ink-border)]'} ${i === current ? 'ring-2 ring-[var(--sb-plum)] ring-offset-2 ring-offset-[var(--sb-paper)]' : ''}`}>{i + 1}</button>)}</div>
   </div>;
 }

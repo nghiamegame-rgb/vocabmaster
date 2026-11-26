@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Zap, Bookmark, Brain, BarChart2, Cloud, Layers } from 'lucide-react';
 import GrammarPractice     from './grammar/GrammarPractice';
 import GrammarQuiz         from './grammar/GrammarQuiz';
@@ -96,24 +96,24 @@ export default function Grammar({ grammarStore, addWord, words = [], vocabSyncSt
       {/* Module header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 via-indigo-600 to-blue-600 flex items-center justify-center shadow-xl shadow-violet-500/25 ring-1 ring-white/15">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--sb-plum)] to-[var(--sb-terracotta-strong)] border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)] flex items-center justify-center">
             <span className="text-white font-black text-lg">G</span>
           </div>
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-white">
-              Grammar <span className="text-violet-400">VSTEP B1</span>
+            <h1 className="sb-heading text-2xl font-black tracking-tight text-[var(--sb-ink)]">
+              Grammar <span className="text-[var(--sb-plum-text)]">VSTEP B1</span>
             </h1>
-            <p className="text-slate-300 text-sm">Nhận diện ngữ pháp · Phân tích cấu trúc câu</p>
+            <p className="text-[var(--sb-ink-soft)] text-sm">Nhận diện ngữ pháp · Phân tích cấu trúc câu</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           {syncStatus === 'error' ? (
-            <button onClick={syncFromCloud} className="vm-btn text-xs text-rose-300 hover:text-rose-200 underline underline-offset-2" title="Dữ liệu cục bộ được giữ nguyên">
+            <button onClick={syncFromCloud} className="vm-btn text-xs font-semibold text-[var(--sb-berry-text)] hover:text-[var(--sb-berry-hover)] underline underline-offset-2" title="Dữ liệu cục bộ được giữ nguyên">
               Lỗi đồng bộ · Thử lại
             </button>
           ) : (
-            <span className="text-xs text-slate-300" role="status">
+            <span className="text-xs text-[var(--sb-ink-soft)]" role="status">
               {syncStatus === 'syncing' || syncStatus === 'conflict'
                 ? 'Đang đồng bộ…'
                 : hasPending ? 'Chờ đồng bộ' : syncStatus === 'ok' ? 'Đã đồng bộ' : ''}
@@ -121,8 +121,8 @@ export default function Grammar({ grammarStore, addWord, words = [], vocabSyncSt
           )}
           {/* Local-only badge */}
           {!cloudConfigured && (
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/12 border border-amber-400/25 text-amber-300 text-xs font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 vm-pulse-soft" />
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--sb-ochre-soft)] border border-[var(--sb-ochre-text)]/35 text-[var(--sb-ochre-text)] text-xs font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--sb-ochre-text)] vm-pulse-soft" />
               Local Only
             </div>
           )}
@@ -131,20 +131,20 @@ export default function Grammar({ grammarStore, addWord, words = [], vocabSyncSt
             onClick={() => setShowCloud(v => !v)}
             className={`vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border relative ${
               showCloud
-                ? 'bg-indigo-500/20 text-indigo-200 border-indigo-400/40'
-                : 'bg-slate-900/75 text-slate-300 hover:text-white border-slate-400/20 hover:border-slate-400/35'
+                ? 'bg-[var(--sb-terracotta-soft)] text-[var(--sb-terracotta-text)] border-[var(--sb-ink)]'
+                : 'bg-[var(--sb-paper-card)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)] border-[var(--sb-ink-border)]'
             }`}
           >
             <Cloud size={13} />
             Cloud
             {hasPending && cloudConfigured && (
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping absolute -top-0.5 -right-0.5" />
+              <span className="w-2 h-2 rounded-full bg-[var(--sb-ochre)] animate-ping absolute -top-0.5 -right-0.5" />
             )}
           </button>
         </div>
       </div>
 
-      {storageError && <p role="alert" className="text-amber-300 text-sm">{storageError}</p>}
+      {storageError && <p role="alert" className="text-[var(--sb-ochre-text)] font-semibold text-sm">{storageError}</p>}
 
       {/* Cloud settings panel */}
       {showCloud && (
@@ -169,13 +169,13 @@ export default function Grammar({ grammarStore, addWord, words = [], vocabSyncSt
               className={`vm-btn flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold relative ${
                 subTab === id
                   ? 'vm-btn-violet text-white'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800/75'
+                  : 'text-[var(--sb-ink-soft)] hover:text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)]'
               }`}
             >
               <Icon size={15} />
               <span className="hidden sm:block">{label}</span>
               {badge > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 ring-2 ring-[#070b14] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--sb-berry-btn)] ring-2 ring-[var(--sb-paper)] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                   {badge > 9 ? '9+' : badge}
                 </span>
               )}

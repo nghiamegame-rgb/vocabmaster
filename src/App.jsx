@@ -14,7 +14,7 @@ import { useDictationStore } from './hooks/useDictationStore';
 // Loaded on first open so the main bundle does not grow.
 const Dictation = lazy(() => import('./components/Dictation'));
 
-const LEGACY_TABS = new Set(['grammar', 'dictation']);
+const LEGACY_TABS = new Set(['dictation']);
 
 export default function App() {
   const [activeTab,   setActiveTab]   = useState('dashboard');
@@ -112,18 +112,18 @@ export default function App() {
             dictationStore={dictationStore}
           />
         )}
+        {activeTab === 'grammar' && (
+          <Grammar
+            grammarStore={grammarStore}
+            addWord={addWord}
+            words={words}
+            structureStore={structureStore}
+            vocabSyncStatus={vocabCloudReadStatus}
+            vocabDataLoadError={vocabDataLoadError}
+          />
+        )}
         {LEGACY_TABS.has(activeTab) && (
           <div className="sb-legacy p-4 sm:p-6">
-            {activeTab === 'grammar' && (
-              <Grammar
-                grammarStore={grammarStore}
-                addWord={addWord}
-                words={words}
-                structureStore={structureStore}
-                vocabSyncStatus={vocabCloudReadStatus}
-                vocabDataLoadError={vocabDataLoadError}
-              />
-            )}
             {activeTab === 'dictation' && (
               <Suspense fallback={<p className="text-slate-300 text-sm" role="status">Đang tải Dictation…</p>}>
                 <Dictation store={dictationStore} />
