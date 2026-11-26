@@ -400,7 +400,7 @@ function QuizConfig({ words, structures = [], onStart }) {
     <div className="vm-page-enter max-w-2xl mx-auto">
       {/* Page header */}
       <div className="mb-7">
-        <h1 className="sb-font-display text-3xl font-extrabold tracking-tight text-[var(--sb-ink)] mb-1">Smart Quiz</h1>
+        <h1 className="sb-font-display text-3xl font-extrabold text-[var(--sb-ink)] mb-1">Smart Quiz</h1>
         <p className="text-[var(--sb-ink-soft)] font-semibold text-sm">
           Configure your quiz, copy the AI prompt, then paste the response to start.
         </p>
@@ -1393,7 +1393,7 @@ function QuizResults({ results, onRestart, mode }) {
     <div className="vm-page-enter max-w-lg mx-auto text-center">
       <div className="vm-card rounded-3xl p-8 mb-6 vm-scale-in">
         <div className="text-6xl mb-4">{grade.emoji}</div>
-        <h2 className={`sb-font-display text-3xl font-extrabold tracking-tight mb-2 ${grade.color}`}>{grade.label}</h2>
+        <h2 className={`sb-font-display text-3xl font-extrabold mb-2 ${grade.color}`}>{grade.label}</h2>
         <p className="text-[var(--sb-ink-soft)] font-semibold mb-6">Quiz complete! Here's how you did:</p>
 
         <div className="flex items-center justify-center gap-8 mb-6">

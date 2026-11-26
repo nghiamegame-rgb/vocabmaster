@@ -58,7 +58,7 @@ function StatCard({ icon: Icon, label, value, strip, badgeBg, suffix = '' }) {
       <div className="flex items-start justify-between gap-3 pt-1">
         <div>
           <p className="text-[var(--sb-ink-soft)] text-xs sm:text-sm font-bold mb-1.5">{label}</p>
-          <p className="sb-font-display text-[var(--sb-ink)] text-3xl font-extrabold tracking-tight tabular-nums">
+          <p className="sb-font-display text-[var(--sb-ink)] text-3xl font-extrabold tabular-nums">
             {value}<span className="text-lg font-bold text-[var(--sb-ink-soft)]">{suffix}</span>
           </p>
         </div>
@@ -147,7 +147,7 @@ export default function Dashboard({ words, hasReadableWords = true, stats, setAc
           <span>Hành trình đến VSTEP · Bản đồ hành trình</span>
         </div>
 
-        <h1 className="sb-font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-[var(--sb-ink)] mb-1.5">
+        <h1 className="sb-font-display text-3xl sm:text-4xl font-extrabold text-[var(--sb-ink)] mb-1.5">
           Dashboard
         </h1>
         <p className="text-[var(--sb-ink-soft)] font-semibold text-sm sm:text-base">
@@ -203,7 +203,7 @@ export default function Dashboard({ words, hasReadableWords = true, stats, setAc
               <TrendingUp size={19} aria-hidden="true" />
             </div>
             <div>
-              <h2 className="sb-font-display text-[var(--sb-ink)] font-extrabold tracking-tight text-xl leading-tight">
+              <h2 className="sb-font-display text-[var(--sb-ink)] font-extrabold text-xl leading-tight">
                 Mastery Levels
               </h2>
               <p className="text-xs font-semibold text-[var(--sb-ink-soft)]">

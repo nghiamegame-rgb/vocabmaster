@@ -250,7 +250,7 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard
           <>
             <div className="flex items-start justify-between gap-2 mb-1.5">
               <div className="flex-1 min-w-0">
-                <h3 className="sb-font-display text-[var(--sb-ink)] font-bold text-2xl leading-snug break-words">{word.english}</h3>
+                <h3 className="sb-font-display text-[var(--sb-ink)] font-extrabold text-2xl leading-snug break-words">{word.english}</h3>
                 {word.annotation && (
                   <p className="sb-vocab-meta mt-0.5 break-words">({word.annotation})</p>
                 )}
@@ -519,7 +519,7 @@ export default memo(function Vocabulary({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="sb-font-display text-3xl font-extrabold tracking-tight text-[var(--sb-ink)] mb-1">Vocabulary</h1>
+          <h1 className="sb-font-display text-3xl font-extrabold text-[var(--sb-ink)] mb-1">Vocabulary</h1>
           <p className="text-[var(--sb-ink-soft)] font-semibold text-sm sm:text-base">{words.length} word{words.length !== 1 ? 's' : ''} in your collection</p>
         </div>
         <div className="flex items-center gap-2.5">

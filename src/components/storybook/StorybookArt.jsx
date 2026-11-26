@@ -179,6 +179,7 @@ export function JourneyMapSvg({ levelCounts, foxLevel = 1 }) {
       role="img"
       aria-label="Bản đồ hành trình 5 chặng từ vựng L1 đến L5"
       className="w-full h-auto block select-none pointer-events-none"
+      style={{ fontFamily: "'Nunito Variable', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
     >
       {/* Parchment background & subtle hand-drawn border */}
       <rect x="0" y="0" width="880" height="280" rx="18" fill="#fbf7ee" />
