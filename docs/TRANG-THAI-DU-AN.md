@@ -292,3 +292,21 @@ Tách từ `main` (`9df68cf`). **Đã push riêng nhánh `feat/storybook-theme-p
   - 9 test trình duyệt Playwright + Edge headless **9/9** đạt: `navbar-sync-chip-browser` (1280/1024/768/640/375/320 px), `dictation-browser`, `vocab-quota-browser`, `vocab-star-browser`, `quiz-feedback-browser`, `listening-autofocus-browser`, `grammar-review-browser`, `voice-settings-browser`, `vocab-sync-browser`. Lưu ý: 2 test chip navbar (`navbar-sync-chip.test.js`, `navbar-sync-chip-browser.test.js`) đổi assert màu chữ chip từ `text-*-200` sang `text-*-900` do nền navbar chuyển từ tối sang sáng.
   - Tự chụp & kiểm tra ảnh màn hình trên Edge headless (dữ liệu mẫu cục bộ) ở 1440/1024/768/375 px cho Dashboard (có dữ liệu & rỗng) và 6 tab cũ trong `.sb-legacy` ở 1440 & 375 px: 0 tràn ngang, 0 lỗi trang, chữ tiếng Việt đủ dấu với `Fraunces Variable` và `Nunito Variable`.
 - **Chưa kiểm tra:** điện thoại thật, Safari/iOS, Firefox, nhiều cỡ màn hình thật ngoài giả lập Edge.
+
+## 22. Ngày 26/11 (đêm) — nhánh `feat/twilight-theme` (chưa ghép `main`)
+
+Tách từ `main` (`2398fcb` — bản giấy kem sáng cũ vẫn nằm ở commit này). **Chỉ mới sửa trên nhánh `feat/twilight-theme`; CHƯA ghép `main`, CHƯA push `main`.** Chi tiết: [STORYBOOK-THEME.md](STORYBOOK-THEME.md).
+
+- **Chuyển sang bảng màu Hoàng Hôn (Twilight / Blue Hour):**
+  - `src/index.css`: đổi toàn bộ biến `--sb-*` sang nền gradient `#0f0b2e → #1a1446`, thẻ `#221b5a`/`#2b246b`, viền lavender 46–62%, chính periwinkle `#5b6ee1` (nút chữ trắng tinh chỉnh thành `--sb-primary-btn: #4c5ed1` để đạt tương phản 5,48:1), nhấn vàng hổ phách `#f2b45a`, hồng đào `#e8809a`/`#f0a38b`, ánh sao `#cfe0ff`, chữ `#f4efff`/`#b9b2e6`. Thay bóng cứng lệch đen đặc bằng bóng glow lavender/amber nhẹ. Hòa quyện `.sb-legacy` và các class `.vm-*`/`.field` vào tông chàm-tím hoàng hôn.
+  - `src/App.jsx`, `src/components/ErrorBoundary.jsx`, `src/components/Navbar.jsx`, `src/components/Dashboard.jsx`: xóa mã màu giấy kem viết cứng, chuyển sang dùng token `var(--sb-*)` (Navbar chip dùng tông sáng `-200` trên nền tối).
+  - `src/components/storybook/StorybookArt.jsx`: tô lại `JourneyMapSvg`, `EmptyTrailScene`, `CompassBadge` và `FoxBody` theo cảnh hoàng hôn (trời gradient chàm → tím → hồng đào → cam hổ phách, sao, trăng lưỡi liềm, mây tím viền đào, núi viền sáng vàng, cột mốc L1–L5 sáng). Không thêm animation mới.
+- **Không đổi:** logic học/chấm điểm, dữ liệu, đồng bộ cloud, `src/hooks/`, `src/utils/`, `api/`, `*-apps-script.js`, nội dung trong 6 tab cũ, `UnderlinedSentence.jsx` và các file đo hình học Grammar.
+- **Đã kiểm tra:**
+  - `npm.cmd run build` đạt (JS chính `557,50 → 561,76 kB`, gzip `167,47 → 168,16 kB`, tăng `+0,69 kB` gzip; CSS `110,42 → 113,40 kB`, gzip `17,51 → 17,52 kB`).
+  - `npm.cmd run lint` 0 lỗi / 31 cảnh báo (không tăng).
+  - `npm.cmd test` **42/42** (có Python trong PATH).
+  - 9 test trình duyệt Playwright + Edge headless **9/9** đạt (`navbar-sync-chip-browser`, `dictation-browser`, `vocab-quota-browser`, `vocab-star-browser`, `quiz-feedback-browser`, `listening-autofocus-browser`, `grammar-review-browser`, `voice-settings-browser`, `vocab-sync-browser`). Đã cập nhật 2 dòng assert màu chip trong `navbar-sync-chip.test.js` và `navbar-sync-chip-browser.test.js` (`-900` → `-200`).
+  - Rà tương phản WCAG AA bằng script tính toán: mọi cặp chữ/nền chính đạt **5,48:1 – 15,12:1**.
+  - Chụp và đọc ảnh màn hình ở 1440 px & 375 px cho Dashboard (có dữ liệu & rỗng) và tất cả 6 tab cũ trong `.sb-legacy`: 0 tràn ngang, 0 lỗi trang. Ghi nhận lệch màu nhẹ ở 6 tab cũ chưa chuyển: Flashcard (mặt thẻ chính dùng `bg-slate-*` xám lạnh) và vài nút pill/ô phụ `bg-slate-800/900` trong Vocabulary/Quiz/Listening/Grammar/Dictation vẫn giữ tông xám xanh cũ nhưng chữ vẫn rõ, sẽ đồng bộ hoàn toàn khi gỡ `.sb-legacy` ở Giai đoạn 2–5.
+- **Chưa kiểm tra:** điện thoại thật, Safari/iOS, Firefox, chưa mở modal/toast phức tạp ngoài các test tự động.

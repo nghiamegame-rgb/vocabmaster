@@ -1,91 +1,72 @@
-# Thiết kế giao diện Storybook — Hành trình đến VSTEP
+# Thiết kế giao diện Storybook (Hoàng Hôn / Twilight) — Hành trình đến VSTEP
 
-- **Nhánh git:** `feat/storybook-theme-phase1` (tách từ `main`).
-- **Phạm vi Giai đoạn 1:** (1) Nền tảng thiết kế trong `src/index.css` & `src/styles/fonts.css`, (2) Thanh menu `Navbar.jsx` + khung ứng dụng `App.jsx` & `ErrorBoundary.jsx` (kèm lớp cầu nối `.sb-legacy` cho 6 tab chưa chuyển), (3) Trang `Dashboard.jsx` ("Bản đồ hành trình") và minh họa SVG gốc trong `src/components/storybook/StorybookArt.jsx`.
-- **Nguyên tắc bất biến:** Không đổi logic học, chấm điểm, đồng bộ cloud, dữ liệu, `id`/`aria-label`/nhãn tab, hay nội dung 6 tab chưa chuyển.
+- **Nhánh git:** `feat/twilight-theme` (tách từ `main` `2398fcb`).
+- **Khôi phục giao diện cũ:** Giao diện giấy kem sáng cũ nằm ở commit **`2398fcb`** (trên `main`) nếu cần khôi phục.
+- **Phạm vi:** Thay thế hoàn toàn bảng màu giấy kem sáng bằng bảng màu **Hoàng Hôn (Twilight / Blue Hour)** trên nền tảng Storybook hiện có (`src/index.css`, `Navbar.jsx`, `App.jsx`, `ErrorBoundary.jsx`, `Dashboard.jsx`, `src/components/storybook/StorybookArt.jsx`). Không thêm nút chuyển sáng/tối, giữ nguyên bố cục, tên class (`.sb-*`, `.vm-*`, `.sb-legacy`), và toàn bộ logic.
 
 ---
 
-## 1. Bảng màu & độ tương phản (WCAG AA)
+## 1. Bảng màu Hoàng Hôn & kết quả rà tương phản (WCAG AA)
 
-| Token CSS | Giá trị | Vai trò | Ghi chú tương phản |
+| Token CSS | Giá trị | Vai trò | Tương phản đã kiểm |
 | --- | --- | --- | --- |
-| `--sb-paper` | `#f6efe2` | Nền trang giấy kem ấm | Nền chính toàn ứng dụng |
-| `--sb-paper-card` | `#fbf7ee` | Nền thẻ, thanh menu, ghi chú | Đạt ≥ 4.5:1 với `--sb-ink` (>12:1) và `--sb-ink-soft` (>6.8:1) |
-| `--sb-paper-warm` | `#f2e8d5` | Nền panel / khung bản đồ | Chữ dùng `--sb-ink` / `--sb-ink-soft` |
-| `--sb-paper-deep` | `#ece1cc` | Nền phụ, trạng thái hover nhẹ | Chữ dùng `--sb-ink` |
-| `--sb-ink` | `#2b2a33` | Mực chính, viền 2px, bóng cứng | Tương phản cao trên mọi nền giấy |
-| `--sb-ink-soft` | `#575361` | Chữ phụ, chú thích | Đạt WCAG AA trên `--sb-paper` và `--sb-paper-card` |
-| `--sb-terracotta` / `--sb-terracotta-strong` / `-text` | `#d9603b` / `#c44d2a` / `#a83b1c` | Nhấn chính (tab đang chọn, nút hành động, lông cáo) | Chữ trắng trên `#c44d2a` (≥ 4.6:1); chữ `#a83b1c` trên giấy sáng |
-| `--sb-forest` / `-text` | `#3f7d58` / `#295a3d` | Chặng L5, thành công, ba lô cáo | Chữ `#295a3d` trên giấy sáng đạt WCAG AA |
-| `--sb-sky` / `--sb-sky-strong` / `-text` | `#3a8fb7` / `#277296` / `#1f5d7a` | Chỉ số độ chính xác, thông tin | Chữ `#1f5d7a` trên giấy sáng đạt WCAG AA |
-| `--sb-ochre` / `-text` | `#e0a82e` / `#7d5608` | Khăn quàng cáo, chặng L3, cảnh báo | Chữ `#7d5608` trên giấy sáng đạt WCAG AA (tránh dùng vàng làm chữ trực tiếp) |
-| `--sb-plum` / `-text` | `#7a4e8c` / `#5e386e` | Điểm nhấn Tháp cấu trúc / Grammar | Chữ `#5e386e` trên giấy sáng đạt WCAG AA |
-| `--sb-berry` / `-text` | `#c8434e` / `#9e2a35` | Chặng L1 (New), cảnh báo lỗi | Chữ `#9e2a35` trên giấy sáng đạt WCAG AA |
-| `--sb-clay` / `-text` | `#d97736` / `#9e4812` | Chặng L2 (Familiar) | Chữ `#9e4812` trên giấy sáng đạt WCAG AA |
-| `--sb-lagoon` | `#216e6e` | Chặng L4 (Proficient) | Đạt WCAG AA trên giấy sáng |
+| `--sb-bg-top` → `--sb-bg-bottom` | `#0f0b2e` → `#1a1446` | Nền trang gradient đứng | Nền chính toàn ứng dụng |
+| `--sb-panel-bg` / `--sb-surface` / `--sb-surface-elevated` | `#1c164a` / `#221b5a` / `#2b246b` | Bề mặt panel, thẻ, nút/thẻ khi hover | Chữ dùng `--sb-text` / `--sb-text-muted` |
+| `--sb-surface-deep` / `--sb-nav-bg` | `#140f3b` / `rgba(17, 12, 50, 0.90)` | Rãnh thanh tiến độ, khung bản đồ, thanh menu | Nền tối sâu, đọc rõ chữ sáng |
+| `--sb-text` | `#f4efff` | Chữ chính | **15,12:1** trên `#1a1446`; **13,58:1** trên `#221b5a`; **11,89:1** trên `#2b246b` |
+| `--sb-text-muted` | `#b9b2e6` | Chữ phụ, chú thích | **8,58:1** trên `#1a1446`; **7,70:1** trên `#221b5a`; **6,75:1** trên `#2b246b` |
+| `--sb-border` / `--sb-border-strong` | `rgba(138, 111, 209, 0.46)` / `0.62` | Viền lavender (40–60%) | Phân tách thẻ/panel nhẹ nhàng |
+| `--sb-primary` / **`--sb-primary-btn`** | `#5b6ee1` / **`#4c5ed1`** | Periwinkle chính (dải màu, nút đang chọn/hành động) | Chữ trắng `#ffffff` trên `#4c5ed1` đạt **5,48:1** (tinh chỉnh tối nhẹ từ `#5b6ee1` vốn chỉ ~4,41:1) |
+| `--sb-secondary` / `-text` | `#8a6fd1` / `#dcd0ff` | Lavender phụ & nhãn | **10,57:1** (`#dcd0ff` trên `#221b5a`) |
+| `--sb-warm` / `--sb-peach` / `-text` | `#e8809a` / `#f0a38b` / `#ffbfd0` | Điểm nhấn ấm hồng đào | **9,92:1** (`#ffbfd0` trên `#221b5a`) |
+| `--sb-amber` / `-text` / `--sb-border-amber` | `#f2b45a` / `#f8ca82` / `rgba(242, 180, 90, 0.62)` | Vàng hổ phách (chọn, huy hiệu, cột mốc, focus ring) | **10,03:1** (`#f8ca82` trên `#221b5a`); **10,20:1** trên nền nav |
+| `--sb-starlight` | `#cfe0ff` | Ánh sáng nhấn xanh trắng nhạt | **11,48:1** trên `#221b5a` |
+| `--sb-success` / `-text` | `#34d399` / `#86efac` | Trạng thái đúng / thành công | **10,90:1** (`#86efac` trên `#221b5a`) |
+| `--sb-danger` / `-text` | `#fb7185` / `#fda4af` | Trạng thái sai / lỗi | **8,09:1** (`#fda4af` trên `#221b5a`) |
+| `--sb-lvl1`..`--sb-lvl5` (+ `-soft`, `-text`, `-border`) | `#fb7185`, `#f0a38b`, `#f2b45a`, `#5eead4`, `#34d399` | 5 chặng từ vựng L1–L5 | Chữ nhãn sáng đạt AA trên nền thẻ; chữ `#120d36` trên viên tròn L1–L5 đạt **6,87:1–12,49:1** |
 
 ---
 
-## 2. Chữ viết (tự host, không dùng CDN)
+## 2. Quy tắc dùng token, viền & bóng phát sáng
+
+- **Dùng token tập trung:** Toàn bộ màu sắc khai báo trong `@theme` và `:root` của `src/index.css`. Component dùng `var(--sb-*)`, không viết cứng mã hex rải rác (chỉ giữ mã hex trong định nghĩa SVG nội tuyến của `StorybookArt.jsx`).
+- **Bóng phát sáng (thay bóng cứng đen đặc):**
+  - `--sb-glow-sm`: viền lavender 26% + ánh sáng periwinkle dịu.
+  - `--sb-glow-md`: bóng thẻ/panel mặc định (lavender + periwinkle).
+  - `--sb-glow-hover`: viền vàng hổ phách 45% + ánh sáng lan tỏa khi rê chuột.
+  - `--sb-glow-amber`: dùng cho nút nổi bật, logo, tab đang chọn.
+- **Vòng focus bàn phím:** `--sb-ring: #f2b45a` (vàng hổ phách), hiển thị rõ trên cả trang chính lẫn `.sb-legacy`.
+
+---
+
+## 3. Chữ viết (tự host, không dùng CDN)
 
 - **Tiêu đề (`.sb-font-display`):** `'Fraunces Variable'`, fallback `Georgia, 'Times New Roman', serif`.
 - **Thân bài:** `'Nunito Variable'`, fallback `system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`.
-- **Tự host:** Cài từ npm `@fontsource-variable/fraunces` và `@fontsource-variable/nunito`. File `src/styles/fonts.css` chỉ khai báo `@font-face` cho **2 subset `vietnamese` và `latin`** để giữ bundle nhẹ và đảm bảo dấu tiếng Việt hiển thị chuẩn. Không gọi Google Fonts từ mạng ngoài.
+- **Tự host:** `@fontsource-variable/fraunces` và `@fontsource-variable/nunito`, chỉ import subset `vietnamese` và `latin` trong `src/styles/fonts.css`.
 
 ---
 
-## 3. Nét viền, đổ bóng & chất liệu giấy
+## 4. Minh họa Hoàng Hôn & Bản đồ khu vực
 
-- **Viền mực:** `2px solid var(--sb-ink)` (`#2b2a33`).
-- **Bo góc hữu cơ nhẹ:** Ví dụ `18px 20px 17px 21px` cho `.sb-card` để có cảm giác cắt giấy thủ công nhưng vẫn gọn gàng.
-- **Bóng đổ lệch cứng kiểu nhãn dán:**
-  - Nhỏ: `2px 2px 0 var(--sb-ink)` (`.sb-sticker`, nút tab đang chọn, nút Sync).
-  - Vừa: `3px 3px 0 var(--sb-ink)` (`.sb-btn-ink`, `.sb-paper-note`) và `4px 4px 0 var(--sb-ink)` (`.sb-card`, `.sb-panel`).
-  - Lớn / Hover: `6px 6px 0 var(--sb-ink)`.
-- **Chất liệu giấy & nền bản đồ:** Pseudo-element `.vm-app-shell::before` (`position: fixed; z-index: -1; pointer-events: none`) phủ lớp màu nước rất nhẹ ở các góc kết hợp SVG `feTurbulence` data-URI độ mờ thấp (`opacity` ~0.04) để tạo vân giấy mà không giảm độ rõ chữ.
+- **Nhân vật gốc:** **Cáo nhỏ lữ khách** (`FoxBody` trong `src/components/storybook/StorybookArt.jsx`) — lông cam san hô `#e8734a`, khăn và khóa ba lô vàng hổ phách `#f2b45a`, cầm gậy đèn lồng phát sáng dịu.
+- **Tranh nền hoàng hôn (`JourneyMapSvg`, `EmptyTrailScene`, `CompassBadge`):**
+  - Bầu trời gradient chàm sâu (`#100b33`) → tím (`#2a1d63`) → hồng tím (`#6c3f7c`) → hồng đào (`#d87594`) → cam hổ phách ở đường chân trời (`#f2b45a`).
+  - Sao lấp lánh `#cfe0ff` / `#f2b45a`, trăng lưỡi liềm, mây tím nhạt viền hồng đào `#f0a38b`, núi/đồi chàm-tím có viền sáng vàng ở cạnh trên, hải đăng bật đèn vàng ấm và 5 cột mốc L1–L5 rực sáng.
+- **Quy tắc minh họa & chuyển động:** Không thêm animation mới; trang trí dùng `aria-hidden="true"` + `pointer-events: none`; giữ hỗ trợ `prefers-reduced-motion`.
 
 ---
 
-## 4. Nhân vật gốc & Bản đồ khu vực ("Hành trình đến VSTEP")
+## 5. Lớp cầu nối `.sb-legacy` & các class giữ nguyên
 
-- **Nhân vật gốc:** **Cáo nhỏ lữ khách** (`FoxTraveler` trong `src/components/storybook/StorybookArt.jsx`) — chú cáo lông đất nung, má kem, đeo ba lô xanh rừng, quàng khăn vàng nghệ, tay cầm cuộn bản đồ. Cáo đứng tại chặng có nhiều từ nhất (ưu tiên chặng cao hơn nếu bằng nhau; khi chưa có từ thì đứng ở L1).
-- **Bản đồ khu vực (chỉ là chủ đề hình ảnh, giữ nguyên tên tab trên thanh menu):**
-  - **Dashboard** → Bản đồ hành trình
-  - **Vocabulary** → Làng từ vựng
-  - **Flashcard** → Trạm thẻ
-  - **Smart Quiz** → Thử thách
-  - **Listening** → Đài nghe hải đăng
-  - **Grammar** → Tháp cấu trúc
-  - **Dictation** → Xưởng chép chính tả
-  - **L1–L5** → 5 chặng trên con đường (`Trại khởi hành`, `Đồi làm quen`, `Rừng đang học`, `Cầu thành thạo`, `Đỉnh tinh thông`).
+- **`.sb-legacy`:** Vẫn giữ để bọc 6 tab chưa chuyển (`Vocabulary`, `Flashcard`, `Smart Quiz`, `Listening`, `Grammar`, `Dictation`) trong `src/App.jsx`. Nay đặt lại nền chàm-tím (`#151040` + gradient lavender/periwinkle), viền lavender và bóng `--sb-glow-md` để hòa với nền hoàng hôn. **Không** gắn `transform`, `filter`, `backdrop-filter`, `contain: paint`, hay `overflow: hidden` lên `.sb-legacy`.
+- **Class giữ nguyên tên:** `.sb-font-display`, `.sb-panel`, `.sb-card`, `.sb-card-interactive`, `.sb-sticker`, `.sb-btn-ink`, `.sb-paper-note`, và toàn bộ `.vm-*`, `.field`, `.progress-fill`, `.perspective-1000`, `.preserve-3d`, `.backface-hidden`, `.rotate-y-180`.
 
 ---
 
-## 5. Quy tắc minh họa & chuyển động
-
-- **Minh họa SVG:**
-  - Thành phần trang trí (`EmptyTrailScene`, `CompassBadge`, họa tiết nền) gắn `aria-hidden="true"` và `pointer-events: none`.
-  - Bản đồ có thông tin (`JourneyMapSvg`) gắn `role="img"` và `aria-label` tiếng Việt mô tả bản đồ 5 chặng, vẫn đặt `pointer-events: none` để không chặn thao tác chạm/chuột.
-- **Chuyển động:**
-  - Chỉ animate `transform`, `opacity` (và bóng nhấn nút/thẻ), thời lượng `160–280 ms`, đường cong `cubic-bezier(0.22, 1, 0.36, 1)`.
-  - Tôn trọng `@media (prefers-reduced-motion: reduce)` để tắt hiệu ứng chuyển động.
-  - Không đặt `position: fixed` bên trong phần tử có `.vm-page-enter` (vì `.vm-page-enter` dùng `transform`).
-
----
-
-## 6. Class tiện ích mới & Lớp cầu nối `.sb-legacy`
-
-- **Class Storybook mới (`src/index.css`):**
-  - `.sb-font-display`, `.sb-card`, `.sb-card-interactive`, `.sb-panel`, `.sb-sticker`, `.sb-btn-ink`, `.sb-paper-note`.
-  - `.sb-legacy`: lớp bọc tạm trong `App.jsx` cho 6 tab chưa chuyển (`Vocabulary`, `Flashcard`, `Smart Quiz`, `Listening`, `Grammar`, `Dictation`). Đặt lại nền tối (`#070b14`), chữ sáng (`#f8fafc`), các biến CSS `--bg-*`/`--text-*`/`--border-*` cũ trong khung bo góc viền mực. **Không** gắn `transform`, `filter`, `backdrop-filter`, `contain: paint`, hay `overflow: hidden` lên `.sb-legacy` để các popup `position: fixed` trong Grammar vẫn neo đúng theo cửa sổ trình duyệt.
-- **Class `.vm-*` cũ giữ nguyên tên:** `.field`, `.vm-panel`, `.vm-card`, `.vm-card-interactive`, `.vm-btn`, `.vm-btn-primary`, `.vm-btn-violet`, `.vm-input`, `.vm-skeleton`, `.progress-fill`, `.perspective-1000`, `.preserve-3d`, `.backface-hidden`, `.rotate-y-180`, `.vm-flip-inner`, `.animate-fade-in`, `.animate-slide-in`, `.vm-page-enter`, `.vm-toast-enter`, `.vm-scale-in`, `.vm-feedback-in`, `.vm-pulse-soft`.
-
----
-
-## 7. Lộ trình các giai đoạn sau
+## 6. Lộ trình các giai đoạn sau
 
 - **Giai đoạn 2:** Chuyển giao diện `Vocabulary` (Làng từ vựng) + `Flashcard` (Trạm thẻ), gỡ `.sb-legacy` khỏi 2 tab này.
-- **Giai đoạn 3:** Chuyển giao diện `Quiz` (Thử thách) + `ListeningReview` (Đài nghe hải đăng) & phần dùng chung `listening/`, giữ nguyên khung ảnh quiz và đo vị trí.
+- **Giai đoạn 3:** Chuyển giao diện `Quiz` (Thử thách) + `ListeningReview` (Đài nghe hải đăng), giữ nguyên khung ảnh quiz và đo vị trí.
 - **Giai đoạn 4:** Chuyển giao diện `Grammar` (Tháp cấu trúc) và các tab con, giữ nguyên logic đo hình học gạch chân/ghi chú.
-- **Giai đoạn 5:** Chuyển giao diện `Dictation` (Xưởng chép chính tả), gỡ hoàn toàn `.sb-legacy` và dọn các biến/class nền tối không còn dùng.
+- **Giai đoạn 5:** Chuyển giao diện `Dictation` (Xưởng chép chính tả), gỡ hoàn toàn `.sb-legacy` và dọn các biến/class cũ.
