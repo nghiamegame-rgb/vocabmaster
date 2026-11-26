@@ -4,6 +4,14 @@
 
 > **Cập nhật 2026-11-25 (đêm):** `feat/voice-picker` và `feat/export-sentences-only` **đã ghép vào `main`** (`ab94f57`) và đã push. Nhánh `feat/dictation-word-listening` sau đó cũng đã ghép (`652765f`) và push; xem mục 20.
 
+## 22. Grammar → Ôn tập: nút "Nghe câu" + "Giọng đọc" — 2026-11-26
+
+- Nhánh `feat/grammar-review-speak` tách từ `main` (`21433b1`), **chưa ghép/push/deploy**.
+- `src/components/grammar/GrammarReview.jsx`: thêm hàng nút **"Nghe câu"** (`#grammar-review-speak`, gọi `speakWithSettings(getGrammarSentence(q), { itemKey: 'grammar-review:' + q.savedId })`) và `<VoiceSettings />` ngay trên thẻ câu trong phiên ôn (bên ngoài `GrammarSentenceCard`, không đụng DOM/đo gạch chân). Câu rỗng chỉ ẩn nút "Nghe câu", giữ `<VoiceSettings />`. Không tự đọc khi sang câu mới; dừng tiếng đọc khi bấm "Câu tiếp"/"Hoàn tất", "Kết thúc phiên", bắt đầu lại hoặc unmount.
+- Bổ sung `globalThis.window ??= {}` ở 2 test Node SSR cũ (`grammar-store-app.test.js`, `grammar-topic.test.js`) do `GrammarReview` nay import chuỗi `VoiceSettings`/`voiceSpeech` → `audio.js`. Thêm test trình duyệt `test/grammar-review-speak-browser.test.js`.
+- **Kiểm tra:** `npm.cmd run build` đạt (JS chính 541,94 kB, CSS 108,85 kB); `npm.cmd run lint` 0 lỗi / 32 cảnh báo sẵn có; `npm.cmd test` **42/42**; 8 test trình duyệt **8/8** đạt (`grammar-review-speak-browser`, `grammar-review-browser`, `grammar-review-notes-persist-browser`, `sentence-notes-browser`, `underline-rendering`, `grammar-topic-browser`, `voice-settings-browser`, `navbar-sync-chip-browser`).
+- **Chưa kiểm chứng:** điện thoại thật, giọng đọc thật, Safari/iOS.
+
 ## 21. Dictation: chọn độ khó prompt AI A1–B2 + đơn giản hóa Từ đã lưu — 2026-11-26
 
 - Nhánh `feat/dictation-levels-simple-words` tách từ `main` (`15ccb24`), **chưa ghép/push/deploy**.

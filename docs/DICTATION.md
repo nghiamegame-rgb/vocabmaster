@@ -144,7 +144,7 @@ Theo mẫu Structures:
 
 ## 10. Giọng đọc và Chế độ thi (từ nhánh `feat/voice-picker`, đã vào `main`)
 
-Dùng chung cho **Dictation** (luyện câu, bấm từ, "Từ đã lưu") và **Listening** (cả hai nguồn). Flashcard, Vocabulary và Smart Quiz **không đổi**: vẫn gọi `playAudio` với giọng en-US mặc định, tốc độ 0.9. Test trên giả lập, **chưa nghe thử giọng thật trên điện thoại/Safari/Firefox**.
+Dùng chung cho **Dictation** (luyện câu, bấm từ, "Từ đã lưu"), **Listening** (cả hai nguồn) và **Grammar → Ôn tập** (nút "Nghe câu" + nút "Giọng đọc", `itemKey` dạng `grammar-review:<savedId>`, từ nhánh `feat/grammar-review-speak`). Flashcard, Vocabulary và Smart Quiz **không đổi**: vẫn gọi `playAudio` với giọng en-US mặc định, tốc độ 0.9. Test trên giả lập, **chưa nghe thử giọng thật trên điện thoại/Safari/Firefox**.
 
 **File**
 
