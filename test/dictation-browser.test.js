@@ -110,12 +110,19 @@ try {
   await page.locator('#dictation-cell-3').click();
   assert.equal(await page.locator('#dictation-counter').innerText(), 'Câu 3/3');
 
-  // ── Saved words ──
+  // ── Saved words (word-only cards; no sentence, lesson title, or listen counts displayed) ──
   await page.locator('#dictation-section-words').click();
   await page.locator('#dictation-words-view-list').click(); // practice is the default view
   await page.locator('#dictation-word-weather').waitFor();
-  assert.match(await page.locator('#dictation-word-weather').innerText(), /The weather is nice today\./);
-  assert.match(await page.locator('#dictation-word-weather').innerText(), /Bài: Bài thử/);
+  const weatherCardText = await page.locator('#dictation-word-weather').innerText();
+  assert.match(weatherCardText, /weather/i);
+  assert.ok(!weatherCardText.includes('The weather is nice today.'), 'source sentence must not be shown');
+  assert.ok(!weatherCardText.includes('Bài thử'), 'lesson title must not be shown');
+  assert.ok(!weatherCardText.includes('nghe đúng'), 'listen counts must not be shown in word list');
+  const savedWeather = await page.evaluate(() => JSON.parse(localStorage.getItem('vocabmaster_dictation_data')).words.find(w => w.id === 'weather'));
+  assert.equal(savedWeather.sentence, '');
+  assert.equal(savedWeather.sentenceId, '');
+  assert.equal(savedWeather.lessonTitle, '');
   await page.locator('#dictation-word-search').fill('zzz');
   await page.getByText('Không có từ khớp').waitFor();
   await page.locator('#dictation-word-search').fill('');
@@ -151,7 +158,7 @@ try {
   await page.locator('#nav-tab-dictation').click();
   await page.locator('#dictation-section-words').click();
   await page.locator('#dictation-words-view-list').click(); // practice is the default view
-  assert.match(await page.locator('#dictation-word-weather').innerText(), /nghe đúng 1 · sai 1/);
+  assert.ok(!(await page.locator('#dictation-word-weather').innerText()).includes('nghe đúng'), 'word list stays clean without listen counts');
 
   // ── Reload keeps everything; vocabulary store untouched ──
   await page.reload();

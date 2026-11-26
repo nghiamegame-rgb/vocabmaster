@@ -5,37 +5,22 @@ import { listenTotals } from './dictationSyncMerge.js';
 import { shuffle } from './wordSelection.js';
 
 export const MAX_CHOICES = 4;
-/** Lesson filter values: '' = every lesson, NO_LESSON = words without a lesson name. */
-export const ALL_LESSONS = '';
-export const NO_LESSON = '-';
-const lessonValue = word => (String(word.lessonTitle ?? '').trim() ? `t:${String(word.lessonTitle).trim()}` : NO_LESSON);
 
 const heardWrong = word => listenTotals(word).wrong > 0;
 const neverPractised = word => { const t = listenTotals(word); return t.correct + t.wrong === 0; };
 
-/**
- * What the filter panel can offer. A filter with nothing to work on is not offered:
- * `lessons` is empty when no word has a lesson name.
- */
+/** What the filter panel can offer. */
 export function practiceFilterOptions(words) {
-  const counts = new Map();
-  for (const word of words) counts.set(lessonValue(word), (counts.get(lessonValue(word)) || 0) + 1);
-  const named = [...counts.keys()].filter(value => value !== NO_LESSON)
-    .sort((a, b) => a.localeCompare(b, 'vi', { numeric: true }));
-  const lessons = named.map(value => ({ value, label: value.slice(2), count: counts.get(value) }));
-  if (lessons.length && counts.has(NO_LESSON)) lessons.push({ value: NO_LESSON, label: '(Không rõ bài)', count: counts.get(NO_LESSON) });
   return {
-    lessons,
     wrongCount: words.filter(heardWrong).length,
     newCount: words.filter(neverPractised).length,
   };
 }
 
 /** Words matching every active filter. */
-export function filterPracticeWords(words, { lesson = ALL_LESSONS, wrongOnly = false, newOnly = false } = {}) {
+export function filterPracticeWords(words, { wrongOnly = false, newOnly = false } = {}) {
   return words.filter(word =>
-    (lesson === ALL_LESSONS || lessonValue(word) === lesson)
-    && (!wrongOnly || heardWrong(word))
+    (!wrongOnly || heardWrong(word))
     && (!newOnly || neverPractised(word)));
 }
 

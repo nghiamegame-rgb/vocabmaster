@@ -40,26 +40,30 @@ test('results: last result wins, attempts counted per device', () => {
   assert.deepEqual(lessonProgress(lessonsOf(data)[0]), { correct: 1, wrong: 0, todo: 1 });
 });
 
-test('saveWord: lower-case id, no duplicate record, tombstone and re-save', () => {
+test('saveWord: lower-case id, no sentence/lesson stored, no duplicate record, tombstone and re-save', () => {
   let { data } = lesson();
-  const sentence = data.sentences[0];
-  let r = saveWord(data, { word: 'Hello,', sentence }, 3000);
+  let r = saveWord(data, 'Hello,', 3000);
   assert.equal(r.status, 'saved');
   data = r.data;
-  assert.deepEqual(data.words.map(w => [w.id, w.word, w.sentence, w.lessonTitle]), [['hello', 'Hello', 'Hello there.', 'Bài 1']]);
-  r = saveWord(data, { word: 'HELLO', sentence }, 3100);
+  assert.deepEqual(
+    data.words.map(w => [w.id, w.word, w.sentenceId, w.sentence, w.lessonTitle]),
+    [['hello', 'Hello', '', '', '']],
+  );
+  r = saveWord(data, 'HELLO', 3100);
   assert.equal(r.status, 'exists');
   assert.equal(r.data, data);
   data = recordWordListen(data, 'hello', true, 'devA');
   data = unsaveWord(data, 'hello', 4000);
   assert.equal(liveRecords(data.words).length, 0);
   assert.equal(data.words.length, 1, 'kept as tombstone');
-  data = saveWord(data, { word: 'hello', sentence }, 4000).data;
+  data = saveWord(data, 'hello', 4000).data;
   const w = data.words[0];
   assert.equal(w.deletedAt, undefined);
+  assert.equal(w.sentence, '');
+  assert.equal(w.lessonTitle, '');
   assert.ok(w.updatedAt > 4000);
   assert.deepEqual(listenTotals(w), { correct: 1, wrong: 0 }, 'listen counters survive re-save');
-  assert.equal(saveWord(data, { word: '—', sentence }).status, 'invalid');
+  assert.equal(saveWord(data, '—').status, 'invalid');
 });
 
 test('deleteLesson tombstones its sentences only', () => {
@@ -73,7 +77,7 @@ test('deleteLesson tombstones its sentences only', () => {
 test('merge is commutative and idempotent', () => {
   const base = lesson().data;
   let a = recordSentenceResult(base, 'L1_0', true, 'devA', 2000);
-  a = saveWord(a, { word: 'there', sentence: a.sentences[0] }, 2100).data;
+  a = saveWord(a, 'there', 2100).data;
   let b = recordSentenceResult(base, 'L1_1', false, 'devB', 2050);
   b = deleteLesson(b, 'L1', 2200);
   const ab = mergeDictationData(a, b);
@@ -89,7 +93,7 @@ test('an old device cannot revive deleted records', () => {
   const deleted = deleteLesson(old, 'L1', 9000);
   const merged = mergeDictationData(old, deleted);
   assert.equal(liveRecords(merged.sentences).length, 0);
-  let words = saveWord(old, { word: 'hello', sentence: old.sentences[0] }, 3000).data;
+  let words = saveWord(old, 'hello', 3000).data;
   const removed = unsaveWord(words, 'hello', 8000);
   assert.equal(liveRecords(mergeDictationData(words, removed).words).length, 0);
   assert.equal(liveRecords(mergeDictationData(removed, words).words).length, 0);
@@ -97,7 +101,7 @@ test('an old device cannot revive deleted records', () => {
 
 test('counters from two devices add up; replays do not double count', () => {
   let { data } = lesson();
-  data = saveWord(data, { word: 'hello', sentence: data.sentences[0] }, 3000).data;
+  data = saveWord(data, 'hello', 3000).data;
   let a = recordWordListen(data, 'hello', true, 'devA');
   a = recordWordListen(a, 'hello', false, 'devA');
   const b = recordWordListen(data, 'hello', true, 'devB');

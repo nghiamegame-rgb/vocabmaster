@@ -7,7 +7,7 @@ import {
   StatsBar, AutoFocusToggle, PromptCard, AnswerFeedback, AnswerGrid, SkipButton,
 } from '../listening/ListeningParts';
 import {
-  ALL_LESSONS, buildWordRound, createWordPicker, filterPracticeWords, isTypedWord, practiceFilterOptions,
+  buildWordRound, createWordPicker, filterPracticeWords, isTypedWord, practiceFilterOptions,
 } from '../../utils/dictationPractice';
 
 /** Long words get smaller text so they rarely have to break on narrow phones. */
@@ -58,7 +58,6 @@ function FilterSwitch({ id, label, count, checked, onToggle }) {
  */
 export default function DictationWordPractice({ store }) {
   const words = store.words;
-  const [lessonFilter, setLessonFilter] = useState(ALL_LESSONS);
   const [wrongOnly, setWrongOnly] = useState(false);
   const [newOnly, setNewOnly] = useState(false);
   const [picker] = useState(() => createWordPicker());
@@ -66,9 +65,7 @@ export default function DictationWordPractice({ store }) {
   const inputRef = useRef(null);
 
   const options = practiceFilterOptions(words);
-  // A lesson that no longer has saved words falls back to "every lesson".
-  const lesson = options.lessons.some(o => o.value === lessonFilter) ? lessonFilter : ALL_LESSONS;
-  const pool = filterPracticeWords(words, { lesson, wrongOnly, newOnly });
+  const pool = filterPracticeWords(words, { wrongOnly, newOnly });
   // Offered while it has something to select, and kept while switched on so it can be switched off.
   const showWrong = options.wrongCount > 0 || wrongOnly;
   const showNew = options.newCount > 0 || newOnly;
@@ -76,7 +73,7 @@ export default function DictationWordPractice({ store }) {
   const game = useListeningGame({
     pool,
     minPool: 1,
-    resetKey: JSON.stringify([lesson, wrongOnly, newOnly]),
+    resetKey: JSON.stringify([wrongOnly, newOnly]),
     holdFeedback: true,
     buildRound: (current, previousId) => buildWordRound({ pool: current, words, previousId, picker }),
     textOf: word => word.word,
@@ -113,20 +110,8 @@ export default function DictationWordPractice({ store }) {
       </div>
 
       {/* ── Filters (only those the saved words can use) ── */}
-      {(options.lessons.length > 0 || showWrong || showNew) && (
+      {(showWrong || showNew) && (
         <div id="dictation-practice-filters" className="vm-panel rounded-2xl p-4 sm:p-5 mb-6 space-y-3.5">
-          {options.lessons.length > 0 && (
-            <label className="block">
-              <span className="block text-slate-300 text-xs font-semibold uppercase tracking-wider mb-2">Tên bài</span>
-              <select
-                id="dictation-practice-lesson" value={lesson} onChange={e => setLessonFilter(e.target.value)}
-                className="w-full vm-input rounded-xl px-3 py-2 text-base sm:text-sm"
-              >
-                <option value={ALL_LESSONS}>Tất cả bài ({words.length})</option>
-                {options.lessons.map(o => <option key={o.value} value={o.value}>{o.label} ({o.count})</option>)}
-              </select>
-            </label>
-          )}
           {showWrong && <FilterSwitch id="dictation-practice-wrong" label="Chỉ từ hay nghe sai" count={options.wrongCount} checked={wrongOnly} onToggle={() => setWrongOnly(v => !v)} />}
           {showNew && <FilterSwitch id="dictation-practice-new" label="Chưa luyện" count={options.newCount} checked={newOnly} onToggle={() => setNewOnly(v => !v)} />}
         </div>
@@ -145,7 +130,7 @@ export default function DictationWordPractice({ store }) {
               <p className="text-amber-200 text-sm">Không còn từ nào khớp bộ lọc.</p>
               <button
                 id="dictation-practice-clear" type="button"
-                onClick={() => { setLessonFilter(ALL_LESSONS); setWrongOnly(false); setNewOnly(false); }}
+                onClick={() => { setWrongOnly(false); setNewOnly(false); }}
                 className="vm-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 border border-slate-400/20 text-white hover:bg-slate-700"
               >Bỏ bộ lọc</button>
             </div>

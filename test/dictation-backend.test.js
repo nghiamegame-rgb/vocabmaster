@@ -11,7 +11,7 @@ import { fetchDictationFromCloud, pushDictationToCloud } from '../src/utils/dict
 
 const lessonData = () => {
   let d = addLesson(emptyDictationData(), { title: 'Bài 1', items: [{ english: 'Hello there.', vietnamese: 'Xin chào.' }, { english: '=SUM(A1) is text', vietnamese: '' }], now: 1000, lessonId: 'L1' }).data;
-  d = saveWord(d, { word: 'Hello', sentence: d.sentences[0] }, 1100).data;
+  d = saveWord(d, 'Hello', 1100).data;
   return d;
 };
 
@@ -38,9 +38,24 @@ test('empty backend, first save, readable Vietnamese rows, JSON round trip', () 
   assert.equal(sentences.getRange(3, 3).getValue(), "'=SUM(A1) is text", 'formula-looking text is escaped');
   const words = b.sheets.get('Từ vựng');
   assert.deepEqual(words.getRange(1, 1, 1, 3).getValues()[0], ['Từ', 'Câu gốc', 'Tên bài']);
-  assert.deepEqual(words.getRange(2, 1, 1, 3).getValues()[0], ['Hello', 'Hello there.', 'Bài 1']);
+  assert.deepEqual(words.getRange(2, 1, 1, 3).getValues()[0], ['Hello', '', '']);
   assert.equal(b.sheets.get('Meta').getRange(1, 2).getValue(), 1);
   assert.equal(b.sheets.get('Meta').getRange(3, 2).getValue(), '', 'journal cleared');
+});
+
+test('words with empty sentence/lesson merge cleanly alongside legacy words with sentence/lesson', () => {
+  const b = dictationBackend();
+  const legacy = {
+    sentences: [],
+    words: [{ id: 'old', word: 'Old', sentenceId: 'L0_0', sentence: 'Old sentence.', lessonTitle: 'Bài cũ', savedAt: 500, updatedAt: 500 }],
+  };
+  assert.equal(b.save(legacy, 0).ok, true);
+  const fresh = saveWord(emptyDictationData(), 'Fresh', 1000).data;
+  const merged = mergeDictationData(fresh, b.get());
+  assert.equal(b.context.dictValidateData(JSON.parse(JSON.stringify(merged))), '');
+  assert.equal(b.save(merged, 1).ok, true);
+  const got = b.get();
+  assert.deepEqual(got.words.map(w => [w.id, w.sentence, w.lessonTitle]), [['old', 'Old sentence.', 'Bài cũ'], ['fresh', '', '']]);
 });
 
 test('CAS conflict, stale/partial payloads rejected, backup kept', () => {
@@ -80,7 +95,7 @@ test('server merge rules equal the client merge rules', () => {
   c = recordSentenceResult(c, 'L1_0', false, 'devB', 2500);
   c = recordWordListen(c, 'hello', false, 'devB');
   c = unsaveWord(c, 'hello', 2600);
-  c = saveWord(c, { word: 'there', sentence: c.sentences[0] }, 2700).data;
+  c = saveWord(c, 'there', 2700).data;
   const cases = [[a, c], [c, a], [a, a], [emptyDictationData(), c], [deleteLesson(a, 'L1', 3000), c]];
   for (const [x, y] of cases) {
     const client = mergeDictationData(x, y);

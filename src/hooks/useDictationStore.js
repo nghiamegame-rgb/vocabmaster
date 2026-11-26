@@ -144,18 +144,18 @@ export function useDictationStore({ url = DICTATION_SYNC_URL } = {}) {
   const recordSentenceResult = useCallback((sentenceId, isCorrect) =>
     Boolean(commit(current => recordResultIn(current, sentenceId, isCorrect, deviceId))), [commit, deviceId]);
 
-  const saveWord = useCallback((word, sentence) => {
+  const saveWord = useCallback(word => {
     let status = 'invalid';
-    const saved = commit(current => { const r = saveWordIn(current, { word, sentence }); status = r.status; return r.data; });
+    const saved = commit(current => { const r = saveWordIn(current, word); status = r.status; return r.data; });
     return saved ? status : 'error';
   }, [commit]);
 
   const unsaveWord = useCallback(wordId => Boolean(commit(current => unsaveWordIn(current, wordId))), [commit]);
 
-  const toggleWord = useCallback((word, sentence) => {
+  const toggleWord = useCallback(word => {
     const id = normalizeWord(word);
     const live = dataRef.current.words.find(w => w.id === id && !w.deletedAt);
-    return live ? (unsaveWord(id) ? 'removed' : 'error') : saveWord(word, sentence);
+    return live ? (unsaveWord(id) ? 'removed' : 'error') : saveWord(word);
   }, [saveWord, unsaveWord]);
 
   const recordWordListen = useCallback((wordId, isCorrect) =>

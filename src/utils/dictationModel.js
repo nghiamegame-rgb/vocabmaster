@@ -41,16 +41,17 @@ export function recordSentenceResult(data, sentenceId, isCorrect, deviceId, now 
 }
 
 /** Saves a word (identified by its lower-case form). An existing live word is left as is. */
-export function saveWord(data, { word, sentence }, now = Date.now()) {
-  const id = normalizeWord(word);
-  const shown = displayWord(word);
+export function saveWord(data, wordInput, now = Date.now()) {
+  const rawWord = typeof wordInput === 'string' ? wordInput : wordInput?.word;
+  const id = normalizeWord(rawWord);
+  const shown = displayWord(rawWord);
   if (!id || !shown) return { data, status: 'invalid' };
   const existing = data.words.find(w => w.id === id);
   if (existing && !existing.deletedAt) return { data, status: 'exists' };
   const record = {
     ...(existing?.listen ? { listen: existing.listen } : {}),
     id, word: shown.slice(0, 100),
-    sentenceId: sentence?.id || '', sentence: sentence?.english || '', lessonTitle: sentence?.lessonTitle || '',
+    sentenceId: '', sentence: '', lessonTitle: '',
     savedAt: now, updatedAt: bump(existing, now),
   };
   const words = existing ? data.words.map(w => w.id === id ? record : w) : [...data.words, record];

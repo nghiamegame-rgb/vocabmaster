@@ -23,8 +23,7 @@ function seed(lessons, results = []) {
   let data = emptyDictationData();
   lessons.forEach(({ title, words }, i) => {
     data = addLesson(data, { title, items: [{ english: words.join(' ') }], now: 1000 + i, lessonId: `L${i}` }).data;
-    const sentence = data.sentences.at(-1);
-    words.forEach((word, j) => { data = saveWord(data, { word, sentence }, 2000 + i * 100 + j).data; });
+    words.forEach((word, j) => { data = saveWord(data, word, 2000 + i * 100 + j).data; });
   });
   for (const [id, ok] of results) data = recordWordListen(data, id, ok, 'dev_seeded');
   return { schema: 1, sentences: data.sentences, words: data.words };
@@ -193,19 +192,8 @@ try {
       assert.deepEqual([right, wrong], totals[shown], `Sheet counters for ${shown}`);
     }
 
-    // Filter by lesson.
-    const options = await page.locator('#dictation-practice-lesson option').allInnerTexts();
-    assert.deepEqual(options, ['Tất cả bài (6)', 'Bài 1 (3)', 'Bài 2 (3)']);
-    since = await spokenCount(page);
-    await page.locator('#dictation-practice-lesson').selectOption({ label: 'Bài 2 (3)' });
-    await page.getByText('3 in pool', { exact: true }).waitFor();
-    for (let i = 0; i < 4; i++) {
-      await page.waitForFunction(n => window.__spoken.length > n, since);
-      assert.ok(['museum', 'airport', 'breakfast'].includes((await lastSpoken(page)).text));
-      since = await spokenCount(page);
-      await page.locator('#dictation-practice-next').click();
-    }
-    await page.locator('#dictation-practice-lesson').selectOption({ index: 0 });
+    // Lesson filter is removed (words are no longer tied to lessons).
+    assert.equal(await page.locator('#dictation-practice-lesson').count(), 0);
 
     // "Chỉ từ hay nghe sai": only words with a wrong count are asked.
     await page.locator('#dictation-practice-wrong').click();
@@ -225,8 +213,8 @@ try {
     await page.waitForTimeout(2200);
     assert.equal(await spokenCount(page), quiet);
     await page.locator('#dictation-word-search').fill('airp');
-    // Search also looks in the source sentence: the three words of Bài 2 share it.
-    assert.equal(await page.locator('li[id^="dictation-word-"]').count(), 3);
+    // Search matches only the word itself (not source sentence or lesson title).
+    assert.equal(await page.locator('li[id^="dictation-word-"]').count(), 1);
     await page.locator('#dictation-word-search').fill('');
     await page.getByRole('button', { name: 'Xoá từ airport' }).click();
     await page.locator('#dictation-word-airport').waitFor({ state: 'detached' });
@@ -268,7 +256,33 @@ try {
     console.log('  ✓ never-practised filter');
   }
 
-  // ── 1 and 2 words, no lesson names, nothing wrong yet ──
+  // ── Legacy words with sentence/lessonTitle still load, never show sentence/lesson in list, search by word only ──
+  {
+    const legacy = {
+      schema: 1,
+      sentences: [],
+      words: [
+        { id: 'lantern', word: 'lantern', sentenceId: 'L0_0', sentence: 'Carry a bright lantern tonight.', lessonTitle: 'Bài cũ 99', savedAt: 1000, updatedAt: 1000 },
+        { id: 'harbor', word: 'harbor', sentenceId: '', sentence: '', lessonTitle: '', savedAt: 2000, updatedAt: 2000 },
+      ],
+    };
+    const { context, page, errors } = await open(legacy);
+    await page.locator('#dictation-words-view-list').click();
+    await page.locator('#dictation-word-lantern').waitFor();
+    const cardText = await page.locator('#dictation-word-lantern').innerText();
+    assert.match(cardText, /lantern/);
+    assert.ok(!cardText.includes('Carry a bright'), 'legacy sentence is hidden in list');
+    assert.ok(!cardText.includes('Bài cũ 99'), 'legacy lesson title is hidden in list');
+    await page.locator('#dictation-word-search').fill('Carry');
+    await page.getByText('Không có từ khớp').waitFor();
+    await page.locator('#dictation-word-search').fill('lant');
+    assert.equal(await page.locator('li[id^="dictation-word-"]').count(), 1);
+    assert.deepEqual(errors, []);
+    await context.close();
+    console.log('  ✓ legacy words with sentence/lesson hidden in list; search by word only');
+  }
+
+  // ── 1 and 2 words, nothing wrong yet ──
   for (const words of [['hello'], ['hello', 'world']]) {
     const data = seed([{ title: 'Bài', words }]);
     data.words.forEach(w => { w.lessonTitle = ''; });

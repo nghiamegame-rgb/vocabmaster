@@ -371,7 +371,7 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
                   <button type="button" onMouseDown={keepTyping} onClick={() => speak(token.text, voiceItem)} className="px-2 py-1 hover:text-indigo-200" title="Nghe từ này">{token.text}</button>
                   <button
                     type="button" onMouseDown={keepTyping} onClick={() => {
-                      const status = store.toggleWord(token.text, sentence);
+                      const status = store.toggleWord(token.text);
                       if (status === 'error') setNotice('Chưa lưu được từ trên thiết bị.');
                     }}
                     aria-pressed={saved} aria-label={saved ? `Bỏ lưu từ ${normalizeWord(token.text)}` : `Lưu từ ${normalizeWord(token.text)}`}

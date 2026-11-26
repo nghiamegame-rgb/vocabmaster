@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   practiceFilterOptions, filterPracticeWords, createWordPicker, buildWordRound, isTypedWord,
-  ALL_LESSONS, NO_LESSON, MAX_CHOICES,
+  MAX_CHOICES,
 } from '../src/utils/dictationPractice.js';
 import { emptyDictationData, addLesson, saveWord, unsaveWord, recordWordListen } from '../src/utils/dictationModel.js';
 import { liveRecords, listenTotals, mergeDictationData, validateDictationData } from '../src/utils/dictationSyncMerge.js';
@@ -12,7 +12,7 @@ import { normalizeWord } from '../src/utils/dictationCheck.js';
 
 function dataWith(words, lessonTitle = 'Bài 1') {
   let data = addLesson(emptyDictationData(), { title: lessonTitle, items: [{ english: words.join(' ') || 'x' }], now: 1000, lessonId: 'L1' }).data;
-  words.forEach((word, i) => { data = saveWord(data, { word, sentence: data.sentences[0] }, 2000 + i).data; });
+  words.forEach((word, i) => { data = saveWord(data, word, 2000 + i).data; });
   return data;
 }
 const live = data => liveRecords(data.words);
@@ -100,33 +100,25 @@ test('typed answer: case, punctuation and apostrophe style ignored; empty never 
   assert.equal(isTypedWord('', word('x', { word: '—' })), false);
 });
 
-test('filters: lesson, heard wrong, never practised (combined as an intersection)', () => {
+test('filters: heard wrong, never practised (combined as an intersection)', () => {
   const words = [
-    word('a', { lessonTitle: 'Bài 10' }),
-    word('b', { lessonTitle: 'Bài 2', listen: { d: { correct: 1, wrong: 0 } } }),
-    word('c', { lessonTitle: 'Bài 2', listen: { d: { correct: 0, wrong: 2 }, e: { correct: 1, wrong: 0 } } }),
+    word('a'),
+    word('b', { listen: { d: { correct: 1, wrong: 0 } } }),
+    word('c', { listen: { d: { correct: 0, wrong: 2 }, e: { correct: 1, wrong: 0 } } }),
     word('d'),
   ];
   const options = practiceFilterOptions(words);
-  assert.deepEqual(options.lessons.map(o => [o.label, o.count]), [['Bài 2', 2], ['Bài 10', 1], ['(Không rõ bài)', 1]]);
-  assert.equal(options.wrongCount, 1);
-  assert.equal(options.newCount, 2);
-  const lesson2 = options.lessons[0].value;
+  assert.deepEqual(options, { wrongCount: 1, newCount: 2 });
   assert.deepEqual(ids(filterPracticeWords(words)), ['a', 'b', 'c', 'd']);
-  assert.deepEqual(ids(filterPracticeWords(words, { lesson: lesson2 })), ['b', 'c']);
-  assert.deepEqual(ids(filterPracticeWords(words, { lesson: NO_LESSON })), ['d']);
   assert.deepEqual(ids(filterPracticeWords(words, { wrongOnly: true })), ['c']);
   assert.deepEqual(ids(filterPracticeWords(words, { newOnly: true })), ['a', 'd']);
-  assert.deepEqual(ids(filterPracticeWords(words, { lesson: lesson2, wrongOnly: true })), ['c']);
   assert.deepEqual(filterPracticeWords(words, { wrongOnly: true, newOnly: true }), []);
-  assert.equal(ALL_LESSONS, '');
 });
 
 test('missing data: filters are not offered and nothing breaks', () => {
-  assert.deepEqual(practiceFilterOptions([]), { lessons: [], wrongCount: 0, newCount: 0 });
-  const bare = [{ id: 'x', word: 'x' }, { id: 'y', word: 'y', lessonTitle: '   ', listen: {} }, { id: 'z', word: 'z', lessonTitle: null, listen: { d: {} } }];
+  assert.deepEqual(practiceFilterOptions([]), { wrongCount: 0, newCount: 0 });
+  const bare = [{ id: 'x', word: 'x' }, { id: 'y', word: 'y', listen: {} }, { id: 'z', word: 'z', listen: { d: {} } }];
   const options = practiceFilterOptions(bare);
-  assert.deepEqual(options.lessons, []);
   assert.equal(options.wrongCount, 0);
   assert.equal(options.newCount, 3);
   assert.equal(filterPracticeWords(bare, { newOnly: true }).length, 3);
