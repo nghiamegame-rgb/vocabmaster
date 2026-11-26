@@ -89,19 +89,19 @@ export default function GrammarSaved({
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/25 ring-1 ring-white/15">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--sb-ochre)] to-[var(--sb-terracotta-strong)] border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)] flex items-center justify-center">
             <Bookmark size={20} className="text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-bold tracking-tight text-white">Câu đã lưu</h2>
-            <p className="text-slate-300 text-sm">{savedQuestions.length} câu đã lưu</p>
+            <h2 className="sb-heading text-xl font-bold tracking-tight text-[var(--sb-ink)]">Câu đã lưu</h2>
+            <p className="text-[var(--sb-ink-soft)] text-sm">{savedQuestions.length} câu đã lưu</p>
           </div>
         </div>
         {/* Cloud / Local badge */}
         <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border ${
           cloudConfigured
-            ? 'bg-emerald-500/12 text-emerald-300 border-emerald-400/30'
-            : 'bg-slate-800/70 text-slate-300 border-slate-400/20'
+            ? 'bg-[var(--sb-forest-soft)] text-[var(--sb-forest-text)] border-[var(--sb-forest)]'
+            : 'bg-[var(--sb-paper-card)] text-[var(--sb-ink)] border-[var(--sb-ink-border)]'
         }`}>
           {cloudConfigured ? <Cloud size={13} /> : <HardDrive size={13} />}
           {cloudConfigured ? 'Cloud Sync' : 'Lưu cục bộ'}
@@ -112,7 +112,7 @@ export default function GrammarSaved({
       <div className="vm-panel rounded-2xl p-4 space-y-3">
         {/* Search */}
         <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sb-ink-soft)] pointer-events-none" />
           <input
             type="text"
             value={search}
@@ -121,20 +121,20 @@ export default function GrammarSaved({
             className="w-full vm-input rounded-xl pl-9 pr-9 py-2.5 text-sm"
           />
           {search && (
-            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors">
+            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--sb-ink-soft)] hover:text-[var(--sb-ink)] transition-colors">
               <X size={14} />
             </button>
           )}
         </div>
 
         <div className="flex flex-wrap gap-2 items-center">
-          <Filter size={14} className="text-slate-400 shrink-0" />
+          <Filter size={14} className="text-[var(--sb-ink-soft)] shrink-0" />
 
           {/* Topic filter */}
           <select
             value={topicFilter}
             onChange={e => setTopicFilter(e.target.value)}
-            className="vm-input text-slate-200 rounded-xl px-3 py-1.5 text-xs"
+            className="vm-input rounded-xl px-3 py-1.5 text-xs"
           >
             <option value="All">Tất cả chủ đề</option>
             {getAvailableTopics(savedQuestions.filter(q => typeof q.topic === 'string')).map(t => (
@@ -147,31 +147,31 @@ export default function GrammarSaved({
             onClick={() => setHardOnly(v => !v)}
             className={`vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border ${
               hardOnly
-                ? 'bg-amber-500/20 text-amber-200 border-amber-400/45 shadow-sm shadow-amber-500/15'
-                : 'bg-slate-900/75 text-slate-300 hover:text-white border-slate-400/20'
+                ? 'bg-[var(--sb-ochre-soft)] text-[var(--sb-ochre-text)] border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)]'
+                : 'bg-[var(--sb-paper-card)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)] border-[var(--sb-ink-border)]'
             }`}
           >
             {hardOnly ? <Star size={12} /> : <StarOff size={12} />}
             Khó (⭐)
           </button>
 
-          <span className="ml-auto text-slate-300 text-xs">{filtered.length} kết quả</span>
+          <span className="ml-auto text-[var(--sb-ink-soft)] text-xs font-medium">{filtered.length} kết quả</span>
         </div>
       </div>
 
       {/* Empty state */}
       {savedQuestions.length === 0 && (
         <div className="text-center py-16">
-          <Bookmark size={48} className="text-slate-500 mx-auto mb-4" />
-          <h3 className="text-slate-300 font-medium mb-2">Chưa có câu hỏi nào được lưu</h3>
-          <p className="text-slate-400 text-sm">Trong khi luyện tập, nhấn nút ⭐ để lưu câu hỏi hay hoặc khó.</p>
+          <Bookmark size={48} className="text-[var(--sb-ink-soft)] mx-auto mb-4" />
+          <h3 className="text-[var(--sb-ink)] font-semibold mb-2">Chưa có câu hỏi nào được lưu</h3>
+          <p className="text-[var(--sb-ink-soft)] text-sm">Trong khi luyện tập, nhấn nút ⭐ để lưu câu hỏi hay hoặc khó.</p>
         </div>
       )}
 
       {filtered.length === 0 && savedQuestions.length > 0 && (
         <div className="text-center py-10">
-          <Search size={36} className="text-slate-500 mx-auto mb-3" />
-          <p className="text-slate-300 text-sm">Không tìm thấy câu hỏi phù hợp với bộ lọc.</p>
+          <Search size={36} className="text-[var(--sb-ink-soft)] mx-auto mb-3" />
+          <p className="text-[var(--sb-ink-soft)] text-sm">Không tìm thấy câu hỏi phù hợp với bộ lọc.</p>
         </div>
       )}
 
@@ -188,7 +188,7 @@ export default function GrammarSaved({
               key={q.savedId}
               data-grammar-sentence-card=""
               className={`vm-panel rounded-2xl overflow-hidden transition-colors duration-200 ${
-                q.hardMarked ? 'border-amber-400/45' : ''
+                q.hardMarked ? 'border-[var(--sb-ochre)]' : ''
               }`}
             >
               {/* Card header */}
@@ -199,7 +199,7 @@ export default function GrammarSaved({
                     onClick={() => onToggleHard(q.savedId)}
                     title={q.hardMarked ? 'Bỏ đánh dấu khó' : 'Đánh dấu là khó'}
                     className={`mt-0.5 shrink-0 transition-colors duration-200 ${
-                      q.hardMarked ? 'text-amber-400' : 'text-slate-400 hover:text-amber-300'
+                      q.hardMarked ? 'text-[var(--sb-ochre-text)]' : 'text-[var(--sb-ink-soft)] hover:text-[var(--sb-ochre-text)]'
                     }`}
                   >
                     <Star size={16} fill={q.hardMarked ? 'currentColor' : 'none'} />
@@ -210,15 +210,15 @@ export default function GrammarSaved({
                     <div className="flex flex-wrap gap-1.5 mb-2">
                       <GrammarTopicBadge question={q} />
                       {/* Review level */}
-                      <span className="px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-300 text-xs font-medium border border-indigo-400/25">
+                      <span className="px-2 py-0.5 rounded-md bg-[var(--sb-sky-soft)] text-[var(--sb-sky-text)] text-xs font-semibold border border-[var(--sb-sky)]/35">
                         Ôn L{level}
                       </span>
                       {wrongs > 0 && (
-                        <span className="px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-300 text-xs font-medium border border-rose-400/25">
+                        <span className="px-2 py-0.5 rounded-md bg-[var(--sb-berry-soft)] text-[var(--sb-berry-text)] text-xs font-semibold border border-[var(--sb-berry)]/35">
                           Cần ôn lại / sai {wrongs}×
                         </span>
                       )}
-                      <span className="px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-300 text-xs border border-slate-400/15">
+                      <span className="px-2 py-0.5 rounded-md bg-[var(--sb-paper-deep)] text-[var(--sb-ink-soft)] text-xs border border-[var(--sb-ink-border)]">
                         {getNextReview(q.savedId)}
                       </span>
                     </div>
@@ -230,19 +230,19 @@ export default function GrammarSaved({
                       onUnderlineChange={onUnderlineChange
                         ? (start, end, color) => onUnderlineChange(q.savedId, start, end, color)
                         : undefined}
-                      className="text-white text-sm leading-relaxed break-words"
+                      className="text-[var(--sb-ink)] font-medium text-sm leading-relaxed break-words"
                       readOnly={!onUnderlineChange}
                       sentenceKey={q.savedId} notes={notesForSentence(sentenceNotes, q.savedId, getGrammarSentence(q))}
                       onNoteChange={onNoteChange ? draft => onNoteChange(q.savedId, getGrammarSentence(q), draft) : undefined}
                     />
 
                     <button type="button" aria-expanded={Boolean(open)} onClick={() => setExpanded(p => ({ ...p, [q.savedId]: !p[q.savedId] }))}
-                      className="text-violet-300 text-sm font-medium mt-2 hover:text-violet-200 transition-colors">
+                      className="text-[var(--sb-terracotta-text)] text-sm font-semibold mt-2 hover:text-[var(--sb-terracotta-hover)] transition-colors">
                       {open ? 'Ẩn phân tích' : 'Hiện phân tích'}
                     </button>
 
                     {/* Saved date */}
-                    <p className="text-slate-400 text-xs mt-1">
+                    <p className="text-[var(--sb-ink-soft)] text-xs mt-1">
                       Đã lưu: {new Date(q.savedAt).toLocaleDateString('vi-VN')}
                     </p>
                   </div>
@@ -253,14 +253,14 @@ export default function GrammarSaved({
                       aria-label={open ? 'Ẩn phân tích' : 'Hiện phân tích'}
                       aria-expanded={Boolean(open)}
                       onClick={() => setExpanded(p => ({ ...p, [q.savedId]: !p[q.savedId] }))}
-                      className="vm-btn p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800"
+                      className="vm-btn p-1.5 rounded-lg text-[var(--sb-ink-soft)] hover:text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)]"
                     >
                       {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </button>
                     {/* Delete */}
                     <button
                       onClick={() => onUnsave(q.savedId)}
-                      className="vm-btn p-1.5 rounded-lg text-slate-300 hover:text-rose-300 hover:bg-rose-500/15"
+                      className="vm-btn p-1.5 rounded-lg text-[var(--sb-ink-soft)] hover:text-[var(--sb-berry-text)] hover:bg-[var(--sb-berry-soft)]"
                       title="Xoá khỏi thư viện"
                     >
                       <Trash2 size={16} />
@@ -271,11 +271,11 @@ export default function GrammarSaved({
 
               {/* Expanded details */}
               {open && (
-                <div className="border-t border-slate-400/15 bg-slate-950/35 p-4 space-y-3 animate-fade-in">
+                <div className="border-t border-[var(--sb-ink-border)] bg-[var(--sb-paper-warm)] p-4 space-y-3 animate-fade-in">
                   <GrammarAnalysis question={q} onQuickAdd={onQuickAdd} analysisTopic={topicFilter === 'All' ? undefined : topicFilter} />
 
                   {/* User notes */}
-                  <div className="border-t border-slate-400/15 pt-3">
+                  <div className="border-t border-[var(--sb-ink-border)] pt-3">
                     {editingNote === q.savedId ? (
                       <div className="space-y-2">
                         <textarea
@@ -294,7 +294,7 @@ export default function GrammarSaved({
                           </button>
                           <button
                             onClick={() => setEditingNote(null)}
-                            className="vm-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 border border-slate-400/20 text-slate-300 hover:text-white"
+                            className="vm-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[var(--sb-paper-card)] border-2 border-[var(--sb-ink-border)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)]"
                           >
                             Huỷ
                           </button>
@@ -303,7 +303,7 @@ export default function GrammarSaved({
                     ) : (
                       <button
                         onClick={() => startEditNote(q)}
-                        className="flex items-center gap-1.5 text-slate-300 hover:text-white text-xs transition-colors"
+                        className="flex items-center gap-1.5 text-[var(--sb-ink-soft)] hover:text-[var(--sb-ink)] font-medium text-xs transition-colors"
                       >
                         <StickyNote size={13} />
                         {q.userNotes ? q.userNotes : 'Thêm ghi chú...'}

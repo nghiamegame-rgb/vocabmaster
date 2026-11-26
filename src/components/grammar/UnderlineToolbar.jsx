@@ -49,7 +49,7 @@ export default function UnderlineToolbar({ position, onColor, onClose, onNote })
       style={style}
       role="toolbar"
       aria-label="Gạch chân màu"
-      className="flex flex-wrap items-center gap-1 px-2 py-1.5 rounded-xl bg-slate-800 border border-slate-600/80 shadow-2xl shadow-black/60"
+      className="flex flex-wrap items-center gap-1 px-2 py-1.5 rounded-xl bg-[var(--sb-paper-card)] border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-md)]"
       // Prevent mousedown from clearing selection
       onMouseDown={e => e.preventDefault()}
     >
@@ -60,18 +60,18 @@ export default function UnderlineToolbar({ position, onColor, onClose, onNote })
           title={UNDERLINE_COLORS[key].label}
           aria-label={UNDERLINE_COLORS[key].label}
           onClick={() => onColor(key)}
-          className={`w-6 h-6 rounded-full border-2 ${key === 'white' ? 'border-slate-300/60' : 'border-transparent'} hover:border-white/60 transition-all duration-150 focus:outline-none focus:border-white`}
+          className={`w-6 h-6 rounded-full border-2 ${key === 'white' ? 'border-[var(--sb-ink)]/50' : 'border-[var(--sb-ink-border)]'} hover:border-[var(--sb-ink)] transition-all duration-150 focus:outline-none focus:border-[var(--sb-ink)]`}
           style={{ backgroundColor: UNDERLINE_COLORS[key].hex }}
         />
       ))}
-      <div className="w-px h-4 bg-slate-600 mx-0.5" aria-hidden="true" />
-      {onNote && <button type="button" onClick={onNote} className="px-2 py-0.5 rounded-lg text-xs font-semibold text-indigo-200 hover:bg-slate-700">Ghi chú</button>}
+      <div className="w-px h-4 bg-[var(--sb-ink-border)] mx-0.5" aria-hidden="true" />
+      {onNote && <button type="button" onClick={onNote} className="px-2 py-0.5 rounded-lg text-xs font-semibold text-[var(--sb-terracotta-text)] hover:bg-[var(--sb-paper-deep)]">Ghi chú</button>}
       <button
         type="button"
         title="Bỏ gạch chân"
         aria-label="Bỏ gạch chân"
         onClick={() => onColor(null)}
-        className="px-2 py-0.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-700 transition-colors focus:outline-none focus:bg-slate-700"
+        className="px-2 py-0.5 rounded-lg text-xs font-semibold text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)] transition-colors focus:outline-none focus:bg-[var(--sb-paper-deep)]"
       >
         Bỏ
       </button>

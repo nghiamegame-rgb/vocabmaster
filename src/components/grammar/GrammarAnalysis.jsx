@@ -9,23 +9,23 @@ import GrammarTopicBadge from './GrammarTopicBadge';
 export function GrammarAnalysis({ question: q, onQuickAdd, analysisTopic }) {
   const detail = q.detailedExplanation;
   const points = isSentenceAnalysis(q) ? getQuickGrammarPoints(q, analysisTopic) : [];
-  return <div className="space-y-4 text-sm text-slate-300 leading-relaxed break-words">
-    <p className="text-slate-400 italic">{q.vietnameseSentence}</p>
+  return <div className="space-y-4 text-sm text-[var(--sb-ink)] leading-relaxed break-words">
+    <p className="text-[var(--sb-ink-soft)] italic">{q.vietnameseSentence}</p>
     {isSentenceAnalysis(q) ? <>
       <section className="space-y-2">
-        <h4 className="text-purple-300 font-semibold">Giải thích nhanh</h4>
+        <h4 className="text-[var(--sb-plum-text)] font-semibold">Giải thích nhanh</h4>
         {points.length ? <ul className="list-disc pl-5 space-y-2">
-          {points.map((point, i) => <li key={i}><span className="text-white font-medium">"{point.phrase}"</span>: {point.explanation}</li>)}
-        </ul> : <p className="text-slate-400">Bản ghi này chưa có giải thích phù hợp với chủ đề đang chọn.</p>}
+          {points.map((point, i) => <li key={i}><span className="text-[var(--sb-ink)] font-bold">"{point.phrase}"</span>: {point.explanation}</li>)}
+        </ul> : <p className="text-[var(--sb-ink-soft)]">Bản ghi này chưa có giải thích phù hợp với chủ đề đang chọn.</p>}
       </section>
       <GrammarReadingNotes question={q} onQuickAdd={onQuickAdd} />
     </> : <>
-      <p className="text-purple-300">Chủ đề chính: {getSentenceTopicLabel(q)}</p>
-      <p className="text-amber-300 text-xs">Bản ghi TOEIC cũ · giữ nguyên dữ liệu gốc</p>
+      <p className="text-[var(--sb-plum-text)] font-semibold">Chủ đề chính: {getSentenceTopicLabel(q)}</p>
+      <p className="text-[var(--sb-ochre-text)] text-xs font-semibold">Bản ghi TOEIC cũ · giữ nguyên dữ liệu gốc</p>
       <p>{q.shortExplanation}</p>
       {detail?.whyCorrect && <p>{detail.whyCorrect}</p>}
       {q.options && <div className="space-y-2">{['A', 'B', 'C', 'D'].map(k => <div key={k}>
-        <p className={k === q.answer ? 'text-emerald-300' : 'text-slate-400'}>{k}. {q.options[k]}{k === q.answer ? ' ✓' : ''}</p>
+        <p className={k === q.answer ? 'text-[var(--sb-forest-text)] font-semibold' : 'text-[var(--sb-ink-soft)]'}>{k}. {q.options[k]}{k === q.answer ? ' ✓' : ''}</p>
         {detail?.[`whyWrong${k}`] && <p>{detail[`whyWrong${k}`]}</p>}
       </div>)}</div>}
       {detail?.grammarRules?.map((r, i) => <p key={i}>• {r}</p>)}
@@ -68,7 +68,7 @@ export default function GrammarSentenceCard({
       sentence={sentence}
       segments={segments}
       onUnderlineChange={handleUnderlineChange}
-      className="text-lg text-white leading-relaxed break-words"
+      className="text-lg text-[var(--sb-ink)] font-medium leading-relaxed break-words"
       readOnly={!underlineKey || !onUnderlineChange}
       sentenceKey={underlineKey} notes={notesForSentence(sentenceNotes, underlineKey, sentence)}
       onNoteChange={onNoteChange ? draft => onNoteChange(underlineKey, sentence, draft) : undefined}
@@ -78,7 +78,7 @@ export default function GrammarSentenceCard({
     {(onAssess || onNext) && <div className="flex flex-wrap gap-2">
       {onAssess && [true, false].map(understood => <button key={String(understood)} type="button" disabled={assessed !== undefined}
         onClick={() => onAssess(understood)}
-        className={`px-4 py-2 rounded-xl text-sm font-semibold ${assessed !== undefined ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : understood ? 'vm-btn bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : 'vm-btn bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-500/20'}`}>
+        className={`px-4 py-2 rounded-xl text-sm font-semibold ${assessed !== undefined ? 'bg-[var(--sb-disabled-bg)] text-[var(--sb-disabled-text)] border border-[var(--sb-disabled-border)] cursor-not-allowed' : understood ? 'vm-btn bg-[var(--sb-forest-btn)] hover:bg-[var(--sb-forest-hover)] text-white border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)]' : 'vm-btn bg-[var(--sb-berry-btn)] hover:bg-[var(--sb-berry-hover)] text-white border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)]'}`}>
         {understood ? 'Đã hiểu' : 'Cần ôn lại'}{assessed === understood ? ' ✓' : ''}
       </button>)}
       {onNext && <button type="button" onClick={onNext} className="vm-btn vm-btn-violet px-4 py-2 rounded-xl text-sm font-semibold">{nextLabel}</button>}
@@ -91,7 +91,7 @@ export default function GrammarSentenceCard({
     </button>
     {shown && <>
       <GrammarAnalysis question={question} onQuickAdd={onQuickAdd} analysisTopic={analysisTopic} />
-      {question.userNotes && <p className="text-amber-200 text-sm whitespace-pre-wrap break-words">Ghi chú: {question.userNotes}</p>}
+      {question.userNotes && <p className="text-[var(--sb-ochre-text)] font-medium text-sm whitespace-pre-wrap break-words">Ghi chú: {question.userNotes}</p>}
     </>}
   </div>;
 }

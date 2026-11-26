@@ -69,26 +69,26 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
     <div className="space-y-6 vm-page-enter">
       {/* Header */}
       <div className="flex items-center gap-3 mb-2">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/25 ring-1 ring-white/15">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--sb-plum)] to-[var(--sb-terracotta-strong)] border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)] flex items-center justify-center">
           <Zap size={20} className="text-white" />
         </div>
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-white">Grammar Practice</h2>
-          <p className="text-slate-300 text-sm">VSTEP B1 · Nhận diện ngữ pháp và phân tích câu</p>
+          <h2 className="sb-heading text-xl font-bold tracking-tight text-[var(--sb-ink)]">Grammar Practice</h2>
+          <p className="text-[var(--sb-ink-soft)] text-sm">VSTEP B1 · Nhận diện ngữ pháp và phân tích câu</p>
         </div>
       </div>
 
       {/* Step 1: Configure */}
       <div className="vm-panel rounded-2xl p-5 space-y-5">
         <div className="flex items-center gap-2.5 mb-1">
-          <span className="w-6 h-6 rounded-full bg-violet-500/25 ring-1 ring-violet-400/40 text-violet-200 text-xs font-bold flex items-center justify-center">1</span>
-          <h3 className="text-white font-semibold">Cấu hình bài luyện</h3>
+          <span className="w-6 h-6 rounded-full bg-[var(--sb-plum-soft)] border border-[var(--sb-plum)]/40 text-[var(--sb-plum-text)] text-xs font-bold flex items-center justify-center">1</span>
+          <h3 className="text-[var(--sb-ink)] font-bold">Cấu hình bài luyện</h3>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Count */}
           <div>
-            <label className="block text-slate-300 text-xs font-medium mb-2">Số câu</label>
+            <label className="block text-[var(--sb-ink-soft)] text-xs font-semibold mb-2">Số câu</label>
             <div className="flex gap-2 flex-wrap">
               {GRAMMAR_COUNTS.map(n => (
                 <button
@@ -96,8 +96,8 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
                   onClick={() => { onSettingsChange?.({ count: n, topic }); resetImportReview(); }}
                   className={`vm-btn px-4 py-2 rounded-xl text-sm font-semibold border ${
                     count === n
-                      ? 'vm-btn-violet border-violet-400/40'
-                      : 'bg-slate-900/75 text-slate-300 hover:text-white hover:bg-slate-800 border-slate-400/20'
+                      ? 'vm-btn-violet border-[var(--sb-ink)]'
+                      : 'bg-[var(--sb-paper-card)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)] border-[var(--sb-ink-border)]'
                   }`}
                 >
                   {n}
@@ -108,7 +108,7 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
 
           {/* Topic */}
           <div>
-            <label className="block text-slate-300 text-xs font-medium mb-2">Chủ đề ngữ pháp</label>
+            <label className="block text-[var(--sb-ink-soft)] text-xs font-semibold mb-2">Chủ đề ngữ pháp</label>
             <select
               value={topic}
               onChange={e => { onSettingsChange?.({ count, topic: e.target.value }); resetImportReview(); }}
@@ -125,26 +125,26 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
       {/* Step 2: Copy prompt */}
       <div className="vm-panel rounded-2xl p-5 space-y-3">
         <div className="flex items-center gap-2.5">
-          <span className="w-6 h-6 rounded-full bg-violet-500/25 ring-1 ring-violet-400/40 text-violet-200 text-xs font-bold flex items-center justify-center">2</span>
-          <h3 className="text-white font-semibold">Copy prompt → Dán vào AI bạn dùng</h3>
+          <span className="w-6 h-6 rounded-full bg-[var(--sb-plum-soft)] border border-[var(--sb-plum)]/40 text-[var(--sb-plum-text)] text-xs font-bold flex items-center justify-center">2</span>
+          <h3 className="text-[var(--sb-ink)] font-bold">Copy prompt → Dán vào AI bạn dùng</h3>
         </div>
 
-        <p className="text-slate-300 text-sm">
+        <p className="text-[var(--sb-ink)] text-sm">
           Dán prompt vào ChatGPT, Gemini, Claude hoặc AI khác, sau đó copy toàn bộ JSON kết quả trả về.
         </p>
-        <p className="text-slate-400 text-xs break-all">Bộ prompt: {batch?.id || 'preview'} · Dữ liệu giữ nguyên đến khi tạo prompt mới; số câu/chủ đề theo lựa chọn hiện tại.</p>
+        <p className="text-[var(--sb-ink-soft)] text-xs break-all">Bộ prompt: {batch?.id || 'preview'} · Dữ liệu giữ nguyên đến khi tạo prompt mới; số câu/chủ đề theo lựa chọn hiện tại.</p>
 
-        <div className="text-xs text-slate-300 space-y-1.5" role="status">
+        <div className="text-xs text-[var(--sb-ink)] space-y-1.5" role="status">
           <p>{batch?.data.vocab.length || 0} mục Vocabulary · {batch?.data.grammar.length || 0} câu Grammar riêng biệt · {prompt.length.toLocaleString('vi-VN')} ký tự. Gửi đầy đủ, không cắt danh sách.</p>
-          <p className="text-slate-400">Đếm khớp từ/cụm từ; không tự gộp purchase/purchased, go/went hoặc từ cùng họ. Không gửi nghĩa, ghi chú hay tiến độ học.</p>
-          <p className="text-slate-400">Câu chưa lưu được đối chiếu trong lần mở Grammar này. Lưu câu để dùng tiếp sau khi rời module/tải lại.</p>
+          <p className="text-[var(--sb-ink-soft)]">Đếm khớp từ/cụm từ; không tự gộp purchase/purchased, go/went hoặc từ cùng họ. Không gửi nghĩa, ghi chú hay tiến độ học.</p>
+          <p className="text-[var(--sb-ink-soft)]">Câu chưa lưu được đối chiếu trong lần mở Grammar này. Lưu câu để dùng tiếp sau khi rời module/tải lại.</p>
           {!batch?.data.vocab.length && <p>Kho Vocabulary trống: tạo câu theo chủ đề, không có danh sách từ mục tiêu.</p>}
           {!batch?.data.grammar.length && <p>Chưa có câu Grammar hoàn chỉnh để đối chiếu.</p>}
-          {syncStatuses.some(status => status === 'syncing' || status === 'conflict') && <p className="text-amber-300">Đang đồng bộ: snapshot chỉ gồm dữ liệu đã tải trên thiết bị. Tạo prompt mới sau khi đồng bộ để cập nhật.</p>}
-          {syncStatuses.some(status => status === 'error' || status === 'idle') && <p className="text-amber-300">Đồng bộ chưa được xác nhận: đang dùng dữ liệu trên thiết bị, chưa xác minh toàn bộ cloud.</p>}
-          {stale && <p className="text-amber-300">Dữ liệu đã thay đổi. Bấm Tạo prompt mới để cập nhật số đếm và danh sách câu trước khi copy.</p>}
-          {incomplete && <p className="text-rose-300">Chưa thể tạo/copy prompt đầy đủ: {corpus.unresolved} bản ghi Grammar thiếu câu hoàn chỉnh/đáp án khôi phục, {corpus.invalidWords} mục Vocabulary thiếu tiếng Anh. Hãy kiểm tra dữ liệu nguồn; ứng dụng không đoán hoặc âm thầm bỏ mục.</p>}
-          {copyError && <p className="text-rose-300" role="alert">{copyError}</p>}
+          {syncStatuses.some(status => status === 'syncing' || status === 'conflict') && <p className="text-[var(--sb-ochre-text)] font-medium">Đang đồng bộ: snapshot chỉ gồm dữ liệu đã tải trên thiết bị. Tạo prompt mới sau khi đồng bộ để cập nhật.</p>}
+          {syncStatuses.some(status => status === 'error' || status === 'idle') && <p className="text-[var(--sb-ochre-text)] font-medium">Đồng bộ chưa được xác nhận: đang dùng dữ liệu trên thiết bị, chưa xác minh toàn bộ cloud.</p>}
+          {stale && <p className="text-[var(--sb-ochre-text)] font-semibold">Dữ liệu đã thay đổi. Bấm Tạo prompt mới để cập nhật số đếm và danh sách câu trước khi copy.</p>}
+          {incomplete && <p className="text-[var(--sb-berry-text)] font-semibold">Chưa thể tạo/copy prompt đầy đủ: {corpus.unresolved} bản ghi Grammar thiếu câu hoàn chỉnh/đáp án khôi phục, {corpus.invalidWords} mục Vocabulary thiếu tiếng Anh. Hãy kiểm tra dữ liệu nguồn; ứng dụng không đoán hoặc âm thầm bỏ mục.</p>}
+          {copyError && <p className="text-[var(--sb-berry-text)] font-semibold" role="alert">{copyError}</p>}
         </div>
 
         <div className="flex flex-wrap gap-2 pt-1">
@@ -153,7 +153,7 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
             disabled={incomplete || stale}
             className={`vm-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed ${
               copied
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30'
+                ? 'bg-[var(--sb-forest-btn)] text-white border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)]'
                 : 'vm-btn-violet'
             }`}
           >
@@ -161,12 +161,12 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
             {copied ? 'Đã copy!' : 'Copy Prompt'}
           </button>
           <button disabled={incomplete} onClick={() => { onNewBatch?.(); setCopied(''); setCopyError(''); resetImportReview(); }}
-            className="vm-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-slate-800/85 border border-slate-400/20 text-slate-200 hover:bg-slate-700 hover:text-white disabled:opacity-40">
+            className="vm-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-[var(--sb-paper-card)] border-2 border-[var(--sb-ink-border)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)] disabled:opacity-40">
             <RefreshCw size={16} /> Tạo prompt mới
           </button>
           <button
             onClick={() => setPromptOpen(v => !v)}
-            className="vm-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-slate-800/85 border border-slate-400/20 text-slate-300 hover:text-white hover:bg-slate-700"
+            className="vm-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-[var(--sb-paper-card)] border-2 border-[var(--sb-ink-border)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)]"
           >
             {promptOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             {promptOpen ? 'Ẩn prompt' : 'Xem prompt'}
@@ -174,8 +174,8 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
         </div>
 
         {promptOpen && (
-          <div className="bg-[#070b14] border border-slate-400/20 rounded-xl p-4 max-h-64 overflow-y-auto animate-fade-in">
-            <pre className="text-slate-200 text-xs whitespace-pre-wrap font-mono leading-relaxed">{prompt}</pre>
+          <div className="bg-[var(--sb-paper-warm)] border-2 border-[var(--sb-ink-border)] rounded-xl p-4 max-h-64 overflow-y-auto animate-fade-in">
+            <pre className="text-[var(--sb-ink)] text-xs whitespace-pre-wrap font-mono leading-relaxed">{prompt}</pre>
           </div>
         )}
       </div>
@@ -185,8 +185,8 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
 
       <div className="vm-panel rounded-2xl p-5 space-y-3">
         <div className="flex items-center gap-2.5">
-          <span className="w-6 h-6 rounded-full bg-violet-500/25 ring-1 ring-violet-400/40 text-violet-200 text-xs font-bold flex items-center justify-center">3</span>
-          <h3 className="text-white font-semibold">Dán JSON từ AI vào đây</h3>
+          <span className="w-6 h-6 rounded-full bg-[var(--sb-plum-soft)] border border-[var(--sb-plum)]/40 text-[var(--sb-plum-text)] text-xs font-bold flex items-center justify-center">3</span>
+          <h3 className="text-[var(--sb-ink)] font-bold">Dán JSON từ AI vào đây</h3>
         </div>
 
         <textarea
@@ -198,51 +198,51 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
         />
 
         {error && (
-          <div className="bg-rose-500/12 border border-rose-400/35 rounded-xl p-4 animate-fade-in">
+          <div className="bg-[var(--sb-berry-soft)] border-2 border-[var(--sb-berry)] rounded-xl p-4 animate-fade-in">
             <div className="flex items-center gap-2 mb-2">
-              <AlertCircle size={16} className="text-rose-300" />
-              <span className="text-rose-300 text-sm font-semibold">Cần sửa nội dung sau</span>
+              <AlertCircle size={16} className="text-[var(--sb-berry-text)]" />
+              <span className="text-[var(--sb-berry-text)] text-sm font-bold">Cần sửa nội dung sau</span>
             </div>
             <ul className="space-y-1">
               {error.map((e, i) => (
-                <li key={i} className="text-rose-200 text-sm">• {e}</li>
+                <li key={i} className="text-[var(--sb-berry-text)] text-sm">• {e}</li>
               ))}
             </ul>
           </div>
         )}
 
-        {importReview && <div className="bg-amber-500/10 border border-amber-400/35 rounded-xl p-4 space-y-3 text-sm animate-fade-in">
-          <p className="text-amber-200 font-semibold">Kiểm tra trước khi bắt đầu</p>
-          {importReview.normalizations.length > 0 && <p className="text-slate-200">Đã tự khớp {importReview.normalizations.length} trích dẫn về đúng chữ trong câu; câu tiếng Anh và lời giải được giữ nguyên.</p>}
+        {importReview && <div className="bg-[var(--sb-ochre-soft)] border-2 border-[var(--sb-ochre)] rounded-xl p-4 space-y-3 text-sm animate-fade-in">
+          <p className="text-[var(--sb-ochre-text)] font-bold">Kiểm tra trước khi bắt đầu</p>
+          {importReview.normalizations.length > 0 && <p className="text-[var(--sb-ink)]">Đã tự khớp {importReview.normalizations.length} trích dẫn về đúng chữ trong câu; câu tiếng Anh và lời giải được giữ nguyên.</p>}
           {importReview.optionalIssues.length > 0 && <>
-            <p className="text-slate-200">Các mục đọc hiểu dưới đây chưa hợp lệ. Bạn có thể sửa JSON, hoặc đánh dấu từng mục để chỉ loại mục đó khỏi bộ câu sắp luyện.</p>
-            {importReview.optionalIssues.map(issue => <label key={issue.key} className="flex items-start gap-2 text-amber-100 break-words">
-              <input type="checkbox" checked={excludedItems.includes(issue.key)} onChange={e => setExcludedItems(prev => e.target.checked ? [...prev, issue.key] : prev.filter(key => key !== issue.key))} className="mt-1 shrink-0" />
+            <p className="text-[var(--sb-ink)]">Các mục đọc hiểu dưới đây chưa hợp lệ. Bạn có thể sửa JSON, hoặc đánh dấu từng mục để chỉ loại mục đó khỏi bộ câu sắp luyện.</p>
+            {importReview.optionalIssues.map(issue => <label key={issue.key} className="flex items-start gap-2 text-[var(--sb-ink)] break-words">
+              <input type="checkbox" checked={excludedItems.includes(issue.key)} onChange={e => setExcludedItems(prev => e.target.checked ? [...prev, issue.key] : prev.filter(key => key !== issue.key))} className="mt-1 shrink-0 accent-[var(--sb-plum)]" />
               <span>Bỏ mục này — {formatGrammarIssue(issue)}</span>
             </label>)}
           </>}
           {importReview.duplicates.length > 0 && <>
-            <p className="text-slate-200">Câu trùng với kho Grammar hiện tại:</p>
-            <ul className="list-disc pl-5 text-amber-100">{importReview.duplicates.map(item => <li key={item.sentence}>Câu {item.sentence}: {item.text}</li>)}</ul>
-            <label className="flex items-start gap-2 text-slate-200"><input type="checkbox" checked={allowDuplicates} onChange={e => setAllowDuplicates(e.target.checked)} className="mt-1" />Tôi vẫn muốn luyện các câu trùng được liệt kê.</label>
-            <p className="text-slate-400 text-xs">Bạn cũng có thể tạo prompt mới để yêu cầu AI sinh bộ khác.</p>
+            <p className="text-[var(--sb-ink)] font-semibold">Câu trùng với kho Grammar hiện tại:</p>
+            <ul className="list-disc pl-5 text-[var(--sb-ink)]">{importReview.duplicates.map(item => <li key={item.sentence}>Câu {item.sentence}: {item.text}</li>)}</ul>
+            <label className="flex items-start gap-2 text-[var(--sb-ink)]"><input type="checkbox" checked={allowDuplicates} onChange={e => setAllowDuplicates(e.target.checked)} className="mt-1 accent-[var(--sb-plum)]" />Tôi vẫn muốn luyện các câu trùng được liệt kê.</label>
+            <p className="text-[var(--sb-ink-soft)] text-xs">Bạn cũng có thể tạo prompt mới để yêu cầu AI sinh bộ khác.</p>
           </>}
           <div className="flex flex-wrap gap-2">
             <button onClick={() => startImport(importReview, { excludedItems, allowDuplicates })}
               disabled={importReview.optionalIssues.some(issue => !excludedItems.includes(issue.key)) || (importReview.duplicates.length > 0 && !allowDuplicates)}
               className="vm-btn vm-btn-violet px-4 py-2 rounded-xl font-semibold disabled:opacity-40">Xác nhận và bắt đầu</button>
-            <button onClick={resetImportReview} className="vm-btn px-4 py-2 rounded-xl bg-slate-800 border border-slate-400/20 text-slate-200 hover:bg-slate-700">Quay lại sửa JSON</button>
+            <button onClick={resetImportReview} className="vm-btn px-4 py-2 rounded-xl bg-[var(--sb-paper-card)] border-2 border-[var(--sb-ink-border)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)]">Quay lại sửa JSON</button>
           </div>
         </div>}
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-slate-400 text-xs">
+          <p className="text-[var(--sb-ink-soft)] text-xs">
             JSON sẽ được validate tự động trước khi bắt đầu.
           </p>
           <div className="flex gap-2">
             <button
               onClick={() => { setJsonInput(''); resetImportReview(); }}
-              className="vm-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-slate-800/85 border border-slate-400/20 text-slate-300 hover:text-white hover:bg-slate-700"
+              className="vm-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-[var(--sb-paper-card)] border-2 border-[var(--sb-ink-border)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)]"
             >
               <RefreshCw size={14} />
               Xoá
@@ -260,13 +260,13 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
       </div>
 
       {/* Tips */}
-      <div className="vm-panel border-indigo-400/25 rounded-2xl p-4 sm:p-5">
-        <h4 className="text-indigo-300 font-semibold text-sm mb-2">💡 Mẹo sử dụng</h4>
-        <ul className="space-y-1.5 text-slate-300 text-sm">
+      <div className="vm-panel border-[var(--sb-terracotta)]/40 rounded-2xl p-4 sm:p-5">
+        <h4 className="text-[var(--sb-terracotta-text)] font-bold text-sm mb-2">💡 Mẹo sử dụng</h4>
+        <ul className="space-y-1.5 text-[var(--sb-ink)] text-sm">
           <li>• Các chủ đề là nhóm tự học, không phải đề cương VSTEP chính thức.</li>
-          <li>• Nếu AI không trả về JSON đúng định dạng, thêm: <span className="text-violet-300 font-mono text-xs">"Return ONLY the JSON array, starting with [ and ending with ]"</span></li>
+          <li>• Nếu AI không trả về JSON đúng định dạng, thêm: <span className="text-[var(--sb-plum-text)] font-semibold font-mono text-xs">"Return ONLY the JSON array, starting with [ and ending with ]"</span></li>
           <li>• Bạn có thể lưu các câu hỏi hay bằng nút bookmark ⭐ trong khi luyện.</li>
-          <li>• Câu hỏi đã lưu sẽ xuất hiện trong tab <span className="text-white">Saved Questions</span> và <span className="text-white">Review</span>.</li>
+          <li>• Câu hỏi đã lưu sẽ xuất hiện trong tab <span className="text-[var(--sb-ink)] font-semibold">Saved Questions</span> và <span className="text-[var(--sb-ink)] font-semibold">Review</span>.</li>
         </ul>
       </div>
     </div>

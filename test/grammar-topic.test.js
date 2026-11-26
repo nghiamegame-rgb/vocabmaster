@@ -46,7 +46,7 @@ try {
         assert.ok(html.indexOf('data-grammar-topic') < html.indexOf('data-sentence-text'));
         assert.ok(html.includes('Hiện phân tích'));
         assert.ok(!html.includes('Giải thích nhanh'));
-        assert.ok(html.includes(label === 'Chưa phân loại' ? 'bg-slate-700/50' : 'bg-purple-600/20'));
+        assert.ok(html.includes(label === 'Chưa phân loại' ? 'bg-[var(--sb-paper-deep)]' : 'bg-[var(--sb-plum-soft)]'));
       }
     }
     assert.doesNotThrow(() => renderToStaticMarkup(createElement(Review, { savedQuestions: records, reviewProgress: {} })));

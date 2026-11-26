@@ -6,7 +6,7 @@ import UnderlineToolbar from './UnderlineToolbar';
 import SentenceNoteEditor from './SentenceNoteEditor';
 
 const EMPTY = [];
-const noteClass = 'rounded px-0.5 text-center text-[12px] leading-4 text-slate-300 whitespace-pre-wrap hover:bg-slate-800/70 focus-visible:bg-slate-800/70 focus-visible:outline focus-visible:outline-1 focus-visible:outline-indigo-400';
+const noteClass = 'rounded px-0.5 text-center text-[12px] leading-4 text-[var(--sb-ink-soft)] whitespace-pre-wrap hover:bg-[var(--sb-paper-deep)] focus-visible:bg-[var(--sb-paper-deep)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[var(--sb-ring)]';
 
 /** English text alone lives in containerRef; note labels/editor are siblings. */
 export default function UnderlinedSentence({ sentence, segments, onUnderlineChange, className = '', readOnly = false,
@@ -106,7 +106,7 @@ export default function UnderlinedSentence({ sentence, segments, onUnderlineChan
         setNotesShown(next);
         onNotesShownChange?.(next);
       }}
-        className="max-w-full rounded px-1 text-xs text-indigo-300 hover:bg-slate-800/70 hover:text-indigo-200 focus-visible:outline focus-visible:outline-1 focus-visible:outline-indigo-400">
+        className="max-w-full rounded px-1 text-xs text-[var(--sb-terracotta-text)] hover:bg-[var(--sb-paper-deep)] hover:text-[var(--sb-terracotta-hover)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[var(--sb-ring)]">
         {notesShown ? 'Ẩn ghi chú' : 'Hiện ghi chú'} ({notes.length})
       </button>
     </div>}

@@ -249,10 +249,10 @@ function Pill({ id, label, selected, onClick }) {
     <button
       id={id}
       onClick={onClick}
-      className={`vm-btn px-4 py-2 rounded-xl text-sm font-medium border ${
+      className={`vm-btn px-4 py-2 rounded-xl text-sm font-bold border-2 ${
         selected
-          ? 'vm-btn-primary border-indigo-400/40'
-          : 'bg-slate-900/75 text-slate-300 border-slate-400/20 hover:bg-slate-800 hover:border-slate-400/35 hover:text-white'
+          ? 'vm-btn-primary'
+          : 'bg-[var(--sb-paper-card)] text-[var(--sb-ink)] border-[var(--sb-ink-border)] hover:bg-[var(--sb-paper-deep)] hover:border-[var(--sb-ink)]'
       }`}
     >
       {label}
@@ -266,7 +266,7 @@ function Pill({ id, label, selected, onClick }) {
 function Section({ title, children }) {
   return (
     <div className="vm-panel rounded-2xl p-5">
-      <h3 className="text-slate-300 text-xs font-semibold uppercase tracking-wider mb-3">
+      <h3 className="text-[var(--sb-ink-soft)] text-xs font-extrabold uppercase tracking-wider mb-3">
         {title}
       </h3>
       {children}
@@ -400,17 +400,17 @@ function QuizConfig({ words, structures = [], onStart }) {
     <div className="vm-page-enter max-w-2xl mx-auto">
       {/* Page header */}
       <div className="mb-7">
-        <h1 className="text-3xl font-extrabold tracking-tight text-white mb-1">Smart Quiz</h1>
-        <p className="text-slate-300 text-sm">
+        <h1 className="sb-font-display text-3xl font-extrabold tracking-tight text-[var(--sb-ink)] mb-1">Smart Quiz</h1>
+        <p className="text-[var(--sb-ink-soft)] font-semibold text-sm">
           Configure your quiz, copy the AI prompt, then paste the response to start.
         </p>
       </div>
 
       {/* Insufficient words warning */}
       {!hasSource && (
-        <div className="flex items-start gap-3 bg-amber-500/12 border border-amber-400/35 rounded-2xl p-4 mb-5 animate-fade-in">
-          <AlertCircle size={17} className="text-amber-300 shrink-0 mt-0.5" />
-          <p className="text-amber-200 text-sm leading-relaxed">
+        <div className="flex items-start gap-3 bg-[var(--sb-ochre-soft)] border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)] rounded-2xl p-4 mb-5 animate-fade-in">
+          <AlertCircle size={17} className="text-[var(--sb-ochre-text)] shrink-0 mt-0.5" />
+          <p className="text-[var(--sb-ink)] text-sm font-medium leading-relaxed">
             {mode === 'structure'
               ? <>Chưa có cấu trúc được chọn. Hãy thêm cấu trúc trong tab <strong>Grammar → Structures</strong>.</>
               : hardOnly
@@ -492,15 +492,15 @@ function QuizConfig({ words, structures = [], onStart }) {
                   key={wt.id}
                   id={`wtype-${wt.id.toLowerCase()}`}
                   onClick={() => { setWordTypeFilter(wt.id); setCopied(false); }}
-                  className={`vm-btn flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border ${
+                  className={`vm-btn flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold border-2 ${
                     wordTypeFilter === wt.id
-                      ? 'vm-btn-primary border-indigo-400/40'
-                      : 'bg-slate-900/75 text-slate-300 border-slate-400/20 hover:bg-slate-800 hover:border-slate-400/35 hover:text-white'
+                      ? 'vm-btn-primary'
+                      : 'bg-[var(--sb-paper-card)] text-[var(--sb-ink)] border-[var(--sb-ink-border)] hover:bg-[var(--sb-paper-deep)] hover:border-[var(--sb-ink)]'
                   }`}
                 >
                   <span>{wt.icon}</span>
                   {wt.label}
-                  <span className="text-xs opacity-75">({cnt})</span>
+                  <span className="text-xs opacity-80">({cnt})</span>
                 </button>
               );
             })}
@@ -517,18 +517,18 @@ function QuizConfig({ words, structures = [], onStart }) {
                   type="button"
                   onClick={() => { setHardOnly(v => !v); setCopied(false); }}
                   aria-pressed={hardOnly}
-                  className={`vm-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border ${
+                  className={`vm-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border-2 ${
                     hardOnly
-                      ? 'bg-amber-500/20 text-amber-200 border-amber-400/50 shadow-lg shadow-amber-500/15'
-                      : 'bg-slate-900/75 text-slate-300 border-slate-400/20 hover:border-amber-400/45 hover:text-amber-300'
+                      ? 'bg-[var(--sb-ochre-soft)] text-[var(--sb-ochre-text)] border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)]'
+                      : 'bg-[var(--sb-paper-card)] text-[var(--sb-ink)] border-[var(--sb-ink-border)] hover:border-[var(--sb-ink)] hover:bg-[var(--sb-ochre-soft)] hover:text-[var(--sb-ochre-text)]'
                   }`}
                 >
-                  <Star size={15} className={hardOnly ? 'fill-amber-400 text-amber-400' : 'text-amber-400'} />
+                  <Star size={15} className={hardOnly ? 'fill-[var(--sb-ochre)] text-[var(--sb-ochre-text)]' : 'text-[var(--sb-ochre-text)]'} />
                   <span>Chỉ từ khó ⭐</span>
-                  <span className="text-xs opacity-80">({hardCount})</span>
+                  <span className="text-xs opacity-85">({hardCount})</span>
                 </button>
-                <p className="text-slate-400 text-xs mt-2">
-                  Áp dụng cho nguồn từ Vocabulary khi tạo AI Prompt mới (hiện có <strong className="text-slate-200">{eligibleWords.length}</strong> từ khớp bộ lọc, cần tối thiểu 4 từ).
+                <p className="text-[var(--sb-ink-soft)] text-xs font-medium mt-2">
+                  Áp dụng cho nguồn từ Vocabulary khi tạo AI Prompt mới (hiện có <strong className="text-[var(--sb-ink)]">{eligibleWords.length}</strong> từ khớp bộ lọc, cần tối thiểu 4 từ).
                 </p>
               </div>
             </div>
@@ -537,12 +537,15 @@ function QuizConfig({ words, structures = [], onStart }) {
 
         {mode === 'structure' && (
           <Section title="Structures to practice">
-            <div className="flex items-center justify-between mb-3 text-xs text-slate-300">
+            <div className="flex items-center justify-between mb-3 text-xs text-[var(--sb-ink-soft)] font-semibold">
               <span>{selectedStructures.length}/{structures.length} cấu trúc được chọn</span>
-              <div className="flex gap-2"><button type="button" onClick={() => setSelectedStructureIds(new Set(structures.map(item => item.id)))} className="text-indigo-300 hover:text-white">Chọn tất cả</button><button type="button" onClick={() => setSelectedStructureIds(new Set())} className="text-slate-300 hover:text-white">Bỏ chọn</button></div>
+              <div className="flex gap-3">
+                <button type="button" onClick={() => setSelectedStructureIds(new Set(structures.map(item => item.id)))} className="text-[var(--sb-terracotta-text)] hover:underline font-bold">Chọn tất cả</button>
+                <button type="button" onClick={() => setSelectedStructureIds(new Set())} className="text-[var(--sb-ink-soft)] hover:text-[var(--sb-ink)] font-bold">Bỏ chọn</button>
+              </div>
             </div>
             <div className="max-h-56 overflow-y-auto space-y-1 pr-1">
-              {structures.map(item => <label key={item.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-800/70 cursor-pointer"><input type="checkbox" checked={selectedStructureIds.has(item.id)} onChange={e => setSelectedStructureIds(prev => { const next = new Set(prev); e.target.checked ? next.add(item.id) : next.delete(item.id); return next; })} className="accent-indigo-500" /><span className="text-sm text-white">{item.english}</span><span className="text-xs text-slate-400">L{item.level}</span></label>)}
+              {structures.map(item => <label key={item.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-[var(--sb-paper-deep)] cursor-pointer"><input type="checkbox" checked={selectedStructureIds.has(item.id)} onChange={e => setSelectedStructureIds(prev => { const next = new Set(prev); e.target.checked ? next.add(item.id) : next.delete(item.id); return next; })} className="accent-[var(--sb-terracotta-strong)]" /><span className="text-sm font-semibold text-[var(--sb-ink)]">{item.english}</span><span className="text-xs font-bold text-[var(--sb-ink-soft)]">L{item.level}</span></label>)}
             </div>
           </Section>
         )}
@@ -555,14 +558,14 @@ function QuizConfig({ words, structures = [], onStart }) {
                 key={qm.id}
                 id={`mode-${qm.id}`}
                 onClick={() => { setMode(qm.id); setCopied(false); }}
-                className={`vm-btn text-left p-4 rounded-xl border ${
+                className={`vm-btn text-left p-4 rounded-xl border-2 ${
                   mode === qm.id
-                    ? 'bg-indigo-500/18 border-indigo-400/60 text-white shadow-md shadow-indigo-500/15'
-                    : 'bg-slate-900/65 border-slate-400/20 text-slate-300 hover:border-slate-400/40 hover:text-white'
+                    ? 'bg-[var(--sb-terracotta-soft)] border-[var(--sb-ink)] text-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)]'
+                    : 'bg-[var(--sb-paper-card)] border-[var(--sb-ink-border)] text-[var(--sb-ink)] hover:border-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)]'
                 }`}
               >
-                <p className="font-semibold text-sm">{qm.label}</p>
-                <p className="text-xs mt-1 opacity-80">{qm.desc}</p>
+                <p className="font-extrabold text-sm">{qm.label}</p>
+                <p className="text-xs mt-1 text-[var(--sb-ink-soft)] font-medium">{qm.desc}</p>
               </button>
             ))}
           </div>
@@ -576,41 +579,41 @@ function QuizConfig({ words, structures = [], onStart }) {
                 key={am.id}
                 id={`answer-mode-${am.id}`}
                 onClick={() => setAnswerMode(am.id)}
-                className={`vm-btn text-left p-4 rounded-xl border ${
+                className={`vm-btn text-left p-4 rounded-xl border-2 ${
                   answerMode === am.id
-                    ? 'bg-violet-500/18 border-violet-400/60 text-white shadow-md shadow-violet-500/15'
-                    : 'bg-slate-900/65 border-slate-400/20 text-slate-300 hover:border-slate-400/40 hover:text-white'
+                    ? 'bg-[var(--sb-plum-soft)] border-[var(--sb-ink)] text-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)]'
+                    : 'bg-[var(--sb-paper-card)] border-[var(--sb-ink-border)] text-[var(--sb-ink)] hover:border-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)]'
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1">
                   {am.id === 'mc'
-                    ? <Type size={14} className={answerMode === am.id ? 'text-violet-300' : 'text-slate-400'} />
-                    : <Headphones size={14} className={answerMode === am.id ? 'text-violet-300' : 'text-slate-400'} />}
-                  <p className="font-semibold text-sm">{am.label}</p>
+                    ? <Type size={14} className={answerMode === am.id ? 'text-[var(--sb-plum-text)]' : 'text-[var(--sb-ink-soft)]'} />
+                    : <Headphones size={14} className={answerMode === am.id ? 'text-[var(--sb-plum-text)]' : 'text-[var(--sb-ink-soft)]'} />}
+                  <p className="font-extrabold text-sm">{am.label}</p>
                 </div>
-                <p className="text-xs opacity-80">{am.desc}</p>
+                <p className="text-xs text-[var(--sb-ink-soft)] font-medium">{am.desc}</p>
               </button>
             ))}
           </div>
         </Section>
 
         {/* Info banner */}
-        <div className="flex items-start gap-3 bg-sky-500/10 border border-sky-400/25 rounded-2xl p-4">
+        <div className="flex items-start gap-3 bg-[var(--sb-sky-soft)] border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)] rounded-2xl p-4">
           <span className="text-xl shrink-0">{mode === 'vstep' ? '🎯' : '✍️'}</span>
-          <p className="text-sky-200 text-xs leading-relaxed">
+          <p className="text-[var(--sb-ink)] text-xs font-medium leading-relaxed">
             {mode === 'vstep' ? (
-              <><strong className="text-sky-100">VSTEP B1–B2 (English):</strong> The AI generates
+              <><strong className="text-[var(--sb-sky-text)]">VSTEP B1–B2 (English):</strong> The AI generates
               English sentences at VSTEP B1–B2 level with a <strong>[_____] blank</strong>, common collocations,
               and 4 English word choices. Explanation is in Vietnamese.</>
             ) : mode === 'structure' ? (
-              <><strong className="text-sky-100">Cấu trúc ngữ pháp:</strong> AI tạo câu VSTEP B1–B2 dựa trên cấu trúc đã chọn, có 4 đáp án và điểm bẫy.</>
+              <><strong className="text-[var(--sb-sky-text)]">Cấu trúc ngữ pháp:</strong> AI tạo câu VSTEP B1–B2 dựa trên cấu trúc đã chọn, có 4 đáp án và điểm bẫy.</>
             ) : (
-              <><strong className="text-sky-100">Vietnamese → English:</strong> The AI writes a Vietnamese
+              <><strong className="text-[var(--sb-sky-text)]">Vietnamese → English:</strong> The AI writes a Vietnamese
               context sentence with a <strong>[_____] blank</strong> and 4 English word choices.</>
             )}
             {answerMode === 'dictation' && (
-              <span className="block mt-1 text-violet-200">
-                🎧 <strong className="text-violet-100">Listening & Typing mode:</strong> You'll hear
+              <span className="block mt-1 text-[var(--sb-plum-text)] font-semibold">
+                🎧 <strong>Listening & Typing mode:</strong> You'll hear
                 the word, see the answer immediately, and type it manually.
               </span>
             )}
@@ -620,18 +623,18 @@ function QuizConfig({ words, structures = [], onStart }) {
         {/* ── Step 1: Copy Prompt ─────────────────────────────────────── */}
         <div className="vm-panel rounded-2xl p-5">
           <div className="flex items-center gap-2.5 mb-1">
-            <span className="w-6 h-6 rounded-full bg-indigo-500/25 ring-1 ring-indigo-400/40 text-indigo-300 text-xs font-bold flex items-center justify-center shrink-0">
+            <span className="w-6 h-6 rounded-full bg-[var(--sb-terracotta-soft)] border border-[var(--sb-ink)] text-[var(--sb-terracotta-text)] text-xs font-extrabold flex items-center justify-center shrink-0">
               1
             </span>
-            <h3 className="text-white font-semibold text-sm">Copy the AI Prompt</h3>
+            <h3 className="sb-font-display text-[var(--sb-ink)] font-bold text-sm">Copy the AI Prompt</h3>
           </div>
-          <p className="text-slate-300 text-xs ml-8 mb-4">
+          <p className="text-[var(--sb-ink-soft)] text-xs font-medium ml-8 mb-4">
             Paste it into{' '}
             <a
               href="https://gemini.google.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-indigo-300 hover:text-indigo-200 underline"
+              className="text-[var(--sb-terracotta-text)] hover:text-[var(--sb-terracotta-hover)] font-bold underline"
             >
               Gemini
             </a>
@@ -640,7 +643,7 @@ function QuizConfig({ words, structures = [], onStart }) {
               href="https://chat.openai.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-indigo-300 hover:text-indigo-200 underline"
+              className="text-[var(--sb-terracotta-text)] hover:text-[var(--sb-terracotta-hover)] font-bold underline"
             >
               ChatGPT
             </a>
@@ -651,10 +654,10 @@ function QuizConfig({ words, structures = [], onStart }) {
             id="copy-prompt-btn"
             onClick={handleCopy}
             disabled={!hasSource}
-            className={`vm-btn w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm ${
+            className={`vm-btn w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm ${
               copied
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30'
-                : 'vm-btn-primary disabled:opacity-40 disabled:cursor-not-allowed'
+                ? 'bg-[var(--sb-forest-btn)] text-white border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)]'
+                : 'vm-btn-primary disabled:opacity-45 disabled:cursor-not-allowed'
             }`}
           >
             {copied
@@ -667,12 +670,12 @@ function QuizConfig({ words, structures = [], onStart }) {
         {/* ── Step 2: Paste JSON & Start ──────────────────────────────── */}
         <div className="vm-panel rounded-2xl p-5">
           <div className="flex items-center gap-2.5 mb-1">
-            <span className="w-6 h-6 rounded-full bg-indigo-500/25 ring-1 ring-indigo-400/40 text-indigo-300 text-xs font-bold flex items-center justify-center shrink-0">
+            <span className="w-6 h-6 rounded-full bg-[var(--sb-terracotta-soft)] border border-[var(--sb-ink)] text-[var(--sb-terracotta-text)] text-xs font-extrabold flex items-center justify-center shrink-0">
               2
             </span>
-            <h3 className="text-white font-semibold text-sm">Paste AI Response (JSON)</h3>
+            <h3 className="sb-font-display text-[var(--sb-ink)] font-bold text-sm">Paste AI Response (JSON)</h3>
           </div>
-          <p className="text-slate-300 text-xs ml-8 mb-3">
+          <p className="text-[var(--sb-ink-soft)] text-xs font-medium ml-8 mb-3">
             Paste the full AI reply here. Markdown code fences (` ```json … ``` `) are stripped automatically.
           </p>
 
@@ -688,9 +691,9 @@ function QuizConfig({ words, structures = [], onStart }) {
 
           {/* Parse error */}
           {parseError && (
-            <div className="flex items-start gap-2 mt-3 bg-rose-500/12 border border-rose-400/35 rounded-xl px-4 py-3 animate-fade-in">
-              <AlertCircle size={14} className="text-rose-300 shrink-0 mt-0.5" />
-              <p className="text-rose-200 text-xs leading-relaxed">{parseError}</p>
+            <div role="alert" className="flex items-start gap-2 mt-3 bg-[var(--sb-berry-soft)] border-2 border-[var(--sb-berry)] rounded-xl px-4 py-3 animate-fade-in">
+              <AlertCircle size={14} className="text-[var(--sb-berry-text)] shrink-0 mt-0.5" />
+              <p className="text-[var(--sb-berry-text)] text-xs font-semibold leading-relaxed">{parseError}</p>
             </div>
           )}
 
@@ -699,7 +702,7 @@ function QuizConfig({ words, structures = [], onStart }) {
             id="start-quiz-btn"
             onClick={handleStart}
             disabled={!jsonPaste.trim()}
-            className="vm-btn vm-btn-violet mt-4 w-full flex items-center justify-center gap-2 py-4 disabled:opacity-40 disabled:cursor-not-allowed rounded-2xl font-bold text-base"
+            className="vm-btn vm-btn-violet mt-4 w-full flex items-center justify-center gap-2 py-4 disabled:opacity-45 disabled:cursor-not-allowed rounded-2xl font-bold text-base"
           >
             <ClipboardPaste size={20} /> 🚀 Start Quiz
           </button>
@@ -715,10 +718,10 @@ function QuizConfig({ words, structures = [], onStart }) {
 const OPTION_LABELS = ['A', 'B', 'C', 'D'];
 
 function optionClass(idx, answered, correctIndex, selected) {
-  if (!answered)              return 'bg-[#121c33]/85 border-slate-400/20 text-white hover:border-indigo-400/70 hover:bg-[#192646]';
-  if (idx === correctIndex)   return 'bg-emerald-500/18 border-emerald-400 text-emerald-200 shadow-lg shadow-emerald-500/15';
-  if (idx === selected)       return 'bg-rose-500/18    border-rose-400    text-rose-200 shadow-lg shadow-rose-500/15';
-  return 'bg-slate-900/50 border-slate-400/15 text-slate-400 cursor-not-allowed opacity-70';
+  if (!answered)              return 'bg-[var(--sb-paper-card)] border-[var(--sb-ink)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-warm)] shadow-[var(--sb-shadow-sm)]';
+  if (idx === correctIndex)   return 'bg-[var(--sb-forest-soft)] border-[var(--sb-forest)] text-[var(--sb-forest-text)] shadow-[var(--sb-shadow-sm)]';
+  if (idx === selected)       return 'bg-[var(--sb-berry-soft)] border-[var(--sb-berry)] text-[var(--sb-berry-text)] shadow-[var(--sb-shadow-sm)]';
+  return 'bg-[var(--sb-disabled-bg)] border-[var(--sb-disabled-border)] text-[var(--sb-disabled-text)] cursor-not-allowed opacity-75';
 }
 
 /** Look up display-only notes without changing option or answer text. */
@@ -728,7 +731,7 @@ function QuizAnnotation({ english, words }) {
   )?.annotation;
 
   return annotation?.trim() ? (
-    <span className="ml-1 text-xs font-normal text-slate-400">({annotation.trim()})</span>
+    <span className="ml-1 text-xs font-normal opacity-80">({annotation.trim()})</span>
   ) : null;
 }
 
@@ -1117,16 +1120,16 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
     <div className="vm-page-enter max-w-2xl mx-auto">
       {/* Progress */}
       <div className="mb-6">
-        <div className="flex items-center justify-between text-sm text-slate-300 mb-2">
-          <span className="font-semibold text-white tabular-nums">
+        <div className="flex items-center justify-between text-sm text-[var(--sb-ink-soft)] mb-2">
+          <span className="font-bold text-[var(--sb-ink)] tabular-nums">
             Question {Math.min(queueIndex + 1, originalCount)}{' '}
-            <span className="text-slate-400">/ {originalCount}</span>
+            <span className="text-[var(--sb-ink-soft)]">/ {originalCount}</span>
           </span>
-          <span className="tabular-nums">{Math.round(progress)}% done</span>
+          <span className="tabular-nums font-semibold">{Math.round(progress)}% done</span>
         </div>
-        <div className="w-full h-2.5 bg-slate-900/90 rounded-full overflow-hidden ring-1 ring-white/5">
+        <div className="w-full h-3 bg-[var(--sb-paper-deep)] rounded-full overflow-hidden border-2 border-[var(--sb-ink)]">
           <div
-            className="h-full bg-gradient-to-r from-indigo-500 via-violet-500 to-teal-400 progress-fill rounded-full"
+            className="h-full bg-gradient-to-r from-[var(--sb-terracotta)] via-[var(--sb-ochre)] to-[var(--sb-forest)] progress-fill rounded-full"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -1139,19 +1142,19 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
           {/* Left: question text + explanation */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-3">
-              <Brain size={15} className="text-indigo-400" />
-              <span className="text-indigo-300 text-xs font-semibold uppercase tracking-wider">Question</span>
+              <Brain size={15} className="text-[var(--sb-terracotta-strong)]" />
+              <span className="text-[var(--sb-terracotta-text)] text-xs font-extrabold uppercase tracking-wider">Question</span>
             </div>
-            <p className="text-white text-xl font-semibold leading-relaxed">{q.question}</p>
+            <p className="sb-font-display text-[var(--sb-ink)] text-xl font-bold leading-relaxed">{q.question}</p>
 
             {/* Explanation appears below the question on the left */}
             {answered && q.explanation && (
-              <div className="mt-4 bg-indigo-500/12 border border-indigo-400/25 rounded-xl px-4 py-3 animate-fade-in">
-                <p className="text-slate-200 text-sm leading-relaxed">
-                  <span className="text-indigo-300 font-semibold">💡 </span>
+              <div className="mt-4 bg-[var(--sb-paper-warm)] border-2 border-[var(--sb-ink)] rounded-xl px-4 py-3 animate-fade-in">
+                <p className="text-[var(--sb-ink)] text-sm font-medium leading-relaxed">
+                  <span className="text-[var(--sb-terracotta-text)] font-bold">💡 </span>
                   {q.explanation}
                   {mode === 'structure' && q.trapPoint && (
-                    <span className="block mt-2 text-amber-200"><strong>Điểm bẫy: </strong>{q.trapPoint}</span>
+                    <span className="block mt-2 text-[var(--sb-ochre-text)]"><strong>Điểm bẫy: </strong>{q.trapPoint}</span>
                   )}
                 </p>
               </div>
@@ -1160,7 +1163,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
 
           {/* Right: vocabulary image — visible immediately in Listening & Typing */}
           {isDictation && showVisual && (
-            <div className="animate-fade-in sm:w-56 sm:shrink-0 rounded-2xl overflow-hidden border border-slate-400/20 shadow-lg relative">
+            <div className="animate-fade-in sm:w-56 sm:shrink-0 rounded-2xl overflow-hidden border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)] relative">
               {imageUrl ? (
                 <img
                   src={imageUrl}
@@ -1171,9 +1174,9 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
               ) : (
                 <WordInitialTile word={q.wordEnglish} className="w-full h-48 sm:h-full" />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#070b14]/80 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[var(--sb-ink)]/80 via-transparent to-transparent" />
               <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
-                <Volume2 size={13} className="text-white/85" />
+                <Volume2 size={13} className="text-white/90" />
                 <span className="text-white font-bold text-sm drop-shadow">
                   {q.wordEnglish}
                   <QuizAnnotation english={q.wordEnglish} words={words} />
@@ -1187,7 +1190,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
             <div
               id="quiz-mc-image-slot"
               aria-live="polite"
-              className="w-[72px] h-[72px] min-[360px]:w-24 min-[360px]:h-24 sm:w-[176px] sm:h-[176px] shrink-0 self-start rounded-2xl overflow-hidden border border-slate-400/20 bg-slate-900/55 shadow-lg relative"
+              className="w-[72px] h-[72px] min-[360px]:w-24 min-[360px]:h-24 sm:w-[176px] sm:h-[176px] shrink-0 self-start rounded-2xl overflow-hidden border-2 border-[var(--sb-ink)] bg-[var(--sb-paper-warm)] shadow-[var(--sb-shadow-sm)] relative"
             >
               {answered ? (
                 <div className="vm-feedback-in relative w-full h-full">
@@ -1201,9 +1204,9 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
                   ) : (
                     <WordInitialTile word={q.wordEnglish} className="w-full h-full" />
                   )}
-                  <div className="hidden sm:block absolute inset-0 bg-gradient-to-t from-[#070b14]/90 via-[#070b14]/25 to-transparent pointer-events-none" />
+                  <div className="hidden sm:block absolute inset-0 bg-gradient-to-t from-[var(--sb-ink)]/85 via-[var(--sb-ink)]/25 to-transparent pointer-events-none" />
                   <div className="hidden sm:flex absolute bottom-2.5 left-2.5 right-2.5 items-center gap-1.5">
-                    <Volume2 size={13} className="text-indigo-300 shrink-0" />
+                    <Volume2 size={13} className="text-[var(--sb-ochre-soft)] shrink-0" />
                     <span className="text-white font-bold text-sm drop-shadow truncate">
                       {q.wordEnglish}
                       <QuizAnnotation english={q.wordEnglish} words={words} />
@@ -1213,9 +1216,9 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
               ) : (
                 <div
                   aria-hidden="true"
-                  className="w-full h-full flex items-center justify-center bg-slate-900/40"
+                  className="w-full h-full flex items-center justify-center bg-[var(--sb-paper-deep)]"
                 >
-                  <ImageIcon size={24} className="text-slate-500/55 sm:w-8 sm:h-8" />
+                  <ImageIcon size={24} className="text-[var(--sb-ink-soft)]/70 sm:w-8 sm:h-8" />
                 </div>
               )}
             </div>
@@ -1235,18 +1238,18 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
               className={`vm-btn w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left
                 ${optionClass(idx, answered, q.correctIndex, selected)}`}
             >
-              <span className="shrink-0 w-8 h-8 rounded-lg bg-slate-950/50 ring-1 ring-white/10 flex items-center justify-center font-bold text-sm">
+              <span className="shrink-0 w-8 h-8 rounded-lg bg-[var(--sb-paper-deep)] border border-[var(--sb-ink)] text-[var(--sb-ink)] flex items-center justify-center font-extrabold text-sm">
                 {OPTION_LABELS[idx]}
               </span>
-              <span className="font-medium flex-1">
+              <span className="font-bold flex-1">
                 {opt}
                 <QuizAnnotation english={opt} words={words} />
               </span>
               {answered && idx === q.correctIndex && (
-                <CheckCircle size={18} className="ml-auto text-emerald-300 shrink-0 vm-scale-in" />
+                <CheckCircle size={18} className="ml-auto text-[var(--sb-forest-text)] shrink-0 vm-scale-in" />
               )}
               {answered && idx === selected && idx !== q.correctIndex && (
-                <XCircle size={18} className="ml-auto text-rose-300 shrink-0 vm-scale-in" />
+                <XCircle size={18} className="ml-auto text-[var(--sb-berry-text)] shrink-0 vm-scale-in" />
               )}
             </button>
           ))}
@@ -1262,23 +1265,23 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
               id="dictation-play-btn"
               onClick={handleDictationPlay}
               disabled={dictAnswered}
-              className="vm-btn vm-btn-primary flex items-center gap-2 px-5 py-3 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-semibold text-sm"
+              className="vm-btn vm-btn-primary flex items-center gap-2 px-5 py-3 disabled:opacity-45 disabled:cursor-not-allowed rounded-xl font-bold text-sm"
             >
               <Headphones size={17} />
               {playCount === 0 ? 'Play Word' : `Play Again (×${playCount})`}
             </button>
             {!dictAnswered && (
-              <span className="text-slate-400 text-xs">
+              <span className="text-[var(--sb-ink-soft)] font-medium text-xs">
                 Audio repeats automatically; Play Again replays immediately.
               </span>
             )}
           </div>
           {/* The answer is visible immediately so learners can listen and type it. */}
           {!dictAnswered && (
-            <div className="flex items-center gap-2 bg-amber-500/12 border border-amber-400/35 rounded-xl px-4 py-2.5 animate-fade-in">
-              <AlertCircle size={14} className="text-amber-300 shrink-0" />
-              <span className="text-amber-200 text-sm">
-                Answer: <strong className="text-amber-100">
+            <div className="flex items-center gap-2 bg-[var(--sb-ochre-soft)] border-2 border-[var(--sb-ochre-text)] rounded-xl px-4 py-2.5 animate-fade-in">
+              <AlertCircle size={14} className="text-[var(--sb-ochre-text)] shrink-0" />
+              <span className="text-[var(--sb-ink)] text-sm font-medium">
+                Answer: <strong className="text-[var(--sb-ochre-text)]">
                   {q.wordEnglish}
                   <QuizAnnotation english={q.wordEnglish} words={words} />
                 </strong>
@@ -1305,8 +1308,8 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
                 ${
                   dictAnswered
                     ? dictCorrect
-                      ? 'border-emerald-400 bg-emerald-500/12'
-                      : 'border-rose-400 bg-rose-500/12'
+                      ? 'border-[var(--sb-forest)] bg-[var(--sb-forest-soft)] text-[var(--sb-forest-text)]'
+                      : 'border-[var(--sb-berry)] bg-[var(--sb-berry-soft)] text-[var(--sb-berry-text)]'
                     : ''
                 }`}
             />
@@ -1314,7 +1317,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
               id="dictation-submit-btn"
               onClick={handleDictationSubmit}
               disabled={!typedAnswer.trim() || dictAnswered}
-              className="vm-btn vm-btn-violet flex items-center gap-1.5 px-5 py-3 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl font-semibold text-sm"
+              className="vm-btn vm-btn-violet flex items-center gap-1.5 px-5 py-3 disabled:opacity-45 disabled:cursor-not-allowed rounded-xl font-bold text-sm"
             >
               <Send size={15} /> Submit
             </button>
@@ -1322,7 +1325,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
               id="dictation-iknowit-btn"
               onClick={handleIKnowIt}
               disabled={dictAnswered}
-              className="vm-btn flex items-center gap-1.5 px-5 py-3 bg-slate-900/70 border border-slate-400/30 hover:border-slate-300/60 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-slate-200 rounded-xl font-semibold text-sm"
+              className="vm-btn flex items-center gap-1.5 px-5 py-3 bg-[var(--sb-paper-card)] border-2 border-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)] disabled:opacity-45 disabled:cursor-not-allowed text-[var(--sb-ink)] rounded-xl font-bold text-sm shadow-[var(--sb-shadow-sm)]"
               title="Auto-skip and mark as correct"
             >
               <FastForward size={15} /> I Know It
@@ -1331,20 +1334,20 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
 
           {/* Feedback after submit */}
           {dictAnswered && (
-            <div className={`flex items-center gap-2 rounded-xl px-4 py-3 animate-fade-in ${
+            <div className={`flex items-center gap-2 rounded-xl px-4 py-3 border-2 animate-fade-in ${
               dictCorrect
-                ? 'bg-emerald-500/15 border border-emerald-400/35'
-                : 'bg-rose-500/15 border border-rose-400/35'
+                ? 'bg-[var(--sb-forest-soft)] border-[var(--sb-forest)]'
+                : 'bg-[var(--sb-berry-soft)] border-[var(--sb-berry)]'
             }`}>
               {dictCorrect
-                ? <CheckCircle size={16} className="text-emerald-300 shrink-0" />
-                : <XCircle    size={16} className="text-rose-300 shrink-0" />}
-              <span className={`text-sm font-medium ${
-                dictCorrect ? 'text-emerald-200' : 'text-rose-200'
+                ? <CheckCircle size={16} className="text-[var(--sb-forest-text)] shrink-0" />
+                : <XCircle    size={16} className="text-[var(--sb-berry-text)] shrink-0" />}
+              <span className={`text-sm font-bold ${
+                dictCorrect ? 'text-[var(--sb-forest-text)]' : 'text-[var(--sb-berry-text)]'
               }`}>
                 {dictCorrect
                   ? 'Correct! 🎉'
-                  : <>Wrong. The answer is <strong className="text-white">
+                  : <>Wrong. The answer is <strong className="text-[var(--sb-ink)]">
                       {q.wordEnglish}
                       <QuizAnnotation english={q.wordEnglish} words={words} />
                     </strong></>}
@@ -1356,8 +1359,8 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
 
       {/* Auto-advancing spinner */}
       {answered && (
-        <div className="animate-fade-in flex items-center justify-center gap-2 py-2 text-slate-300 text-sm">
-          <div className="w-4 h-4 border-2 border-slate-600 border-t-indigo-400 rounded-full animate-spin" />
+        <div className="animate-fade-in flex items-center justify-center gap-2 py-2 text-[var(--sb-ink-soft)] font-semibold text-sm">
+          <div className="w-4 h-4 border-2 border-[var(--sb-paper-deep)] border-t-[var(--sb-terracotta-strong)] rounded-full animate-spin" />
           {queueIndex + 1 >= questionQueue.length
             ? 'Finishing quiz…'
             : 'Next question in a moment…'
@@ -1377,40 +1380,40 @@ function QuizResults({ results, onRestart, mode }) {
   const pct     = Math.round((correct / total) * 100);
 
   const grade =
-    pct >= 90 ? { label: 'Excellent!',  color: 'text-emerald-300', emoji: '🏆' } :
-    pct >= 70 ? { label: 'Good Job!',   color: 'text-indigo-300',  emoji: '👏' } :
-    pct >= 50 ? { label: 'Keep Going!', color: 'text-amber-300',   emoji: '💪' } :
-               { label: 'Try Again!',   color: 'text-rose-300',    emoji: '📚' };
+    pct >= 90 ? { label: 'Excellent!',  color: 'text-[var(--sb-forest-text)]',     emoji: '🏆' } :
+    pct >= 70 ? { label: 'Good Job!',   color: 'text-[var(--sb-terracotta-text)]', emoji: '👏' } :
+    pct >= 50 ? { label: 'Keep Going!', color: 'text-[var(--sb-ochre-text)]',      emoji: '💪' } :
+               { label: 'Try Again!',   color: 'text-[var(--sb-berry-text)]',      emoji: '📚' };
 
   return (
     <div className="vm-page-enter max-w-lg mx-auto text-center">
       <div className="vm-card rounded-3xl p-8 mb-6 vm-scale-in">
         <div className="text-6xl mb-4">{grade.emoji}</div>
-        <h2 className={`text-3xl font-extrabold tracking-tight mb-2 ${grade.color}`}>{grade.label}</h2>
-        <p className="text-slate-300 mb-6">Quiz complete! Here's how you did:</p>
+        <h2 className={`sb-font-display text-3xl font-extrabold tracking-tight mb-2 ${grade.color}`}>{grade.label}</h2>
+        <p className="text-[var(--sb-ink-soft)] font-semibold mb-6">Quiz complete! Here's how you did:</p>
 
         <div className="flex items-center justify-center gap-8 mb-6">
           <div>
-            <p className="text-4xl font-black text-white tabular-nums">{correct}/{total}</p>
-            <p className="text-slate-300 text-sm mt-1">Correct</p>
+            <p className="sb-font-display text-4xl font-black text-[var(--sb-ink)] tabular-nums">{correct}/{total}</p>
+            <p className="text-[var(--sb-ink-soft)] font-semibold text-sm mt-1">Correct</p>
           </div>
-          <div className="w-px h-12 bg-slate-400/20" />
+          <div className="w-px h-12 bg-[var(--sb-ink-border)]" />
           <div>
-            <p className={`text-4xl font-black tabular-nums ${grade.color}`}>{pct}%</p>
-            <p className="text-slate-300 text-sm mt-1">Accuracy</p>
+            <p className={`sb-font-display text-4xl font-black tabular-nums ${grade.color}`}>{pct}%</p>
+            <p className="text-[var(--sb-ink-soft)] font-semibold text-sm mt-1">Accuracy</p>
           </div>
         </div>
 
-        <div className="bg-slate-900/70 border border-slate-400/15 rounded-xl p-3.5 text-sm text-slate-300">
-          <Zap size={14} className="inline text-indigo-400 mr-1.5" />
-          {mode === 'structure' ? 'Tiến độ L1–L5 của cấu trúc được cập nhật theo câu trả lời.' : 'Word mastery levels &amp; streaks updated based on your answers.'}
+        <div className="bg-[var(--sb-paper-warm)] border-2 border-[var(--sb-ink)] rounded-xl p-3.5 text-sm font-medium text-[var(--sb-ink)]">
+          <Zap size={14} className="inline text-[var(--sb-terracotta-strong)] mr-1.5" />
+          {mode === 'structure' ? 'Tiến độ L1–L5 của cấu trúc được cập nhật theo câu trả lời.' : 'Word mastery levels & streaks updated based on your answers.'}
         </div>
       </div>
 
       <button
         id="restart-quiz-btn"
         onClick={onRestart}
-        className="vm-btn vm-btn-primary flex items-center justify-center gap-2 mx-auto px-8 py-3.5 rounded-2xl font-semibold"
+        className="vm-btn vm-btn-primary flex items-center justify-center gap-2 mx-auto px-8 py-3.5 rounded-2xl font-bold"
       >
         <RotateCcw size={16} /> Take Another Quiz
       </button>

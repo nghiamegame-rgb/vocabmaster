@@ -1,5 +1,14 @@
 # Bàn giao workspace VocabMaster
 
+## 25. Toàn trang Storybook Giấy Kem Sáng & gỡ `.sb-legacy` — 2026-11-26
+
+- Nhánh `feat/storybook-light-all` tách từ `main` (`3240dd8`); **chưa ghép/push `main`**. Giao diện Hoàng Hôn (Twilight) cũ nằm ở commit `cbca927` trên `main`; bản giấy kem Giai đoạn 1 nằm ở `2398fcb`. Chi tiết: [STORYBOOK-THEME.md](STORYBOOK-THEME.md).
+- **Bước A:** Khôi phục theme giấy kem sáng (`src/index.css`, `App.jsx`, `Navbar.jsx`, `ErrorBoundary.jsx`, `Dashboard.jsx`, `StorybookArt.jsx`, 2 test `navbar-sync-chip*`).
+- **Bước B (mỗi tab 1 commit):** Chuyển đồng bộ 6 tab còn lại (`Vocabulary`, `Flashcard`, `Smart Quiz` + `WordInitialTile`, `Listening` + `VoiceSettings` + `ListeningParts` + `DictationWordListening`, `Grammar` 15 file + `grammar-topic.test.js:49`, `Dictation` 6 file) sang biến `--sb-*` / `.vm-*` nền sáng, giữ nguyên bố cục/kích thước đo hình học ở Smart Quiz, Grammar (`UnderlinedSentence`, `SentenceNoteEditor`, `UnderlineToolbar`) và hành vi tự focus Listening.
+- **Bước C:** Gỡ bỏ `LEGACY_TABS` / `.sb-legacy` trong `src/App.jsx` và toàn bộ rule `.sb-legacy` / `--color-vm-*` / `--shadow-*` nền tối trong `src/index.css`.
+- **Kiểm tra sau hoàn tất:** `npm.cmd run build` đạt (JS `570,00 kB` / gzip `167,41 kB`, CSS `74,96 kB` / gzip `13,18 kB`, giảm từ CSS `113,40 kB`), `npm.cmd run lint` 0 lỗi / 31 cảnh báo, `npm.cmd test` **42/42**, **20/20** test trình duyệt Playwright + Edge (`*browser*.test.js` + `underline-rendering.test.js`) đạt, kiểm tra ảnh chụp 1440 px & 375 px qua cả 7 khu vực 0 lỗi, 0 tràn ngang.
+- **Chưa kiểm chứng:** điện thoại thật, Safari/iOS, Firefox.
+
 > **Cập nhật 2026-11-26 (rạng sáng):** toàn bộ phần Dictation (`feat/dictation`, `feat/voice-picker`, `feat/export-sentences-only`, `feat/dictation-word-listening`) **đã ghép vào `main` (`652765f`), đã push; Vercel Production Ready**; đồng bộ Google Sheet Dictation **đã cài và chạy thật** (Sheet + Apps Script + 2 biến Vercel; bằng chứng ở TRANG-THAI mục 18). Các câu "chưa ghép/push/deploy" trong các mục 18, 20 và ghi chú cũ bên dưới là lịch sử tại thời điểm viết (đã đánh dấu "sau đó đã ghép"). Tình hình hiện tại: [TRANG-THAI-DU-AN.md](TRANG-THAI-DU-AN.md) mục 1, 2, 18.
 
 > **Cập nhật 2026-11-25 (đêm):** `feat/voice-picker` và `feat/export-sentences-only` **đã ghép vào `main`** (`ab94f57`) và đã push. Nhánh `feat/dictation-word-listening` sau đó cũng đã ghép (`652765f`) và push; xem mục 20.

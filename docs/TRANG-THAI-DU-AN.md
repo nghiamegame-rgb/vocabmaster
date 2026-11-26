@@ -310,3 +310,20 @@ Tách từ `main` (`2398fcb` — bản giấy kem sáng cũ vẫn nằm ở comm
   - Rà tương phản WCAG AA bằng script tính toán: mọi cặp chữ/nền chính đạt **5,48:1 – 15,12:1**.
   - Chụp và đọc ảnh màn hình ở 1440 px & 375 px cho Dashboard (có dữ liệu & rỗng) và tất cả 6 tab cũ trong `.sb-legacy`: 0 tràn ngang, 0 lỗi trang. Ghi nhận lệch màu nhẹ ở 6 tab cũ chưa chuyển: Flashcard (mặt thẻ chính dùng `bg-slate-*` xám lạnh) và vài nút pill/ô phụ `bg-slate-800/900` trong Vocabulary/Quiz/Listening/Grammar/Dictation vẫn giữ tông xám xanh cũ nhưng chữ vẫn rõ, sẽ đồng bộ hoàn toàn khi gỡ `.sb-legacy` ở Giai đoạn 2–5.
 - **Chưa kiểm tra:** điện thoại thật, Safari/iOS, Firefox, chưa mở modal/toast phức tạp ngoài các test tự động.
+
+## 23. Ngày 26/11 (đêm muộn) — nhánh `feat/storybook-light-all` (chưa ghép `main`)
+
+Tách từ `main` (`3240dd8`). **Chỉ mới sửa và commit theo từng bước trên nhánh `feat/storybook-light-all`; CHƯA ghép `main`, CHƯA push `main`.** Chi tiết bảng màu & token: [STORYBOOK-THEME.md](STORYBOOK-THEME.md).
+
+- **Khôi phục theme giấy kem sáng & áp dụng đồng nhất cho toàn bộ trang web (Bước A → Bước B từng tab → Bước C gỡ `.sb-legacy`):**
+  1. **Bước A:** Khôi phục nền tảng giấy kem ấm từ `2398fcb` (`src/index.css`, `App.jsx`, `Navbar.jsx`, `ErrorBoundary.jsx`, `Dashboard.jsx`, `StorybookArt.jsx`, 2 test `navbar-sync-chip*`). Giao diện Hoàng Hôn cũ được giữ nguyên tại commit **`cbca927`** trên `main` nếu cần xem lại.
+  2. **Bước B (mỗi tab một commit):** Lần lượt chuyển toàn bộ 6 tab còn lại (`Vocabulary`, `Flashcard`, `Smart Quiz` + `WordInitialTile`, `Listening` + `VoiceSettings` + `ListeningParts` + `DictationWordListening`, `Grammar` 15 file + `grammar-topic.test.js`, `Dictation` 6 file) sang biến `--sb-*` / `.vm-*` nền sáng giấy kem, chữ mực `#2b2a33` / `#575361`, viền mực và trạng thái đúng/sai/cảnh báo/vô hiệu hóa đạt WCAG AA.
+  3. **Bước C:** Gỡ bỏ hoàn toàn lớp cầu nối `.sb-legacy`, biến `--color-vm-*` và các quy tắc CSS nền tối khỏi `src/App.jsx` và `src/index.css`. Rà soát `src/` không còn class tối (`bg-slate-*`, `text-slate-*`, `#070b14`, `.sb-legacy`).
+- **Không đổi:** toàn bộ logic học, chấm điểm, L1–L5, đồng bộ Google Sheets, `src/hooks/`, `src/utils/`, `api/`, `*-apps-script.js`, kích thước/bố cục ô ảnh Smart Quiz (`#quiz-mc-image-slot`, `.vm-card`), logic đo hình học gạch chân/ghi chú Grammar (`UnderlinedSentence.jsx`), cơ chế tự mở bàn phím Listening, phát âm.
+- **Đã kiểm tra sau Bước C:**
+  - `npm.cmd run build` đạt (`index-*.js`: `570,00 kB` / gzip `167,41 kB` so với `main` `561,76 kB` / gzip `168,16 kB`; CSS giảm từ `113,40 kB` gzip `17,52 kB` xuống **`74,96 kB`** gzip `13,18 kB` sau khi gỡ `.sb-legacy`; chunk `Dictation-*.js`: `52,93 kB`).
+  - `npm.cmd run lint` **0 lỗi / 31 cảnh báo** (giữ nguyên mốc).
+  - `npm.cmd test` **42/42** đạt (có Python thật trong `PATH`).
+  - **20/20** test trình duyệt Playwright + Edge headless (`*browser*.test.js` + `underline-rendering.test.js`) đạt, bao gồm toàn bộ test đo hình học (`quiz-feedback-browser`, `underline-rendering`, `sentence-notes-browser`, `navbar-sync-chip-browser`), `grammar-*`, `dictation-*`, `vocab-*`, `listening-autofocus-browser`, `voice-settings-browser`.
+  - Ảnh chụp màn hình trên Edge headless (dữ liệu mẫu cục bộ) ở **1440 px & 375 px** trên cả 7 khu vực (`Dashboard` có dữ liệu & rỗng, `Vocabulary`, `Flashcard` mặt trước/sau, `Smart Quiz` cấu hình/câu hỏi MC đã chọn đáp án, `Listening` + `VoiceSettings`, `Grammar` Luyện tập/Câu đã lưu/Ôn tập, `Dictation` Luyện nghe/Thư viện bài): **0 lỗi JS, 0 tràn ngang**, không còn mảng/khung tối sót lại.
+- **Chưa kiểm tra:** điện thoại thật, Safari/iOS, Firefox.

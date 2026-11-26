@@ -25,11 +25,11 @@ function WordChoice({ word, state, onClick, index }) {
     >
       {(state === 'correct' || state === 'wrong') && (
         <span aria-hidden="true" className={`absolute inset-0 rounded-[inherit] border-2 vm-scale-in ${state === 'correct'
-          ? 'border-emerald-400 bg-emerald-500/20' : 'border-rose-400 bg-rose-500/20'}`} />
+          ? 'border-[var(--sb-forest)] bg-[var(--sb-forest-soft)]' : 'border-[var(--sb-berry)] bg-[var(--sb-berry-soft)]'}`} />
       )}
-      <span lang="en" className={`relative min-w-0 font-bold text-white hyphens-auto [overflow-wrap:anywhere] ${choiceSize(word.word)}`}>{word.word}</span>
-      {state === 'correct' && <CheckCircle2 size={22} aria-hidden="true" className="absolute top-2 right-2 text-emerald-300" />}
-      {state === 'wrong' && <XCircle size={22} aria-hidden="true" className="absolute top-2 right-2 text-rose-300" />}
+      <span lang="en" className={`relative min-w-0 font-bold text-[var(--sb-ink)] hyphens-auto [overflow-wrap:anywhere] ${choiceSize(word.word)}`}>{word.word}</span>
+      {state === 'correct' && <CheckCircle2 size={22} aria-hidden="true" className="absolute top-2 right-2 text-[var(--sb-forest-text)]" />}
+      {state === 'wrong' && <XCircle size={22} aria-hidden="true" className="absolute top-2 right-2 text-[var(--sb-berry-text)]" />}
     </button>
   );
 }
@@ -38,12 +38,12 @@ function FilterSwitch({ id, label, count, checked, onToggle }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="flex items-center gap-2 flex-wrap min-w-0">
-        <span className="text-slate-200 text-xs font-semibold">{label}</span>
-        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/35">{count} từ</span>
+        <span className="text-[var(--sb-ink)] text-xs font-semibold">{label}</span>
+        <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[var(--sb-ochre-soft)] text-[var(--sb-ochre-text)] border border-[var(--sb-ochre-text)]/35">{count} từ</span>
       </span>
       <button
         id={id} type="button" onClick={onToggle} aria-pressed={checked} aria-label={label}
-        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${checked ? 'bg-amber-500 shadow-sm shadow-amber-500/40' : 'bg-slate-600'}`}
+        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${checked ? 'bg-[var(--sb-ochre-text)]' : 'bg-[var(--sb-ink-soft)]'}`}
       >
         <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-200 ${checked ? 'translate-x-4' : 'translate-x-0.5'}`} />
       </button>
@@ -94,8 +94,8 @@ export default function DictationWordPractice({ store }) {
 
   if (words.length === 0) {
     return (
-      <p id="dictation-practice-empty" className="vm-panel rounded-2xl p-5 text-sm text-slate-300">
-        Chưa có từ nào đã lưu. Trong Luyện nghe, khi một từ mở, bấm biểu tượng lưu <Bookmark size={14} className="inline text-violet-300" aria-hidden="true" />.
+      <p id="dictation-practice-empty" className="vm-panel rounded-2xl p-5 text-sm text-[var(--sb-ink-soft)]">
+        Chưa có từ nào đã lưu. Trong Luyện nghe, khi một từ mở, bấm biểu tượng lưu <Bookmark size={14} className="inline text-[var(--sb-plum-text)]" aria-hidden="true" />.
       </p>
     );
   }
@@ -119,19 +119,19 @@ export default function DictationWordPractice({ store }) {
 
       {!round ? (
         game.hasEnough ? (
-          <div className="flex items-center justify-center py-20 text-slate-300">
-            <div className="animate-spin mr-3 w-5 h-5 border-2 border-slate-600 border-t-indigo-400 rounded-full" />
+          <div className="flex items-center justify-center py-20 text-[var(--sb-ink-soft)]">
+            <div className="animate-spin mr-3 w-5 h-5 border-2 border-[var(--sb-ink-border)] border-t-[var(--sb-terracotta-strong)] rounded-full" />
             Loading…
           </div>
         ) : (
-          <div id="dictation-practice-nomatch" className="flex items-start gap-3 bg-amber-500/12 border border-amber-400/35 rounded-2xl p-5 animate-fade-in">
-            <AlertCircle size={20} className="text-amber-300 shrink-0 mt-0.5" />
+          <div id="dictation-practice-nomatch" className="flex items-start gap-3 bg-[var(--sb-ochre-soft)] border-2 border-[var(--sb-ink)] rounded-2xl p-5 animate-fade-in">
+            <AlertCircle size={20} className="text-[var(--sb-ochre-text)] shrink-0 mt-0.5" />
             <div className="space-y-2">
-              <p className="text-amber-200 text-sm">Không còn từ nào khớp bộ lọc.</p>
+              <p className="text-[var(--sb-ochre-text)] font-semibold text-sm">Không còn từ nào khớp bộ lọc.</p>
               <button
                 id="dictation-practice-clear" type="button"
                 onClick={() => { setWrongOnly(false); setNewOnly(false); }}
-                className="vm-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 border border-slate-400/20 text-white hover:bg-slate-700"
+                className="vm-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--sb-paper-card)] border-2 border-[var(--sb-ink)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)]"
               >Bỏ bộ lọc</button>
             </div>
           </div>
@@ -170,7 +170,7 @@ export default function DictationWordPractice({ store }) {
 
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <SkipButton id="dictation-practice-next" answered={answered} onClick={game.handleNext} />
-            <span className="text-xs text-slate-300">{pool.length} in pool</span>
+            <span className="text-xs text-[var(--sb-ink-soft)]">{pool.length} in pool</span>
           </div>
         </>
       )}

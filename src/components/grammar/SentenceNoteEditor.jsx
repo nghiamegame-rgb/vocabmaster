@@ -38,13 +38,13 @@ export default function SentenceNoteEditor({ anchor, text, existing, error, onCh
   }, [anchor, text, onClose, position.width]);
   useLayoutEffect(() => { input.current.focus(); }, []);
   return <div ref={box} role="dialog" aria-label="Ghi chú đoạn văn bản" style={{ position: 'fixed', ...position, overflow: 'auto', zIndex: 10000 }}
-    className="rounded-xl border border-indigo-400/50 bg-slate-900 p-3 shadow-xl space-y-2">
+    className="rounded-xl border-2 border-[var(--sb-ink)] bg-[var(--sb-paper-card)] p-3 shadow-[var(--sb-shadow-lg)] space-y-2">
     <textarea ref={input} aria-label="Nội dung ghi chú" value={text} onChange={event => onChange(event.target.value)} rows={2}
-      placeholder="Nghĩa, từ loại hoặc giải thích…" className="w-full resize-none rounded-lg bg-slate-800 p-2 text-sm leading-relaxed text-slate-100 outline-none focus:ring-1 focus:ring-indigo-400" />
-    {error && <p role="alert" className="text-xs text-rose-300">{error}</p>}
+      placeholder="Nghĩa, từ loại hoặc giải thích…" className="w-full resize-none rounded-lg vm-input p-2 text-sm leading-relaxed outline-none" />
+    {error && <p role="alert" className="text-xs font-semibold text-[var(--sb-berry-text)]">{error}</p>}
     <div className="flex flex-wrap gap-2">
-      <button type="button" onClick={onClose} className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs text-white">Xong</button>
-      {existing && <button type="button" onClick={onDelete} className="rounded-lg px-2 py-1.5 text-xs text-rose-300 hover:bg-slate-800">Xóa ghi chú</button>}
+      <button type="button" onClick={onClose} className="vm-btn vm-btn-primary rounded-lg px-3 py-1.5 text-xs font-semibold">Xong</button>
+      {existing && <button type="button" onClick={onDelete} className="rounded-lg px-2 py-1.5 text-xs font-semibold text-[var(--sb-berry-text)] hover:bg-[var(--sb-berry-soft)]">Xóa ghi chú</button>}
     </div>
   </div>;
 }
