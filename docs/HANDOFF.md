@@ -4,6 +4,15 @@
 
 > **Cập nhật 2026-11-25 (đêm):** `feat/voice-picker` và `feat/export-sentences-only` **đã ghép vào `main`** (`ab94f57`) và đã push. Nhánh `feat/dictation-word-listening` sau đó cũng đã ghép (`652765f`) và push; xem mục 20.
 
+## 23. Giao diện Storybook — Giai đoạn 1 — 2026-11-26
+
+- Nhánh `feat/storybook-theme-phase1` tách từ `main` (`9df68cf`), đã push riêng lên `origin` cho Vercel Preview; **chưa ghép `main`**. Chi tiết thiết kế: [STORYBOOK-THEME.md](STORYBOOK-THEME.md).
+- **Nền tảng & Font:** `src/index.css` chuyển sang bảng màu giấy kem ấm (`--sb-paper: #f6efe2`, mực `--sb-ink: #2b2a33`), giữ nguyên tên các class `.vm-*` cũ và thêm `.sb-*` mới. Bỏ Google Fonts CDN, tự host `@fontsource-variable/fraunces` và `@fontsource-variable/nunito` qua `src/styles/fonts.css` (chỉ subset `vietnamese` + `latin`).
+- **Cầu nối `.sb-legacy`:** `src/App.jsx` bọc 6 tab chưa chuyển (`Vocabulary`, `Flashcard`, `Smart Quiz`, `Listening`, `Grammar`, `Dictation`) trong `.sb-legacy` (khôi phục biến màu tối cũ, không dùng `transform`/`filter`/`overflow:hidden` để không lệch `position: fixed` của Grammar). **Còn phải gỡ dần ở Giai đoạn 2–5** khi thiết kế lại từng tab.
+- **Navbar & Dashboard:** `src/components/Navbar.jsx` thiết kế lại theo phong cách giấy/mực, giữ nguyên 7 tab, `id`, `aria-label`, `PushIndicator`, `SyncStatusChip` (đổi chữ chip sang `text-*-900` trên nền sáng; cập nhật `navbar-sync-chip.test.js` và `navbar-sync-chip-browser.test.js`). `src/components/Dashboard.jsx` + `src/components/storybook/StorybookArt.jsx` thiết kế lại thành "Bản đồ hành trình" với nhân vật SVG gốc Cáo nhỏ lữ khách.
+- **Kiểm tra:** `npm.cmd run build` đạt (JS chính `557,42 kB` / gzip `167,46 kB`, tăng `+3,92 kB` gzip; CSS `110,35 kB`), `npm.cmd run lint` 0 lỗi / 31 cảnh báo, `npm.cmd test` **42/42**, 9 test trình duyệt **9/9** đạt, ảnh chụp kiểm tra 1440/1024/768/375 px đạt (0 tràn ngang).
+- **Chưa kiểm chứng:** điện thoại thật, Safari/iOS, Firefox, nhiều cỡ màn hình thật.
+
 ## 22. Grammar → Ôn tập: nút "Nghe câu" + "Giọng đọc" — 2026-11-26
 
 - Nhánh `feat/grammar-review-speak` tách từ `main` (`21433b1`), **chưa ghép/push/deploy**.
