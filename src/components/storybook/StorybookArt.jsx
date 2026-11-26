@@ -224,7 +224,7 @@ export function JourneyMapSvg({ levelCounts, foxLevel = 1 }) {
         <polygon points="20,7 23,20 20,17.5 17,20" fill="#d9603b" stroke="#2b2a33" strokeWidth="1.2" />
         <polygon points="20,33 23,20 20,22.5 17,20" fill="#3a8fb7" stroke="#2b2a33" strokeWidth="1.2" />
         <circle cx="20" cy="20" r="2" fill="#e0a82e" stroke="#2b2a33" strokeWidth="1.2" />
-        <text x="20" y="47" textAnchor="middle" fontSize="9" fontWeight="800" fill="#575361">VSTEP</text>
+        <text x="20" y="47" textAnchor="middle" fontSize="9" fontWeight="800" fill="#383542">VSTEP</text>
       </g>
 
       {/* Winding journey trail */}
@@ -269,13 +269,13 @@ export function JourneyMapSvg({ levelCounts, foxLevel = 1 }) {
 
             {/* Stage name pill */}
             <rect x="-46" y="25" width="92" height="20" rx="8" fill="#fbf7ee" stroke="#2b2a33" strokeWidth="1.6" />
-            <text x="0" y="38.5" textAnchor="middle" fontSize="10.5" fontWeight="700" fill="#2b2a33">
+            <text x="0" y="38.5" textAnchor="middle" fontSize="10.5" fontWeight="700" fill="#17161d">
               {title}
             </text>
 
             {/* Word count badge */}
             <rect x="-26" y="48" width="52" height="17" rx="8.5" fill={soft} stroke="#2b2a33" strokeWidth="1.4" />
-            <text x="0" y="59.5" textAnchor="middle" fontSize="10" fontWeight="800" fill="#2b2a33">
+            <text x="0" y="59.5" textAnchor="middle" fontSize="10" fontWeight="800" fill="#17161d">
               {count} từ
             </text>
           </g>

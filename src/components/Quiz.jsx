@@ -500,7 +500,7 @@ function QuizConfig({ words, structures = [], onStart }) {
                 >
                   <span>{wt.icon}</span>
                   {wt.label}
-                  <span className="text-xs opacity-80">({cnt})</span>
+                  <span className="text-xs">({cnt})</span>
                 </button>
               );
             })}
@@ -525,7 +525,7 @@ function QuizConfig({ words, structures = [], onStart }) {
                 >
                   <Star size={15} className={hardOnly ? 'fill-[var(--sb-ochre)] text-[var(--sb-ochre-text)]' : 'text-[var(--sb-ochre-text)]'} />
                   <span>Chỉ từ khó ⭐</span>
-                  <span className="text-xs opacity-85">({hardCount})</span>
+                  <span className="text-xs">({hardCount})</span>
                 </button>
                 <p className="text-[var(--sb-ink-soft)] text-xs font-medium mt-2">
                   Áp dụng cho nguồn từ Vocabulary khi tạo AI Prompt mới (hiện có <strong className="text-[var(--sb-ink)]">{eligibleWords.length}</strong> từ khớp bộ lọc, cần tối thiểu 4 từ).
@@ -626,7 +626,7 @@ function QuizConfig({ words, structures = [], onStart }) {
             <span className="w-6 h-6 rounded-full bg-[var(--sb-terracotta-soft)] border border-[var(--sb-ink)] text-[var(--sb-terracotta-text)] text-xs font-extrabold flex items-center justify-center shrink-0">
               1
             </span>
-            <h3 className="sb-font-display text-[var(--sb-ink)] font-bold text-sm">Copy the AI Prompt</h3>
+            <h3 className="sb-font-body text-[var(--sb-ink)] font-bold text-base">Copy the AI Prompt</h3>
           </div>
           <p className="text-[var(--sb-ink-soft)] text-xs font-medium ml-8 mb-4">
             Paste it into{' '}
@@ -673,7 +673,7 @@ function QuizConfig({ words, structures = [], onStart }) {
             <span className="w-6 h-6 rounded-full bg-[var(--sb-terracotta-soft)] border border-[var(--sb-ink)] text-[var(--sb-terracotta-text)] text-xs font-extrabold flex items-center justify-center shrink-0">
               2
             </span>
-            <h3 className="sb-font-display text-[var(--sb-ink)] font-bold text-sm">Paste AI Response (JSON)</h3>
+            <h3 className="sb-font-body text-[var(--sb-ink)] font-bold text-base">Paste AI Response (JSON)</h3>
           </div>
           <p className="text-[var(--sb-ink-soft)] text-xs font-medium ml-8 mb-3">
             Paste the full AI reply here. Markdown code fences (` ```json … ``` `) are stripped automatically.
@@ -721,17 +721,21 @@ function optionClass(idx, answered, correctIndex, selected) {
   if (!answered)              return 'bg-[var(--sb-paper-card)] border-[var(--sb-ink)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-warm)] shadow-[var(--sb-shadow-sm)]';
   if (idx === correctIndex)   return 'bg-[var(--sb-forest-soft)] border-[var(--sb-forest)] text-[var(--sb-forest-text)] shadow-[var(--sb-shadow-sm)]';
   if (idx === selected)       return 'bg-[var(--sb-berry-soft)] border-[var(--sb-berry)] text-[var(--sb-berry-text)] shadow-[var(--sb-shadow-sm)]';
-  return 'bg-[var(--sb-disabled-bg)] border-[var(--sb-disabled-border)] text-[var(--sb-disabled-text)] cursor-not-allowed opacity-75';
+  return 'bg-[var(--sb-disabled-bg)] border-[var(--sb-disabled-border)] text-[var(--sb-disabled-text)] cursor-not-allowed';
 }
 
 /** Look up display-only notes without changing option or answer text. */
-function QuizAnnotation({ english, words }) {
+function QuizAnnotation({ english, words, onDark = false }) {
   const annotation = words.find(
     w => w.english.trim().toLowerCase() === (english || '').trim().toLowerCase()
   )?.annotation;
 
   return annotation?.trim() ? (
-    <span className="ml-1 text-xs font-normal opacity-80">({annotation.trim()})</span>
+    <span className={onDark
+      ? 'sb-font-body ml-1 text-xs font-medium text-white/95'
+      : 'sb-font-body ml-1.5 text-sm font-medium text-[var(--sb-ink-soft)]'}>
+      ({annotation.trim()})
+    </span>
   ) : null;
 }
 
@@ -1145,12 +1149,12 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
               <Brain size={15} className="text-[var(--sb-terracotta-strong)]" />
               <span className="text-[var(--sb-terracotta-text)] text-xs font-extrabold uppercase tracking-wider">Question</span>
             </div>
-            <p className="sb-font-display text-[var(--sb-ink)] text-xl font-bold leading-relaxed">{q.question}</p>
+            <p className="sb-font-body text-[var(--sb-ink)] text-xl font-bold leading-relaxed">{q.question}</p>
 
             {/* Explanation appears below the question on the left */}
             {answered && q.explanation && (
               <div className="mt-4 bg-[var(--sb-paper-warm)] border-2 border-[var(--sb-ink)] rounded-xl px-4 py-3 animate-fade-in">
-                <p className="text-[var(--sb-ink)] text-sm font-medium leading-relaxed">
+                <p className="sb-font-body text-[var(--sb-ink)] text-base font-medium leading-relaxed">
                   <span className="text-[var(--sb-terracotta-text)] font-bold">💡 </span>
                   {q.explanation}
                   {mode === 'structure' && q.trapPoint && (
@@ -1179,7 +1183,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
                 <Volume2 size={13} className="text-white/90" />
                 <span className="text-white font-bold text-sm drop-shadow">
                   {q.wordEnglish}
-                  <QuizAnnotation english={q.wordEnglish} words={words} />
+                  <QuizAnnotation english={q.wordEnglish} words={words} onDark />
                 </span>
               </div>
             </div>
@@ -1209,7 +1213,7 @@ function QuizGame({ questions, words, onFinish, updateWordLevel, answerMode, mod
                     <Volume2 size={13} className="text-[var(--sb-ochre-soft)] shrink-0" />
                     <span className="text-white font-bold text-sm drop-shadow truncate">
                       {q.wordEnglish}
-                      <QuizAnnotation english={q.wordEnglish} words={words} />
+                      <QuizAnnotation english={q.wordEnglish} words={words} onDark />
                     </span>
                   </div>
                 </div>

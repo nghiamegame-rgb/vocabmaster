@@ -13,7 +13,7 @@ const tabs = [
 /** Sync button visual state for the current Vocabulary sync status. */
 function useSyncVisual(syncStatus) {
   const MAP = {
-    idle:     { label: 'Sync',     cls: 'bg-[#fbf7ee] text-[#2b2a33] hover:bg-[#ece1cc] border-[#2b2a33] shadow-[2px_2px_0_#2b2a33]', spin: false, Icon: RefreshCw },
+    idle:     { label: 'Sync',     cls: 'bg-[#fbf7ee] text-[var(--sb-ink)] hover:bg-[#ece1cc] border-[#2b2a33] shadow-[2px_2px_0_#2b2a33]', spin: false, Icon: RefreshCw },
     syncing:  { label: 'Syncing…', cls: 'text-indigo-900 bg-indigo-100 border-indigo-700 shadow-[2px_2px_0_#2b2a33] cursor-wait',     spin: false, Icon: RefreshCw },
     ok:       { label: 'Synced!',  cls: 'text-emerald-900 bg-emerald-100 border-emerald-700 shadow-[2px_2px_0_#2b2a33]',              spin: false, Icon: RefreshCw },
     error:    { label: 'Failed',   cls: 'text-rose-900 bg-rose-100 border-rose-700 shadow-[2px_2px_0_#2b2a33]',                       spin: false, Icon: RefreshCw },
@@ -125,7 +125,7 @@ export default function Navbar({ activeTab, setActiveTab, syncStatus, pushStatus
               <div className="w-8 h-8 rounded-xl bg-[#d9603b] border-2 border-[#2b2a33] shadow-[2px_2px_0_#2b2a33] flex items-center justify-center transition-transform duration-200 hover:scale-105">
                 <span className="sb-font-display text-white font-black text-sm">V</span>
               </div>
-              <span className="sb-font-display text-[#2b2a33] font-extrabold text-lg tracking-tight hidden xl:block">
+              <span className="sb-font-display text-[var(--sb-ink)] font-extrabold text-lg tracking-tight hidden xl:block">
                 Vocab<span className="text-[#a83b1c]">Master</span>
               </span>
             </div>
@@ -142,7 +142,7 @@ export default function Navbar({ activeTab, setActiveTab, syncStatus, pushStatus
                     vm-btn flex items-center gap-1.5 px-0.5 min-[360px]:px-1.5 sm:px-2.5 xl:px-2.5 py-1.5 rounded-xl text-sm font-bold border-2 shrink-0 whitespace-nowrap
                     ${activeTab === id
                       ? 'bg-[#c44d2a] text-white border-[#2b2a33] shadow-[2px_2px_0_#2b2a33]'
-                      : 'border-transparent text-[#2b2a33] hover:bg-[#ece1cc] hover:border-[#2b2a33]/35'}
+                      : 'border-transparent text-[var(--sb-ink)] hover:bg-[#ece1cc] hover:border-[#2b2a33]/35'}
                   `}
                 >
                   <Icon size={16} />

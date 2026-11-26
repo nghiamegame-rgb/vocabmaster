@@ -246,7 +246,7 @@ export default function Flashcard({ words, updateWordLevel }) {
               }`}
             >
               {opt.label}
-              <span className="ml-1 opacity-80">({count})</span>
+              <span className="ml-1">({count})</span>
             </button>
           );
         })}
@@ -264,7 +264,7 @@ export default function Flashcard({ words, updateWordLevel }) {
         >
           <Star size={12} className={hardOnly ? 'fill-[var(--sb-ochre)] text-[var(--sb-ochre-text)]' : 'text-[var(--sb-ochre-text)]'} />
           <span>Chỉ từ khó ⭐</span>
-          <span className="opacity-80">({hardCount})</span>
+          <span>({hardCount})</span>
         </button>
       </div>
 
@@ -291,7 +291,7 @@ export default function Flashcard({ words, updateWordLevel }) {
             >
               <span>{opt.icon}</span>
               <span>{opt.label}</span>
-              <span className="opacity-80">({count})</span>
+              <span>({count})</span>
             </button>
           );
         })}
@@ -322,7 +322,7 @@ export default function Flashcard({ words, updateWordLevel }) {
           <div className="w-16 h-16 rounded-2xl sb-sticker bg-[var(--sb-paper-warm)] flex items-center justify-center mx-auto mb-4">
             <Filter size={28} className="text-[var(--sb-ink-soft)]" />
           </div>
-          <h3 className="sb-font-display text-[var(--sb-ink)] font-bold text-lg mb-2">
+          <h3 className="sb-font-body text-[var(--sb-ink)] font-bold text-lg mb-2">
             {hardOnly ? 'Không có từ khó ⭐ nào khớp bộ lọc này' : 'Không có từ nào khớp bộ lọc này'}
           </h3>
           <p className="text-[var(--sb-ink-soft)] text-sm">
@@ -364,12 +364,14 @@ export default function Flashcard({ words, updateWordLevel }) {
   // ── Card content ──────────────────────────────────────────────────────────
   const frontContent = mode === 'eng-vie' ? (
     <div className="flex flex-col items-center justify-center h-full p-8">
-      <h2 className="sb-font-display text-4xl md:text-5xl font-extrabold tracking-tight text-[var(--sb-ink)] mb-2 text-center">
+      <h2 className="sb-font-display text-4xl md:text-5xl font-extrabold text-[var(--sb-ink)] mb-2 text-center">
         {currentWord.english}
-        {currentWord.annotation?.trim() && (
-          <span className="ml-2 text-sm md:text-base font-sans font-semibold text-[var(--sb-ink-soft)]">({currentWord.annotation.trim()})</span>
-        )}
       </h2>
+      {currentWord.annotation?.trim() && (
+        <p data-testid="flashcard-annotation" className="sb-vocab-annotation mt-1.5 max-w-prose text-center">
+          ({currentWord.annotation.trim()})
+        </p>
+      )}
       <button
         onClick={playPronunciation}
         aria-label="Pronounce word"
@@ -380,7 +382,7 @@ export default function Flashcard({ words, updateWordLevel }) {
     </div>
   ) : (
     <div className="flex flex-col items-center justify-center h-full p-8">
-      <h2 className="sb-font-display text-3xl md:text-4xl font-extrabold tracking-tight text-[var(--sb-ink)] mb-8 text-center">{currentWord.vietnamese}</h2>
+      <h2 className="sb-font-body text-3xl md:text-4xl font-extrabold text-[var(--sb-ink)] mb-8 text-center leading-snug">{currentWord.vietnamese}</h2>
       <button
         onClick={playPronunciation}
         aria-label="Pronounce word"
@@ -400,7 +402,7 @@ export default function Flashcard({ words, updateWordLevel }) {
           className="w-full max-h-56 object-cover rounded-2xl mb-6 shadow-[var(--sb-shadow-sm)] border-2 border-[var(--sb-ink)]"
         />
       )}
-      <h2 className="sb-font-display text-3xl md:text-4xl font-extrabold tracking-tight text-[var(--sb-forest-text)] text-center mb-3">{currentWord.vietnamese}</h2>
+      <h2 className="sb-font-body text-3xl md:text-4xl font-extrabold text-[var(--sb-forest-text)] text-center leading-snug mb-3">{currentWord.vietnamese}</h2>
       <p className="text-[var(--sb-ink)] text-sm font-bold px-3.5 py-1 bg-[var(--sb-paper-card)] rounded-full border-2 border-[var(--sb-ink)]">{currentWord.wordType}</p>
     </div>
   ) : (
@@ -413,12 +415,14 @@ export default function Flashcard({ words, updateWordLevel }) {
         />
       )}
       {/* Show english + annotation on the back in vie-eng mode */}
-      <h2 className="sb-font-display text-4xl md:text-5xl font-extrabold tracking-tight text-[var(--sb-terracotta-text)] text-center mb-2">
+      <h2 className="sb-font-display text-4xl md:text-5xl font-extrabold text-[var(--sb-terracotta-text)] text-center mb-2">
         {currentWord.english}
-        {currentWord.annotation?.trim() && (
-          <span className="ml-2 text-sm md:text-base font-sans font-semibold text-[var(--sb-ink-soft)]">({currentWord.annotation.trim()})</span>
-        )}
       </h2>
+      {currentWord.annotation?.trim() && (
+        <p data-testid="flashcard-annotation" className="sb-vocab-annotation mb-2 max-w-prose text-center">
+          ({currentWord.annotation.trim()})
+        </p>
+      )}
       <p className="text-[var(--sb-ink)] text-sm font-bold px-3.5 py-1 bg-[var(--sb-paper-card)] rounded-full border-2 border-[var(--sb-ink)]">{currentWord.wordType}</p>
     </div>
   );

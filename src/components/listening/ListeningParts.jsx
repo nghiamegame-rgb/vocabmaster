@@ -136,7 +136,7 @@ export function AnswerFeedback({ isCorrect, children }) {
   return (
     <div className={`
       animate-fade-in mb-5 flex items-center gap-3 px-5 py-3.5 rounded-2xl
-      font-semibold text-sm
+      sb-font-body font-semibold text-base
       ${isCorrect
         ? 'bg-[var(--sb-forest-soft)] border-2 border-[var(--sb-forest)] text-[var(--sb-forest-text)]'
         : 'bg-[var(--sb-berry-soft)] border-2 border-[var(--sb-berry)] text-[var(--sb-berry-text)]'

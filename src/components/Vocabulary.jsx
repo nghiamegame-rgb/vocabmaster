@@ -250,18 +250,18 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard
           <>
             <div className="flex items-start justify-between gap-2 mb-1.5">
               <div className="flex-1 min-w-0">
-                <h3 className="sb-font-display text-[var(--sb-ink)] font-bold text-lg leading-tight tracking-tight">{word.english}</h3>
+                <h3 className="sb-font-display text-[var(--sb-ink)] font-bold text-2xl leading-snug break-words">{word.english}</h3>
                 {word.annotation && (
-                  <span className="text-[var(--sb-ink-soft)] text-xs font-semibold">({word.annotation})</span>
+                  <p className="sb-vocab-meta mt-0.5 break-words">({word.annotation})</p>
                 )}
               </div>
               <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-xs font-bold border ${level.badge}`}>
                 L{word.level} {level.label}
               </span>
             </div>
-            <p className="text-[var(--sb-ink-soft)] font-medium text-sm mb-1.5 leading-snug">{word.vietnamese}</p>
+            <p className="sb-vocab-meaning mb-2">{word.vietnamese}</p>
             {/* Streak + Due indicator */}
-            <p className="text-[var(--sb-ink-soft)] text-xs mb-3.5 flex items-center gap-2 flex-wrap">
+            <p className="sb-vocab-meta mb-3.5 flex items-center gap-2 flex-wrap">
               <span>🔥 Streak: <span className="text-[var(--sb-ink)] font-bold tabular-nums">{streak}</span></span>
               {isDue && (
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[var(--sb-ochre-soft)] text-[var(--sb-ochre-text)] border border-[var(--sb-ochre-text)]/40">
@@ -555,7 +555,7 @@ export default memo(function Vocabulary({
         id="add-word-form"
         className="vm-panel rounded-2xl p-5 mb-6"
       >
-        <h2 className="sb-font-display text-[var(--sb-ink)] font-bold mb-4 flex items-center gap-2">
+        <h2 className="sb-font-body text-[var(--sb-ink)] font-extrabold text-lg mb-4 flex items-center gap-2">
           <Plus size={18} className="text-[var(--sb-terracotta-strong)]" /> Add New Word
         </h2>
         {error && (
@@ -660,7 +660,7 @@ export default memo(function Vocabulary({
             }`}
           >
             {opt.label}
-            <span className="ml-1.5 text-xs opacity-80">
+            <span className="ml-1.5 text-xs">
               ({opt.value === null ? poolForLevelCounts.length : levelCounts[opt.value] || 0})
             </span>
           </button>
@@ -679,7 +679,7 @@ export default memo(function Vocabulary({
         >
           <Star size={14} className={hardOnly ? 'fill-[var(--sb-ochre)] text-[var(--sb-ochre-text)]' : 'text-[var(--sb-ochre-text)]'} />
           <span>Khó ⭐</span>
-          <span className="ml-0.5 text-xs opacity-85">({hardCount})</span>
+          <span className="ml-0.5 text-xs">({hardCount})</span>
         </button>
       </div>
 
@@ -698,7 +698,7 @@ export default memo(function Vocabulary({
           >
             <span>{opt.icon}</span>
             <span className="hidden sm:inline">{opt.label.split('(')[0].trim()}</span>
-            <span className="text-xs opacity-80">
+            <span className="text-xs">
               ({opt.value === 'All'
                 ? poolForTypeCounts.length
                 : typeCounts[opt.value] || 0})
@@ -776,7 +776,7 @@ export default memo(function Vocabulary({
       {filtered.length === 0 ? (
         <div className="sb-card text-center py-14 px-6">
           <BookOpen size={52} className="text-[var(--sb-ink-soft)] mx-auto mb-4" />
-          <p className="sb-font-display text-[var(--sb-ink)] font-bold text-lg">
+          <p className="sb-font-body text-[var(--sb-ink)] font-extrabold text-lg">
             {hardOnly
               ? 'Chưa có từ khó ⭐ nào khớp bộ lọc hiện tại'
               : vocabFilter || typeFilter !== 'All' || searchQuery
