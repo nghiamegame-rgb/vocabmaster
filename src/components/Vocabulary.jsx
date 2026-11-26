@@ -12,11 +12,11 @@ import { normalizeWordInput } from '../utils/vocabWord';
 /* Constants                                                            */
 /* ------------------------------------------------------------------ */
 const LEVEL_COLORS = {
-  1: { badge: 'bg-rose-500/20    text-rose-400    border-rose-500/30',    dot: 'bg-rose-400',    label: 'New'       },
-  2: { badge: 'bg-orange-500/20  text-orange-400  border-orange-500/30',  dot: 'bg-orange-400',  label: 'Familiar'  },
-  3: { badge: 'bg-amber-500/20   text-amber-400   border-amber-500/30',   dot: 'bg-amber-400',   label: 'Learning'  },
-  4: { badge: 'bg-teal-500/20    text-teal-400    border-teal-500/30',    dot: 'bg-teal-400',    label: 'Proficient'},
-  5: { badge: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', dot: 'bg-emerald-400', label: 'Mastered'  },
+  1: { badge: 'bg-[var(--sb-berry-soft)]  text-[var(--sb-berry-text)]  border-[var(--sb-berry)]',  dot: 'bg-[var(--sb-berry)]',  label: 'New'       },
+  2: { badge: 'bg-[var(--sb-clay-soft)]   text-[var(--sb-clay-text)]   border-[var(--sb-clay)]',   dot: 'bg-[var(--sb-clay)]',   label: 'Familiar'  },
+  3: { badge: 'bg-[var(--sb-ochre-soft)]  text-[var(--sb-ochre-text)]  border-[var(--sb-ochre)]',  dot: 'bg-[var(--sb-ochre)]',  label: 'Learning'  },
+  4: { badge: 'bg-[var(--sb-lagoon-soft)] text-[var(--sb-lagoon-text)] border-[var(--sb-lagoon)]', dot: 'bg-[var(--sb-lagoon)]', label: 'Proficient'},
+  5: { badge: 'bg-[var(--sb-forest-soft)] text-[var(--sb-forest-text)] border-[var(--sb-forest)]', dot: 'bg-[var(--sb-forest)]', label: 'Mastered'  },
 };
 
 const WORD_TYPES = [
@@ -27,10 +27,10 @@ const WORD_TYPES = [
 ];
 
 const TYPE_META = {
-  Word:   { color: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',  icon: '📝' },
-  Phrase: { color: 'bg-purple-500/20 text-purple-300 border-purple-500/30',  icon: '💬' },
-  Family: { color: 'bg-sky-500/20    text-sky-300    border-sky-500/30',     icon: '🌳' },
-  Preposition: { color: 'bg-teal-500/20 text-teal-300 border-teal-500/30', icon: '🔗' },
+  Word:        { color: 'bg-[var(--sb-terracotta-soft)] text-[var(--sb-terracotta-text)] border-[var(--sb-terracotta)]', icon: '📝' },
+  Phrase:      { color: 'bg-[var(--sb-plum-soft)]       text-[var(--sb-plum-text)]       border-[var(--sb-plum)]',       icon: '💬' },
+  Family:      { color: 'bg-[var(--sb-sky-soft)]        text-[var(--sb-sky-text)]        border-[var(--sb-sky)]',        icon: '🌳' },
+  Preposition: { color: 'bg-[var(--sb-lagoon-soft)]     text-[var(--sb-lagoon-text)]     border-[var(--sb-lagoon)]',     icon: '🔗' },
 };
 
 const PAGE_SIZE = 24;
@@ -43,17 +43,17 @@ function Pagination({ page, pageCount, onChange, position }) {
         onClick={() => onChange(page - 1)}
         disabled={page === 1}
         aria-label="Previous page"
-        className="vm-btn p-2 bg-slate-900/80 border border-slate-400/20 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 hover:border-slate-400/35"
+        className="vm-btn p-2 bg-[var(--sb-paper-card)] border-2 border-[var(--sb-ink)] text-[var(--sb-ink)] rounded-xl disabled:opacity-45 disabled:cursor-not-allowed hover:bg-[var(--sb-paper-deep)] shadow-[var(--sb-shadow-sm)]"
       >
         <ChevronLeft size={16} />
       </button>
-      <label className="flex items-center gap-2 text-slate-300">
+      <label className="flex items-center gap-2 text-[var(--sb-ink-soft)] font-semibold">
         Page
         <select
           aria-label="Vocabulary page"
           value={page}
           onChange={e => onChange(Number(e.target.value))}
-          className="vm-input rounded-xl px-2.5 py-1.5 text-white"
+          className="vm-input rounded-xl px-2.5 py-1.5 text-[var(--sb-ink)] font-bold"
         >
           {Array.from({ length: pageCount }, (_, i) => (
             <option key={i + 1} value={i + 1}>{i + 1}</option>
@@ -66,7 +66,7 @@ function Pagination({ page, pageCount, onChange, position }) {
         onClick={() => onChange(page + 1)}
         disabled={page === pageCount}
         aria-label="Next page"
-        className="vm-btn p-2 bg-slate-900/80 border border-slate-400/20 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 hover:border-slate-400/35"
+        className="vm-btn p-2 bg-[var(--sb-paper-card)] border-2 border-[var(--sb-ink)] text-[var(--sb-ink)] rounded-xl disabled:opacity-45 disabled:cursor-not-allowed hover:bg-[var(--sb-paper-deep)] shadow-[var(--sb-shadow-sm)]"
       >
         <ChevronRight size={16} />
       </button>
@@ -125,9 +125,9 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard
   return (
     <div className={`vm-card vm-card-interactive rounded-2xl overflow-hidden group animate-fade-in ${
       selected
-        ? 'border-indigo-400 ring-2 ring-indigo-500/35'
+        ? 'border-[var(--sb-terracotta-strong)] ring-2 ring-[var(--sb-terracotta)]/40'
         : word.hardMarked
-          ? 'border-amber-400/45 hover:border-amber-400/70'
+          ? 'border-[var(--sb-ochre-text)]'
           : ''
     }`}>
       {/* Select checkbox + difficult-word star row */}
@@ -137,10 +137,10 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard
             id={`select-${word.id}`}
             type="button"
             onClick={() => onToggleSelect(word.id)}
-            className="vm-btn p-1 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-slate-800/70"
+            className="vm-btn p-1 rounded-lg text-[var(--sb-ink-soft)] hover:text-[var(--sb-terracotta-text)] hover:bg-[var(--sb-paper-deep)]"
             title={selected ? 'Deselect' : 'Select'}
           >
-            {selected ? <CheckSquare size={16} className="text-indigo-400" /> : <Square size={16} />}
+            {selected ? <CheckSquare size={16} className="text-[var(--sb-terracotta-strong)]" /> : <Square size={16} />}
           </button>
           <button
             id={`star-${word.id}`}
@@ -154,21 +154,21 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard
             title={word.hardMarked ? 'Bỏ đánh dấu từ khó' : 'Đánh dấu từ khó'}
             className={`vm-btn p-1 rounded-lg ${
               word.hardMarked
-                ? 'text-amber-400 hover:bg-amber-500/15'
-                : 'text-slate-400 hover:text-amber-300 hover:bg-slate-800/70'
+                ? 'text-[var(--sb-ochre-text)] bg-[var(--sb-ochre-soft)] hover:bg-[var(--sb-ochre)]/30'
+                : 'text-[var(--sb-ink-soft)] hover:text-[var(--sb-ochre-text)] hover:bg-[var(--sb-paper-deep)]'
             }`}
           >
-            <Star size={15} className={word.hardMarked ? 'fill-amber-400 text-amber-400' : ''} />
+            <Star size={15} className={word.hardMarked ? 'fill-[var(--sb-ochre)] text-[var(--sb-ochre-text)]' : ''} />
           </button>
         </div>
-        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${typeMeta.color}`}>
+        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${typeMeta.color}`}>
           {typeMeta.icon} {word.wordType || 'Word'}
         </span>
       </div>
 
       {/* Image */}
       {word.imageUrl && !imgError ? (
-        <div className="relative w-full h-32 bg-slate-950/80">
+        <div className="relative w-full h-32 bg-[var(--sb-paper-deep)] border-y border-[var(--sb-ink-faint)]">
           <img
             src={word.imageUrl}
             alt={word.english}
@@ -177,13 +177,13 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard
             className="w-full h-full object-cover"
             onError={() => setImgError(true)}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0d1424]/75 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[var(--sb-ink)]/30 to-transparent" />
         </div>
       ) : word.imageUrl && imgError ? (
-        <div className="w-full h-20 bg-slate-950/60 flex items-center justify-center">
+        <div className="w-full h-20 bg-[var(--sb-paper-deep)] border-y border-[var(--sb-ink-faint)] flex items-center justify-center">
           <div className="flex flex-col items-center gap-1">
-            <ImageIcon size={20} className="text-slate-400" />
-            <span className="text-slate-400 text-xs">Image unavailable</span>
+            <ImageIcon size={20} className="text-[var(--sb-ink-soft)]" />
+            <span className="text-[var(--sb-ink-soft)] text-xs font-medium">Image unavailable</span>
           </div>
         </div>
       ) : null}
@@ -196,34 +196,34 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard
               value={editFields.english}
               onChange={e => setEditFields(f => ({ ...f, english: e.target.value }))}
               placeholder="English word"
-              className="w-full vm-input rounded-lg px-3 py-2 text-white text-sm"
+              className="w-full vm-input rounded-lg px-3 py-2 text-sm font-semibold"
             />
             <input
               id={`edit-annotation-${word.id}`}
               value={editFields.annotation}
               onChange={e => setEditFields(f => ({ ...f, annotation: e.target.value }))}
               placeholder="Từ loại / Ghi chú (adj, v - n, adv…)"
-              className="w-full vm-input rounded-lg px-3 py-2 text-slate-200 text-xs"
+              className="w-full vm-input rounded-lg px-3 py-2 text-xs"
             />
             <input
               id={`edit-vietnamese-${word.id}`}
               value={editFields.vietnamese}
               onChange={e => setEditFields(f => ({ ...f, vietnamese: e.target.value }))}
               placeholder="Vietnamese meaning"
-              className="w-full vm-input rounded-lg px-3 py-2 text-white text-sm"
+              className="w-full vm-input rounded-lg px-3 py-2 text-sm"
             />
             <input
               id={`edit-imageurl-${word.id}`}
               value={editFields.imageUrl}
               onChange={e => setEditFields(f => ({ ...f, imageUrl: e.target.value }))}
               placeholder="Image URL (optional)"
-              className="w-full vm-input rounded-lg px-3 py-2 text-white text-sm"
+              className="w-full vm-input rounded-lg px-3 py-2 text-sm"
             />
             <select
               id={`edit-type-${word.id}`}
               value={editFields.wordType}
               onChange={e => setEditFields(f => ({ ...f, wordType: e.target.value }))}
-              className="w-full vm-input rounded-lg px-3 py-2 text-white text-sm"
+              className="w-full vm-input rounded-lg px-3 py-2 text-sm"
             >
               {WORD_TYPES.map(t => (
                 <option key={t.value} value={t.value}>{t.label}</option>
@@ -233,14 +233,14 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard
               <button
                 id={`save-edit-${word.id}`}
                 onClick={saveEdit}
-                className="vm-btn vm-btn-primary flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-medium"
+                className="vm-btn vm-btn-primary flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-bold"
               >
                 <Check size={12} /> Save
               </button>
               <button
                 id={`cancel-edit-${word.id}`}
                 onClick={cancelEdit}
-                className="vm-btn flex-1 flex items-center justify-center gap-1 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-400/20 text-white rounded-lg text-xs font-medium"
+                className="vm-btn flex-1 flex items-center justify-center gap-1 py-1.5 bg-[var(--sb-paper-warm)] hover:bg-[var(--sb-paper-deep)] border-2 border-[var(--sb-ink)] text-[var(--sb-ink)] rounded-lg text-xs font-bold"
               >
                 <X size={12} /> Cancel
               </button>
@@ -250,21 +250,21 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard
           <>
             <div className="flex items-start justify-between gap-2 mb-1.5">
               <div className="flex-1 min-w-0">
-                <h3 className="text-white font-bold text-lg leading-tight tracking-tight">{word.english}</h3>
+                <h3 className="sb-font-display text-[var(--sb-ink)] font-bold text-lg leading-tight tracking-tight">{word.english}</h3>
                 {word.annotation && (
-                  <span className="text-slate-300 text-xs font-medium">({word.annotation})</span>
+                  <span className="text-[var(--sb-ink-soft)] text-xs font-semibold">({word.annotation})</span>
                 )}
               </div>
-              <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium border ${level.badge}`}>
+              <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-xs font-bold border ${level.badge}`}>
                 L{word.level} {level.label}
               </span>
             </div>
-            <p className="text-slate-300 text-sm mb-1.5 leading-snug">{word.vietnamese}</p>
+            <p className="text-[var(--sb-ink-soft)] font-medium text-sm mb-1.5 leading-snug">{word.vietnamese}</p>
             {/* Streak + Due indicator */}
-            <p className="text-slate-400 text-xs mb-3.5 flex items-center gap-2 flex-wrap">
-              <span>🔥 Streak: <span className="text-slate-200 font-semibold tabular-nums">{streak}</span></span>
+            <p className="text-[var(--sb-ink-soft)] text-xs mb-3.5 flex items-center gap-2 flex-wrap">
+              <span>🔥 Streak: <span className="text-[var(--sb-ink)] font-bold tabular-nums">{streak}</span></span>
               {isDue && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-400/35">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[var(--sb-ochre-soft)] text-[var(--sb-ochre-text)] border border-[var(--sb-ochre-text)]/40">
                   ⏰ Due
                 </span>
               )}
@@ -275,7 +275,7 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard
                 id={`speak-${word.id}`}
                 onClick={speak}
                 title="Pronounce"
-                className="vm-btn flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-indigo-500/15 hover:bg-indigo-500/30 border border-indigo-400/25 text-indigo-300 hover:text-indigo-200 rounded-xl text-xs font-semibold"
+                className="vm-btn flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-[var(--sb-terracotta-soft)] hover:bg-[var(--sb-terracotta-strong)] border-2 border-[var(--sb-ink)] text-[var(--sb-terracotta-text)] hover:text-white rounded-xl text-xs font-bold"
               >
                 <Volume2 size={13} /> Speak
               </button>
@@ -283,7 +283,7 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard
                 id={`edit-${word.id}`}
                 onClick={() => setEditing(true)}
                 title="Edit"
-                className="vm-btn flex items-center justify-center p-2 bg-slate-800/80 hover:bg-slate-700 border border-slate-400/15 text-slate-300 hover:text-white rounded-xl"
+                className="vm-btn flex items-center justify-center p-2 bg-[var(--sb-paper-warm)] hover:bg-[var(--sb-paper-deep)] border-2 border-[var(--sb-ink)] text-[var(--sb-ink)] rounded-xl"
               >
                 <Pencil size={13} />
               </button>
@@ -291,7 +291,7 @@ const WordCard = memo(function WordCard({ word, onDelete, onUpdate, onToggleHard
                 id={`delete-${word.id}`}
                 onClick={() => onDelete(word.id)}
                 title="Delete"
-                className="vm-btn flex items-center justify-center p-2 bg-slate-800/80 hover:bg-rose-600 border border-slate-400/15 hover:border-rose-500 text-slate-300 hover:text-white rounded-xl"
+                className="vm-btn flex items-center justify-center p-2 bg-[var(--sb-paper-warm)] hover:bg-[var(--sb-berry-btn)] border-2 border-[var(--sb-ink)] text-[var(--sb-berry-text)] hover:text-white rounded-xl"
               >
                 <Trash2 size={13} />
               </button>
@@ -519,8 +519,8 @@ export default memo(function Vocabulary({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white mb-1">Vocabulary</h1>
-          <p className="text-slate-300 text-sm sm:text-base">{words.length} word{words.length !== 1 ? 's' : ''} in your collection</p>
+          <h1 className="sb-font-display text-3xl font-extrabold tracking-tight text-[var(--sb-ink)] mb-1">Vocabulary</h1>
+          <p className="text-[var(--sb-ink-soft)] font-semibold text-sm sm:text-base">{words.length} word{words.length !== 1 ? 's' : ''} in your collection</p>
         </div>
         <div className="flex items-center gap-2.5">
           <input
@@ -534,7 +534,7 @@ export default memo(function Vocabulary({
           <button
             id="import-btn"
             onClick={() => fileInputRef.current?.click()}
-            className="vm-btn flex items-center gap-2 px-4 py-2 bg-slate-800/80 hover:bg-slate-700/90 text-slate-100 rounded-xl text-sm font-medium border border-slate-400/20 hover:border-slate-400/35"
+            className="vm-btn flex items-center gap-2 px-4 py-2 bg-[var(--sb-paper-card)] hover:bg-[var(--sb-paper-deep)] text-[var(--sb-ink)] rounded-xl text-sm font-bold border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)]"
           >
             <Upload size={15} /> Import
           </button>
@@ -542,7 +542,7 @@ export default memo(function Vocabulary({
             id="export-btn"
             onClick={handleExport}
             disabled={words.length === 0}
-            className="vm-btn vm-btn-primary flex items-center gap-2 px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-sm font-semibold"
+            className="vm-btn vm-btn-primary flex items-center gap-2 px-4 py-2 disabled:opacity-45 disabled:cursor-not-allowed rounded-xl text-sm font-bold"
           >
             <Download size={15} /> Export
           </button>
@@ -555,16 +555,16 @@ export default memo(function Vocabulary({
         id="add-word-form"
         className="vm-panel rounded-2xl p-5 mb-6"
       >
-        <h2 className="text-white font-semibold mb-4 flex items-center gap-2">
-          <Plus size={18} className="text-indigo-400" /> Add New Word
+        <h2 className="sb-font-display text-[var(--sb-ink)] font-bold mb-4 flex items-center gap-2">
+          <Plus size={18} className="text-[var(--sb-terracotta-strong)]" /> Add New Word
         </h2>
         {error && (
-          <div className="flex items-center gap-2 text-rose-300 bg-rose-500/12 border border-rose-400/30 rounded-xl px-4 py-3 mb-3 text-sm animate-fade-in">
+          <div role="alert" className="flex items-center gap-2 text-[var(--sb-berry-text)] bg-[var(--sb-berry-soft)] border-2 border-[var(--sb-berry)] rounded-xl px-4 py-3 mb-3 text-sm font-semibold animate-fade-in">
             <AlertCircle size={15} /> {error}
           </div>
         )}
         {success && (
-          <div className="flex items-center gap-2 text-emerald-300 bg-emerald-500/12 border border-emerald-400/30 rounded-xl px-4 py-3 mb-3 text-sm animate-fade-in">
+          <div role="status" className="flex items-center gap-2 text-[var(--sb-forest-text)] bg-[var(--sb-forest-soft)] border-2 border-[var(--sb-forest)] rounded-xl px-4 py-3 mb-3 text-sm font-semibold animate-fade-in">
             <Check size={15} /> {success}
           </div>
         )}
@@ -584,7 +584,7 @@ export default memo(function Vocabulary({
               onChange={e => setAnnotation(e.target.value)}
               placeholder="Từ loại (adj, v…)"
               title="Từ loại / Ghi chú"
-              className="w-28 sm:w-36 shrink-0 vm-input rounded-xl px-3 py-2.5 text-slate-200 text-xs"
+              className="w-28 sm:w-36 shrink-0 vm-input rounded-xl px-3 py-2.5 text-xs"
             />
           </div>
           <input
@@ -605,7 +605,7 @@ export default memo(function Vocabulary({
             id="input-word-type"
             value={wordType}
             onChange={e => setWordType(e.target.value)}
-            className="vm-input rounded-xl px-4 py-2.5 text-sm"
+            className="vm-input rounded-xl px-4 py-2.5 text-sm font-medium"
           >
             {WORD_TYPES.map(t => (
               <option key={t.value} value={t.value}>{t.label}</option>
@@ -615,7 +615,7 @@ export default memo(function Vocabulary({
         <button
           id="add-word-btn"
           type="submit"
-          className="vm-btn vm-btn-primary mt-3.5 flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold"
+          className="vm-btn vm-btn-primary mt-3.5 flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold"
         >
           <Plus size={16} /> Add Word
         </button>
@@ -623,7 +623,7 @@ export default memo(function Vocabulary({
 
       {/* Search Bar */}
       <div className="relative mb-4">
-        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--sb-ink-soft)] pointer-events-none" />
         <input
           id="vocab-search"
           type="text"
@@ -638,7 +638,7 @@ export default memo(function Vocabulary({
           <button
             id="vocab-search-clear"
             onClick={() => { setSearchQuery(''); setPage(1); }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--sb-ink-soft)] hover:text-[var(--sb-ink)] transition-colors"
             title="Clear search"
           >
             <X size={14} />
@@ -653,14 +653,14 @@ export default memo(function Vocabulary({
             key={String(opt.value)}
             id={`filter-level-${opt.value ?? 'all'}`}
             onClick={() => { setVocabFilter(opt.value); setPage(1); }}
-            className={`vm-btn px-4 py-1.5 rounded-full text-sm font-medium border ${
+            className={`vm-btn px-4 py-1.5 rounded-full text-sm font-bold border-2 ${
               vocabFilter === opt.value
-                ? 'vm-btn-primary border-indigo-400/40'
-                : 'bg-slate-900/75 text-slate-300 hover:bg-slate-800 hover:text-white border-slate-400/20'
+                ? 'vm-btn-primary'
+                : 'bg-[var(--sb-paper-card)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)] border-[var(--sb-ink-border)]'
             }`}
           >
             {opt.label}
-            <span className="ml-1.5 text-xs opacity-75">
+            <span className="ml-1.5 text-xs opacity-80">
               ({opt.value === null ? poolForLevelCounts.length : levelCounts[opt.value] || 0})
             </span>
           </button>
@@ -671,15 +671,15 @@ export default memo(function Vocabulary({
           onClick={() => { setHardOnly(v => !v); setPage(1); }}
           aria-pressed={hardOnly}
           title={hardOnly ? 'Hiện tất cả từ' : 'Chỉ hiện từ khó đã đánh dấu sao'}
-          className={`vm-btn flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium border ${
+          className={`vm-btn flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold border-2 ${
             hardOnly
-              ? 'bg-amber-500/20 text-amber-200 border-amber-400/50 shadow-md shadow-amber-500/15'
-              : 'bg-slate-900/75 text-slate-300 hover:bg-slate-800 hover:text-amber-300 border-slate-400/20'
+              ? 'bg-[var(--sb-ochre-soft)] text-[var(--sb-ochre-text)] border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)]'
+              : 'bg-[var(--sb-paper-card)] text-[var(--sb-ink)] hover:bg-[var(--sb-ochre-soft)] hover:text-[var(--sb-ochre-text)] border-[var(--sb-ink-border)]'
           }`}
         >
-          <Star size={14} className={hardOnly ? 'fill-amber-400 text-amber-400' : 'text-amber-400'} />
+          <Star size={14} className={hardOnly ? 'fill-[var(--sb-ochre)] text-[var(--sb-ochre-text)]' : 'text-[var(--sb-ochre-text)]'} />
           <span>Khó ⭐</span>
-          <span className="ml-0.5 text-xs opacity-80">({hardCount})</span>
+          <span className="ml-0.5 text-xs opacity-85">({hardCount})</span>
         </button>
       </div>
 
@@ -690,15 +690,15 @@ export default memo(function Vocabulary({
             key={opt.value}
             id={`filter-type-${opt.value.toLowerCase()}`}
             onClick={() => { setTypeFilter(opt.value); setPage(1); }}
-            className={`vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium ${
+            className={`vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border ${
               typeFilter === opt.value
-                ? 'bg-slate-700/90 text-white shadow-sm ring-1 ring-white/10'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                ? 'bg-[var(--sb-terracotta-strong)] text-white border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)]'
+                : 'border-transparent text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)]'
             }`}
           >
             <span>{opt.icon}</span>
             <span className="hidden sm:inline">{opt.label.split('(')[0].trim()}</span>
-            <span className="text-xs opacity-70">
+            <span className="text-xs opacity-80">
               ({opt.value === 'All'
                 ? poolForTypeCounts.length
                 : typeCounts[opt.value] || 0})
@@ -709,27 +709,27 @@ export default memo(function Vocabulary({
 
       {/* Bulk Action Bar */}
       {selected.size > 0 && (
-        <div className="relative z-10 flex items-center gap-3 mb-4 px-4 py-3 bg-indigo-500/12 border border-indigo-400/35 rounded-xl backdrop-blur-sm animate-fade-in">
-          <Layers size={16} className="text-indigo-300 shrink-0" />
-          <span className="text-indigo-200 text-sm font-medium">
+        <div className="relative z-10 sb-paper-note flex items-center gap-3 mb-4 px-4 py-3 animate-fade-in">
+          <Layers size={16} className="text-[var(--sb-terracotta-strong)] shrink-0" />
+          <span className="text-[var(--sb-ink)] text-sm font-bold">
             {selected.size} word{selected.size !== 1 ? 's' : ''} selected
           </span>
           <div className="relative ml-auto">
             <button
               id="bulk-level-btn"
               onClick={() => setShowBulkDd(v => !v)}
-              className="vm-btn vm-btn-primary flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold"
+              className="vm-btn vm-btn-primary flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold"
             >
               Change Level <ChevronDown size={13} />
             </button>
             {showBulkDd && (
-              <div className="absolute right-0 top-full mt-1.5 bg-[#0f172a] border border-slate-400/25 rounded-xl shadow-[0_18px_42px_-10px_rgba(2,6,23,0.9)] z-50 min-w-[150px] overflow-visible vm-scale-in">
+              <div className="absolute right-0 top-full mt-1.5 bg-[var(--sb-paper-card)] border-2 border-[var(--sb-ink)] rounded-xl shadow-[var(--sb-shadow-md)] z-50 min-w-[160px] overflow-visible vm-scale-in">
                 {[1, 2, 3, 4, 5].map(l => (
                   <button
                     key={l}
                     id={`bulk-set-level-${l}`}
                     onClick={() => handleBulkChangeLevel(l)}
-                    className="w-full text-left px-4 py-2.5 text-sm text-slate-200 hover:bg-slate-800 hover:text-white transition-colors first:rounded-t-xl last:rounded-b-xl"
+                    className="w-full text-left px-4 py-2.5 text-sm font-semibold text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)] transition-colors first:rounded-t-[10px] last:rounded-b-[10px]"
                   >
                     L{l} — {LEVEL_COLORS[l].label}
                   </button>
@@ -740,7 +740,7 @@ export default memo(function Vocabulary({
           <button
             id="bulk-clear-btn"
             onClick={() => setSelected(new Set())}
-            className="vm-btn flex items-center gap-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-400/20 text-slate-200 rounded-lg text-xs font-medium"
+            className="vm-btn flex items-center gap-1 px-3 py-1.5 bg-[var(--sb-paper-warm)] hover:bg-[var(--sb-paper-deep)] border-2 border-[var(--sb-ink)] text-[var(--sb-ink)] rounded-lg text-xs font-bold"
           >
             <X size={13} /> Clear
           </button>
@@ -754,15 +754,15 @@ export default memo(function Vocabulary({
             <button
               id="select-all-btn"
               onClick={toggleSelectAll}
-              className="flex items-center gap-2 text-slate-300 hover:text-white text-sm transition-colors"
+              className="flex items-center gap-2 text-[var(--sb-ink)] hover:text-[var(--sb-terracotta-text)] text-sm font-bold transition-colors"
             >
               {allSelected
-                ? <CheckSquare size={16} className="text-indigo-400" />
+                ? <CheckSquare size={16} className="text-[var(--sb-terracotta-strong)]" />
                 : <Square size={16} />
               }
               {allSelected ? 'Deselect All' : 'Select All'}
             </button>
-            <span className="text-slate-400 text-xs">
+            <span className="text-[var(--sb-ink-soft)] font-semibold text-xs">
               ({filtered.length} matching; {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, filtered.length)} shown)
             </span>
           </div>
@@ -774,16 +774,16 @@ export default memo(function Vocabulary({
 
       {/* Word Grid */}
       {filtered.length === 0 ? (
-        <div className="text-center py-20">
-          <BookOpen size={56} className="text-slate-500 mx-auto mb-4" />
-          <p className="text-slate-300 font-medium text-lg">
+        <div className="sb-card text-center py-14 px-6">
+          <BookOpen size={52} className="text-[var(--sb-ink-soft)] mx-auto mb-4" />
+          <p className="sb-font-display text-[var(--sb-ink)] font-bold text-lg">
             {hardOnly
               ? 'Chưa có từ khó ⭐ nào khớp bộ lọc hiện tại'
               : vocabFilter || typeFilter !== 'All' || searchQuery
                 ? 'No words match this filter'
                 : 'No words yet'}
           </p>
-          <p className="text-slate-400 text-sm mt-2">
+          <p className="text-[var(--sb-ink-soft)] text-sm mt-2">
             {hardOnly
               ? 'Hãy đánh dấu ⭐ cho từ khó trong danh sách hoặc tắt bộ lọc "Khó ⭐".'
               : vocabFilter || typeFilter !== 'All' || searchQuery

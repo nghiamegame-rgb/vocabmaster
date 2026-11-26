@@ -47,42 +47,56 @@
   --sb-paper-card: #fbf7ee;
   --sb-paper-warm: #f2e8d5;
   --sb-paper-deep: #ece1cc;
+  --sb-input-bg: #fffdf8;
+  --sb-backdrop: rgba(43, 42, 51, 0.45);
   --sb-ink: #2b2a33;
   --sb-ink-soft: #575361;
+  --sb-ink-border: rgba(43, 42, 51, 0.28);
   --sb-ink-faint: rgba(43, 42, 51, 0.16);
 
   --sb-terracotta: #d9603b;
   --sb-terracotta-strong: #c44d2a;
+  --sb-terracotta-hover: #ad3f1f;
   --sb-terracotta-text: #a83b1c;
   --sb-terracotta-soft: #fae3d7;
 
   --sb-forest: #3f7d58;
-  --sb-forest-text: #295a3d;
+  --sb-forest-btn: #2f6e4a;
+  --sb-forest-hover: #255a3b;
+  --sb-forest-text: #225437;
   --sb-forest-soft: #ddeee2;
 
   --sb-sky: #3a8fb7;
-  --sb-sky-strong: #277296;
-  --sb-sky-text: #1f5d7a;
+  --sb-sky-strong: #226b8c;
+  --sb-sky-text: #1c5874;
   --sb-sky-soft: #dceef6;
 
   --sb-ochre: #e0a82e;
-  --sb-ochre-text: #7d5608;
+  --sb-ochre-text: #7a5205;
   --sb-ochre-soft: #f8ecd0;
 
   --sb-plum: #7a4e8c;
+  --sb-plum-hover: #643c75;
   --sb-plum-text: #5e386e;
   --sb-plum-soft: #ede1f2;
 
   --sb-berry: #c8434e;
-  --sb-berry-text: #9e2a35;
+  --sb-berry-btn: #b8333f;
+  --sb-berry-hover: #9e2732;
+  --sb-berry-text: #96222d;
   --sb-berry-soft: #f9dfe1;
 
   --sb-clay: #d97736;
-  --sb-clay-text: #9e4812;
+  --sb-clay-text: #96420e;
   --sb-clay-soft: #fae8d8;
 
   --sb-lagoon: #216e6e;
+  --sb-lagoon-text: #175252;
   --sb-lagoon-soft: #d9f0ef;
+
+  --sb-disabled-bg: #dfd5c0;
+  --sb-disabled-text: #595462;
+  --sb-disabled-border: rgba(43, 42, 51, 0.30);
 
   --sb-shadow-sm: 2px 2px 0 var(--sb-ink);
   --sb-shadow-md: 4px 4px 0 var(--sb-ink);
@@ -172,6 +186,11 @@ body {
     radial-gradient(56rem 34rem at 8% -4%, rgba(224, 168, 46, 0.14), transparent 62%),
     radial-gradient(48rem 30rem at 92% 6%, rgba(58, 143, 183, 0.11), transparent 60%),
     radial-gradient(46rem 30rem at 52% 102%, rgba(63, 125, 88, 0.10), transparent 64%);
+}
+
+::selection {
+  background-color: var(--sb-ochre-soft);
+  color: var(--sb-ink);
 }
 
 /* Accessible keyboard focus ring across all interactive elements */
@@ -290,12 +309,12 @@ body {
   outline-offset: 2px;
 }
 
-/* Shared form input surface (kept for legacy tabs & shared controls) */
+/* Shared form input surface (Storybook warm-paper default; overridden inside .sb-legacy) */
 .field {
   width: 100%;
-  background: var(--bg-input);
-  border: 1px solid var(--border-default);
-  color: var(--text-primary);
+  background: var(--sb-input-bg);
+  border: 2px solid var(--sb-ink-border);
+  color: var(--sb-ink);
   border-radius: var(--vm-radius-md);
   padding: 0.65rem 0.875rem;
   font-size: 0.875rem;
@@ -304,32 +323,32 @@ body {
               box-shadow var(--duration-fast) var(--ease-out-smooth);
 }
 .field::placeholder {
-  color: var(--text-muted);
+  color: var(--sb-ink-soft);
 }
 .field:hover:not(:disabled) {
-  border-color: var(--border-strong);
+  border-color: var(--sb-ink);
 }
 .field:focus {
-  border-color: var(--primary);
-  background: rgba(15, 23, 42, 0.94);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+  border-color: var(--sb-terracotta-strong);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(196, 77, 42, 0.18);
 }
 .field:focus-visible {
-  outline: 2px solid var(--accent-ring);
+  outline: 2px solid var(--sb-ring);
   outline-offset: 1px;
 }
 
-/* Shared surface & control utilities (names preserved for existing tabs & tests) */
+/* Shared surface & control utilities (Storybook warm paper; names kept for all tabs & tests) */
 .vm-panel {
-  background: linear-gradient(180deg, rgba(19, 29, 51, 0.78) 0%, rgba(13, 20, 36, 0.86) 100%);
-  border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-card);
+  background-color: var(--sb-paper-warm);
+  border: 2px solid var(--sb-ink);
+  box-shadow: var(--sb-shadow-md);
 }
 
 .vm-card {
-  background: linear-gradient(180deg, rgba(21, 32, 56, 0.82) 0%, rgba(14, 22, 40, 0.9) 100%);
-  border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-card);
+  background-color: var(--sb-paper-card);
+  border: 2px solid var(--sb-ink);
+  box-shadow: var(--sb-shadow-md);
   transition: transform var(--duration-normal) var(--ease-out-smooth),
               border-color var(--duration-normal) var(--ease-out-smooth),
               box-shadow var(--duration-normal) var(--ease-out-smooth),
@@ -337,9 +356,9 @@ body {
 }
 
 .vm-card-interactive:hover {
-  transform: translateY(-2px);
-  border-color: var(--border-strong);
-  box-shadow: var(--shadow-card-hover);
+  transform: translate(-2px, -2px);
+  border-color: var(--sb-ink);
+  box-shadow: var(--sb-shadow-lg);
 }
 
 .vm-btn {
@@ -351,50 +370,98 @@ body {
               opacity var(--duration-fast) var(--ease-out-smooth);
 }
 .vm-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform: translate(-1px, -1px);
 }
 .vm-btn:active:not(:disabled) {
-  transform: scale(0.975);
+  transform: translate(1px, 1px);
 }
 
 .vm-btn-primary {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  background-color: var(--sb-terracotta-strong);
   color: #ffffff;
-  box-shadow: var(--shadow-accent), inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
+  border: 2px solid var(--sb-ink);
+  box-shadow: var(--sb-shadow-sm);
 }
 .vm-btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #7477f7 0%, #5b52f0 100%);
-  box-shadow: 0 10px 24px -6px rgba(99, 102, 241, 0.55), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  background-color: var(--sb-terracotta-hover);
+  box-shadow: 3px 3px 0 var(--sb-ink);
 }
 
 .vm-btn-violet {
-  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  background-color: var(--sb-plum);
   color: #ffffff;
-  box-shadow: var(--shadow-violet), inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
+  border: 2px solid var(--sb-ink);
+  box-shadow: var(--sb-shadow-sm);
 }
 .vm-btn-violet:hover:not(:disabled) {
-  background: linear-gradient(135deg, #9b70f8 0%, #7477f7 100%);
-  box-shadow: 0 10px 24px -6px rgba(139, 92, 246, 0.52), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  background-color: var(--sb-plum-hover);
+  box-shadow: 3px 3px 0 var(--sb-ink);
 }
 
 .vm-input {
-  background: var(--bg-input);
-  border: 1px solid var(--border-default);
-  color: var(--text-primary);
+  background: var(--sb-input-bg);
+  border: 2px solid var(--sb-ink-border);
+  color: var(--sb-ink);
   transition: border-color var(--duration-fast) var(--ease-out-smooth),
               background-color var(--duration-fast) var(--ease-out-smooth),
               box-shadow var(--duration-fast) var(--ease-out-smooth);
 }
 .vm-input::placeholder {
-  color: var(--text-muted);
+  color: var(--sb-ink-soft);
 }
 .vm-input:hover:not(:disabled) {
-  border-color: var(--border-strong);
+  border-color: var(--sb-ink);
 }
 .vm-input:focus {
+  border-color: var(--sb-terracotta-strong);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(196, 77, 42, 0.18);
+}
+
+/* Temporary dark overrides inside .sb-legacy until all 6 tabs finish Step B */
+.sb-legacy .field,
+.sb-legacy .vm-input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+}
+.sb-legacy .field::placeholder,
+.sb-legacy .vm-input::placeholder {
+  color: var(--text-muted);
+}
+.sb-legacy .field:focus,
+.sb-legacy .vm-input:focus {
   border-color: var(--primary);
   background: rgba(15, 23, 42, 0.94);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+}
+.sb-legacy .vm-panel {
+  background: linear-gradient(180deg, rgba(19, 29, 51, 0.78) 0%, rgba(13, 20, 36, 0.86) 100%);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-card);
+}
+.sb-legacy .vm-card {
+  background: linear-gradient(180deg, rgba(21, 32, 56, 0.82) 0%, rgba(14, 22, 40, 0.9) 100%);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-card);
+}
+.sb-legacy .vm-card-interactive:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-card-hover);
+}
+.sb-legacy .vm-btn-primary {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  border: none;
+  box-shadow: var(--shadow-accent), inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
+}
+.sb-legacy .vm-btn-violet {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  border: none;
+  box-shadow: var(--shadow-violet), inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
+}
+.sb-legacy .vm-skeleton {
+  background-color: #16223a;
 }
 
 /* Custom scrollbar (warm paper tone) */
@@ -458,13 +525,13 @@ body {
 .vm-skeleton {
   position: relative;
   overflow: hidden;
-  background-color: #16223a;
+  background-color: var(--sb-paper-deep);
 }
 .vm-skeleton::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(148, 163, 184, 0.14) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 253, 248, 0.55) 50%, transparent 100%);
   transform: translateX(-100%);
   animation: vmSheen 1.4s var(--ease-out-smooth) infinite;
 }

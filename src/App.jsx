@@ -14,6 +14,8 @@ import { useDictationStore } from './hooks/useDictationStore';
 // Loaded on first open so the main bundle does not grow.
 const Dictation = lazy(() => import('./components/Dictation'));
 
+const LEGACY_TABS = new Set(['flashcard', 'quiz', 'listening', 'grammar', 'dictation']);
+
 export default function App() {
   const [activeTab,   setActiveTab]   = useState('dashboard');
   const [vocabFilter, setVocabFilter] = useState(null); // null = show all levels
@@ -76,20 +78,20 @@ export default function App() {
             }}
           />
         )}
-        {activeTab !== 'dashboard' && (
+        {activeTab === 'vocabulary' && (
+          <Vocabulary
+            words={words}
+            addWord={addWord}
+            deleteWord={deleteWord}
+            updateWord={updateWord}
+            toggleWordHard={toggleWordHard}
+            bulkUpdateLevel={bulkUpdateLevel}
+            vocabFilter={vocabFilter}
+            setVocabFilter={setVocabFilter}
+          />
+        )}
+        {LEGACY_TABS.has(activeTab) && (
           <div className="sb-legacy p-4 sm:p-6">
-            {activeTab === 'vocabulary' && (
-              <Vocabulary
-                words={words}
-                addWord={addWord}
-                deleteWord={deleteWord}
-                updateWord={updateWord}
-                toggleWordHard={toggleWordHard}
-                bulkUpdateLevel={bulkUpdateLevel}
-                vocabFilter={vocabFilter}
-                setVocabFilter={setVocabFilter}
-              />
-            )}
             {activeTab === 'quiz' && (
               <Quiz
                 words={words}
