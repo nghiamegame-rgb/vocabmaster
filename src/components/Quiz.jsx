@@ -500,7 +500,7 @@ function QuizConfig({ words, structures = [], onStart }) {
                 >
                   <span>{wt.icon}</span>
                   {wt.label}
-                  <span className="text-xs opacity-80">({cnt})</span>
+                  <span className="text-xs">({cnt})</span>
                 </button>
               );
             })}
@@ -525,7 +525,7 @@ function QuizConfig({ words, structures = [], onStart }) {
                 >
                   <Star size={15} className={hardOnly ? 'fill-[var(--sb-ochre)] text-[var(--sb-ochre-text)]' : 'text-[var(--sb-ochre-text)]'} />
                   <span>Chỉ từ khó ⭐</span>
-                  <span className="text-xs opacity-85">({hardCount})</span>
+                  <span className="text-xs">({hardCount})</span>
                 </button>
                 <p className="text-[var(--sb-ink-soft)] text-xs font-medium mt-2">
                   Áp dụng cho nguồn từ Vocabulary khi tạo AI Prompt mới (hiện có <strong className="text-[var(--sb-ink)]">{eligibleWords.length}</strong> từ khớp bộ lọc, cần tối thiểu 4 từ).
@@ -721,7 +721,7 @@ function optionClass(idx, answered, correctIndex, selected) {
   if (!answered)              return 'bg-[var(--sb-paper-card)] border-[var(--sb-ink)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-warm)] shadow-[var(--sb-shadow-sm)]';
   if (idx === correctIndex)   return 'bg-[var(--sb-forest-soft)] border-[var(--sb-forest)] text-[var(--sb-forest-text)] shadow-[var(--sb-shadow-sm)]';
   if (idx === selected)       return 'bg-[var(--sb-berry-soft)] border-[var(--sb-berry)] text-[var(--sb-berry-text)] shadow-[var(--sb-shadow-sm)]';
-  return 'bg-[var(--sb-disabled-bg)] border-[var(--sb-disabled-border)] text-[var(--sb-disabled-text)] cursor-not-allowed opacity-75';
+  return 'bg-[var(--sb-disabled-bg)] border-[var(--sb-disabled-border)] text-[var(--sb-disabled-text)] cursor-not-allowed';
 }
 
 /** Look up display-only notes without changing option or answer text. */

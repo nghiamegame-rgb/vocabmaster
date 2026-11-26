@@ -660,7 +660,7 @@ export default memo(function Vocabulary({
             }`}
           >
             {opt.label}
-            <span className="ml-1.5 text-xs opacity-80">
+            <span className="ml-1.5 text-xs">
               ({opt.value === null ? poolForLevelCounts.length : levelCounts[opt.value] || 0})
             </span>
           </button>
@@ -679,7 +679,7 @@ export default memo(function Vocabulary({
         >
           <Star size={14} className={hardOnly ? 'fill-[var(--sb-ochre)] text-[var(--sb-ochre-text)]' : 'text-[var(--sb-ochre-text)]'} />
           <span>Khó ⭐</span>
-          <span className="ml-0.5 text-xs opacity-85">({hardCount})</span>
+          <span className="ml-0.5 text-xs">({hardCount})</span>
         </button>
       </div>
 
@@ -698,7 +698,7 @@ export default memo(function Vocabulary({
           >
             <span>{opt.icon}</span>
             <span className="hidden sm:inline">{opt.label.split('(')[0].trim()}</span>
-            <span className="text-xs opacity-80">
+            <span className="text-xs">
               ({opt.value === 'All'
                 ? poolForTypeCounts.length
                 : typeCounts[opt.value] || 0})

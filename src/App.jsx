@@ -57,7 +57,7 @@ export default function App() {
       />
 
       <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
-        <div data-testid="vocab-sync-controls" className="sb-paper-note mb-5 px-4 py-3 text-sm text-[#2b2a33] flex flex-wrap gap-x-4 gap-y-2 items-center" role="status">
+        <div data-testid="vocab-sync-controls" className="sb-paper-note mb-5 px-4 py-3 text-sm text-[var(--sb-ink)] flex flex-wrap gap-x-4 gap-y-2 items-center" role="status">
           <span className="font-medium">Vocabulary: {syncPaused || syncStatus === 'paused' ? 'đang tạm dừng ghi cloud' : 'đồng bộ đã bật trên thiết bị'}</span>
           <button className="vm-btn text-[#a83b1c] hover:text-[#7c270f] underline underline-offset-4 font-semibold" onClick={syncPaused ? resumeSync : pauseSync}>{syncPaused ? 'Bật đồng bộ thiết bị' : 'Tạm dừng đồng bộ'}</button>
           <button className="vm-btn text-[#a83b1c] hover:text-[#7c270f] underline underline-offset-4 font-semibold" onClick={exportSyncBackup}>Xuất bản sao Vocabulary</button>

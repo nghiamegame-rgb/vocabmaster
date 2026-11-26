@@ -38,7 +38,7 @@ export default function Dictation({ store }) {
               className={`vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold ${section === id ? 'bg-[var(--sb-paper-card)] text-[var(--sb-ink)] border border-[var(--sb-ink)] shadow-sm' : 'text-[var(--sb-ink-soft)] hover:text-[var(--sb-ink)] hover:bg-[var(--sb-paper-card)]/60'}`}
             >
               <Icon size={14} /> {label}
-              {id === 'words' && <span className="text-xs opacity-75">({store.words.length})</span>}
+              {id === 'words' && <span className="text-xs">({store.words.length})</span>}
             </button>
           ))}
         </div>

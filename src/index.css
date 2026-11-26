@@ -14,8 +14,8 @@
   --color-sb-paper-card: #fbf7ee;
   --color-sb-paper-warm: #f2e8d5;
   --color-sb-paper-deep: #ece1cc;
-  --color-sb-ink: #2b2a33;
-  --color-sb-ink-soft: #575361;
+  --color-sb-ink: #17161d;
+  --color-sb-ink-soft: #383542;
   --color-sb-terracotta: #d9603b;
   --color-sb-terracotta-strong: #c44d2a;
   --color-sb-forest: #3f7d58;
@@ -37,8 +37,8 @@
   --sb-paper-deep: #ece1cc;
   --sb-input-bg: #fffdf8;
   --sb-backdrop: rgba(43, 42, 51, 0.45);
-  --sb-ink: #2b2a33;
-  --sb-ink-soft: #575361;
+  --sb-ink: #17161d;
+  --sb-ink-soft: #383542;
   --sb-ink-border: rgba(43, 42, 51, 0.28);
   --sb-ink-faint: rgba(43, 42, 51, 0.16);
 
@@ -83,7 +83,7 @@
   --sb-lagoon-soft: #d9f0ef;
 
   --sb-disabled-bg: #dfd5c0;
-  --sb-disabled-text: #595462;
+  --sb-disabled-text: #3e3a48;
   --sb-disabled-border: rgba(43, 42, 51, 0.30);
 
   --sb-shadow-sm: 2px 2px 0 var(--sb-ink);
@@ -102,7 +102,7 @@
 
   --text-primary: var(--sb-ink);
   --text-secondary: var(--sb-ink-soft);
-  --text-muted: #65606f;
+  --text-muted: #383542;
 
   --border-subtle: rgba(43, 42, 51, 0.14);
   --border-default: rgba(43, 42, 51, 0.28);

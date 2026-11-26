@@ -68,7 +68,7 @@ function FilterPills({ options, active, onSelect, countFn, idPrefix }) {
           >
             {opt.icon && <span className="text-xs">{opt.icon}</span>}
             <span>{opt.label}</span>
-            <span className="ml-0.5 text-xs opacity-80">({count})</span>
+            <span className="ml-0.5 text-xs">({count})</span>
           </button>
         );
       })}
@@ -400,7 +400,7 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
               >
                 <span>{opt.icon}</span>
                 <span className="hidden sm:inline">{opt.label.split('(')[0].trim()}</span>
-                <span className="text-xs opacity-75">({typeCount(opt.value)})</span>
+                <span className="text-xs">({typeCount(opt.value)})</span>
               </button>
             ))}
           </div>

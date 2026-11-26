@@ -57,9 +57,9 @@ function StatCard({ icon: Icon, label, value, strip, badgeBg, suffix = '' }) {
       <div className={`absolute top-0 left-0 right-0 h-2 ${strip}`} aria-hidden="true" />
       <div className="flex items-start justify-between gap-3 pt-1">
         <div>
-          <p className="text-[#575361] text-xs sm:text-sm font-bold mb-1.5">{label}</p>
-          <p className="sb-font-display text-[#2b2a33] text-3xl font-extrabold tracking-tight tabular-nums">
-            {value}<span className="text-lg font-bold opacity-80">{suffix}</span>
+          <p className="text-[var(--sb-ink-soft)] text-xs sm:text-sm font-bold mb-1.5">{label}</p>
+          <p className="sb-font-display text-[var(--sb-ink)] text-3xl font-extrabold tracking-tight tabular-nums">
+            {value}<span className="text-lg font-bold text-[var(--sb-ink-soft)]">{suffix}</span>
           </p>
         </div>
         <div className={`w-11 h-11 rounded-xl sb-sticker ${badgeBg} flex items-center justify-center shrink-0`}>
@@ -83,8 +83,8 @@ function MasteryBar({ level, label, stage, count, total, bar, pill, isFoxHere, o
           <span className={`inline-flex items-center px-2 py-0.5 rounded-lg border text-xs font-extrabold ${pill}`}>
             L{level}
           </span>
-          <span className="text-[#2b2a33] font-bold text-sm">{label}</span>
-          <span className="text-xs font-semibold text-[#575361]">· {stage}</span>
+          <span className="text-[var(--sb-ink)] font-bold text-sm">{label}</span>
+          <span className="text-xs font-semibold text-[var(--sb-ink-soft)]">· {stage}</span>
           {isFoxHere && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#fae3d7] text-[#a83b1c] border border-[#2b2a33] text-[11px] font-bold">
               <MapPin size={11} aria-hidden="true" /> Cáo đang dừng chân
@@ -92,8 +92,8 @@ function MasteryBar({ level, label, stage, count, total, bar, pill, isFoxHere, o
           )}
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-[#575361] font-semibold text-xs">{count} words</span>
-          <span className="text-[#2b2a33] font-extrabold text-sm tabular-nums">{pct}%</span>
+          <span className="text-[var(--sb-ink-soft)] font-semibold text-xs">{count} words</span>
+          <span className="text-[var(--sb-ink)] font-extrabold text-sm tabular-nums">{pct}%</span>
         </div>
       </div>
       <div className="w-full h-3 bg-[#ece1cc] rounded-full overflow-hidden border-2 border-[#2b2a33]">
@@ -102,7 +102,7 @@ function MasteryBar({ level, label, stage, count, total, bar, pill, isFoxHere, o
           style={{ width: `${pct}%` }}
         />
       </div>
-      <p className="text-[#575361] text-xs font-semibold mt-2 group-hover:text-[#a83b1c] transition-colors">
+      <p className="text-[var(--sb-ink-soft)] text-xs font-semibold mt-2 group-hover:text-[#a83b1c] transition-colors">
         Click to filter vocabulary →
       </p>
     </button>
@@ -147,14 +147,14 @@ export default function Dashboard({ words, hasReadableWords = true, stats, setAc
           <span>Hành trình đến VSTEP · Bản đồ hành trình</span>
         </div>
 
-        <h1 className="sb-font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-[#2b2a33] mb-1.5">
+        <h1 className="sb-font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-[var(--sb-ink)] mb-1.5">
           Dashboard
         </h1>
-        <p className="text-[#575361] font-semibold text-sm sm:text-base">
+        <p className="text-[var(--sb-ink-soft)] font-semibold text-sm sm:text-base">
           Track your vocabulary learning progress
         </p>
 
-        <div className="mt-4 sb-paper-note flex items-start gap-2.5 px-4 py-3 text-sm text-[#2b2a33] sm:items-center">
+        <div className="mt-4 sb-paper-note flex items-start gap-2.5 px-4 py-3 text-sm text-[var(--sb-ink)] sm:items-center">
           <Volume2 size={17} className="mt-0.5 shrink-0 text-[#a83b1c] sm:mt-0" aria-hidden="true" />
           <p className="font-medium leading-relaxed">
             🔊 Mẹo học tập: Hãy đọc thành tiếng mỗi từ vựng, sau đó nghe phát âm chuẩn để ghi nhớ tốt hơn và cải thiện kỹ năng Nghe VSTEP!
@@ -203,17 +203,17 @@ export default function Dashboard({ words, hasReadableWords = true, stats, setAc
               <TrendingUp size={19} aria-hidden="true" />
             </div>
             <div>
-              <h2 className="sb-font-display text-[#2b2a33] font-extrabold tracking-tight text-xl leading-tight">
+              <h2 className="sb-font-display text-[var(--sb-ink)] font-extrabold tracking-tight text-xl leading-tight">
                 Mastery Levels
               </h2>
-              <p className="text-xs font-semibold text-[#575361]">
+              <p className="text-xs font-semibold text-[var(--sb-ink-soft)]">
                 5 chặng trên con đường chinh phục VSTEP
               </p>
             </div>
           </div>
 
           {totalWords > 0 && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#fbf7ee] border-2 border-[#2b2a33] text-xs font-bold text-[#2b2a33]">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#fbf7ee] border-2 border-[#2b2a33] text-xs font-bold text-[var(--sb-ink)]">
               <MapPin size={13} className="text-[#a83b1c]" aria-hidden="true" />
               Cáo nhỏ đang ở: {activeStageMeta.stage} (L{foxLevel})
             </span>
@@ -223,12 +223,12 @@ export default function Dashboard({ words, hasReadableWords = true, stats, setAc
         {totalWords === 0 ? (
           <div className="sb-card p-6 sm:p-8 text-center space-y-3">
             <EmptyTrailScene />
-            <p className="sb-font-display text-lg font-extrabold text-[#2b2a33]">
+            <p className="sb-font-display text-lg font-extrabold text-[var(--sb-ink)]">
               Cáo nhỏ đã gói ghém hành trang, sẵn sàng cùng bạn mở chặng đầu tiên!
             </p>
             <div>
-              <p className="text-[#2b2a33] font-bold">No words yet</p>
-              <p className="text-[#575361] text-sm mt-1">
+              <p className="text-[var(--sb-ink)] font-bold">No words yet</p>
+              <p className="text-[var(--sb-ink-soft)] text-sm mt-1">
                 Add words in the Vocabulary tab to get started
               </p>
             </div>
@@ -274,10 +274,10 @@ export default function Dashboard({ words, hasReadableWords = true, stats, setAc
       {/* Map Regions (Quick Signposts) */}
       <div>
         <div className="flex items-center justify-between gap-2 mb-3">
-          <h2 className="sb-font-display text-lg font-extrabold text-[#2b2a33]">
+          <h2 className="sb-font-display text-lg font-extrabold text-[var(--sb-ink)]">
             Các vùng đất trên bản đồ
           </h2>
-          <span className="text-xs font-semibold text-[#575361]">Chọn điểm đến để luyện tập</span>
+          <span className="text-xs font-semibold text-[var(--sb-ink-soft)]">Chọn điểm đến để luyện tập</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {REGION_LINKS.map(({ tab, region, name, Icon, badge }) => (
@@ -291,8 +291,8 @@ export default function Dashboard({ words, hasReadableWords = true, stats, setAc
                 <Icon size={17} aria-hidden="true" />
               </div>
               <div>
-                <p className="text-sm font-extrabold text-[#2b2a33] leading-snug">{region}</p>
-                <p className="text-xs font-semibold text-[#575361]">{name}</p>
+                <p className="text-sm font-extrabold text-[var(--sb-ink)] leading-snug">{region}</p>
+                <p className="text-xs font-semibold text-[var(--sb-ink-soft)]">{name}</p>
               </div>
             </button>
           ))}
@@ -304,14 +304,14 @@ export default function Dashboard({ words, hasReadableWords = true, stats, setAc
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sb-card p-4 sm:p-5">
             <p className="text-[#a83b1c] text-sm font-extrabold">💡 Spaced Repetition</p>
-            <p className="text-[#575361] text-xs sm:text-sm font-medium mt-1.5 leading-relaxed">
+            <p className="text-[var(--sb-ink-soft)] text-xs sm:text-sm font-medium mt-1.5 leading-relaxed">
               Answer correctly 2×, 4×, 8×, 15× in a row to advance through L1→L2→L3→L4→L5.
             </p>
           </div>
           <div className="sb-card p-4 sm:p-5">
             <p className="text-[#295a3d] text-sm font-extrabold">🎯 Current focus</p>
-            <p className="text-[#575361] text-xs sm:text-sm font-medium mt-1.5 leading-relaxed">
-              You have <strong className="text-[#2b2a33] font-extrabold">{level1Count}</strong> new / struggling words to review.
+            <p className="text-[var(--sb-ink-soft)] text-xs sm:text-sm font-medium mt-1.5 leading-relaxed">
+              You have <strong className="text-[var(--sb-ink)] font-extrabold">{level1Count}</strong> new / struggling words to review.
             </p>
           </div>
         </div>

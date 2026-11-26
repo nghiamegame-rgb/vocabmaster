@@ -246,7 +246,7 @@ export default function Flashcard({ words, updateWordLevel }) {
               }`}
             >
               {opt.label}
-              <span className="ml-1 opacity-80">({count})</span>
+              <span className="ml-1">({count})</span>
             </button>
           );
         })}
@@ -264,7 +264,7 @@ export default function Flashcard({ words, updateWordLevel }) {
         >
           <Star size={12} className={hardOnly ? 'fill-[var(--sb-ochre)] text-[var(--sb-ochre-text)]' : 'text-[var(--sb-ochre-text)]'} />
           <span>Chỉ từ khó ⭐</span>
-          <span className="opacity-80">({hardCount})</span>
+          <span>({hardCount})</span>
         </button>
       </div>
 
@@ -291,7 +291,7 @@ export default function Flashcard({ words, updateWordLevel }) {
             >
               <span>{opt.icon}</span>
               <span>{opt.label}</span>
-              <span className="opacity-80">({count})</span>
+              <span>({count})</span>
             </button>
           );
         })}
