@@ -1,126 +1,159 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   VocabMaster Design System — Storybook Map & Warm Paper (Phase 1)
-   Light paper-and-ink tokens, WCAG AA contrast, GPU-only motion,
-   plus .sb-legacy bridge for tabs not yet migrated.
+   VocabMaster Design System — Storybook Twilight / Blue Hour
+   Dark twilight tokens, WCAG AA contrast, soft lavender/amber glows,
+   GPU-only motion, plus .sb-legacy bridge for tabs not yet migrated.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @theme {
-  /* Storybook semantic palette */
-  --color-sb-paper: #f6efe2;
-  --color-sb-paper-card: #fbf7ee;
-  --color-sb-paper-warm: #f2e8d5;
-  --color-sb-paper-deep: #ece1cc;
-  --color-sb-ink: #2b2a33;
-  --color-sb-ink-soft: #575361;
-  --color-sb-terracotta: #d9603b;
-  --color-sb-terracotta-strong: #c44d2a;
-  --color-sb-forest: #3f7d58;
-  --color-sb-sky: #3a8fb7;
-  --color-sb-ochre: #e0a82e;
-  --color-sb-plum: #7a4e8c;
-  --color-sb-berry: #c8434e;
-  --color-sb-clay: #d97736;
-  --color-sb-lagoon: #216e6e;
+  /* Storybook Twilight semantic palette */
+  --color-sb-bg-top: #0f0b2e;
+  --color-sb-bg-bottom: #1a1446;
+  --color-sb-panel: #1c164a;
+  --color-sb-surface: #221b5a;
+  --color-sb-surface-elevated: #2b246b;
+  --color-sb-text: #f4efff;
+  --color-sb-text-muted: #b9b2e6;
+  --color-sb-primary: #5b6ee1;
+  --color-sb-primary-btn: #4c5ed1;
+  --color-sb-secondary: #8a6fd1;
+  --color-sb-warm: #e8809a;
+  --color-sb-peach: #f0a38b;
+  --color-sb-amber: #f2b45a;
+  --color-sb-starlight: #cfe0ff;
+  --color-sb-success: #34d399;
+  --color-sb-danger: #fb7185;
 
-  /* Legacy tokens retained for unmigrated tabs inside .sb-legacy */
-  --color-vm-canvas: #070b14;
-  --color-vm-surface-1: #0d1424;
-  --color-vm-surface-2: #131d33;
-  --color-vm-surface-3: #1b2844;
-  --color-vm-accent: #6366f1;
-  --color-vm-accent-soft: #818cf8;
-  --color-vm-violet: #8b5cf6;
-  --color-vm-teal: #2dd4bf;
+  /* Legacy tokens aligned to twilight for unmigrated tabs inside .sb-legacy */
+  --color-vm-canvas: #0f0b2e;
+  --color-vm-surface-1: #16113e;
+  --color-vm-surface-2: #221b5a;
+  --color-vm-surface-3: #2b246b;
+  --color-vm-accent: #5b6ee1;
+  --color-vm-accent-soft: #8a6fd1;
+  --color-vm-violet: #8a6fd1;
+  --color-vm-teal: #5eead4;
   --color-vm-success: #34d399;
-  --color-vm-warning: #fbbf24;
+  --color-vm-warning: #f2b45a;
   --color-vm-danger: #fb7185;
-  --color-vm-info: #38bdf8;
+  --color-vm-info: #cfe0ff;
 }
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 
-  /* Storybook Palette */
-  --sb-paper: #f6efe2;
-  --sb-paper-card: #fbf7ee;
-  --sb-paper-warm: #f2e8d5;
-  --sb-paper-deep: #ece1cc;
-  --sb-ink: #2b2a33;
-  --sb-ink-soft: #575361;
-  --sb-ink-faint: rgba(43, 42, 51, 0.16);
+  /* Twilight / Blue Hour Palette */
+  --sb-bg-top: #0f0b2e;
+  --sb-bg-bottom: #1a1446;
+  --sb-panel-bg: #1c164a;
+  --sb-surface: #221b5a;
+  --sb-surface-elevated: #2b246b;
+  --sb-surface-deep: #140f3b;
+  --sb-nav-bg: rgba(17, 12, 50, 0.90);
 
-  --sb-terracotta: #d9603b;
-  --sb-terracotta-strong: #c44d2a;
-  --sb-terracotta-text: #a83b1c;
-  --sb-terracotta-soft: #fae3d7;
+  --sb-text: #f4efff;
+  --sb-text-muted: #b9b2e6;
+  --sb-border: rgba(138, 111, 209, 0.46);
+  --sb-border-strong: rgba(138, 111, 209, 0.62);
+  --sb-border-amber: rgba(242, 180, 90, 0.62);
 
-  --sb-forest: #3f7d58;
-  --sb-forest-text: #295a3d;
-  --sb-forest-soft: #ddeee2;
+  /* Brand & semantic accents (AA verified on #1c164a–#2b246b) */
+  --sb-primary: #5b6ee1;
+  --sb-primary-btn: #4c5ed1;
+  --sb-primary-soft: rgba(91, 110, 225, 0.24);
+  --sb-primary-text: #dbe2ff;
 
-  --sb-sky: #3a8fb7;
-  --sb-sky-strong: #277296;
-  --sb-sky-text: #1f5d7a;
-  --sb-sky-soft: #dceef6;
+  --sb-secondary: #8a6fd1;
+  --sb-secondary-soft: rgba(138, 111, 209, 0.22);
+  --sb-secondary-text: #dcd0ff;
 
-  --sb-ochre: #e0a82e;
-  --sb-ochre-text: #7d5608;
-  --sb-ochre-soft: #f8ecd0;
+  --sb-warm: #e8809a;
+  --sb-peach: #f0a38b;
+  --sb-warm-soft: rgba(232, 128, 154, 0.20);
+  --sb-warm-text: #ffbfd0;
 
-  --sb-plum: #7a4e8c;
-  --sb-plum-text: #5e386e;
-  --sb-plum-soft: #ede1f2;
+  --sb-amber: #f2b45a;
+  --sb-amber-soft: rgba(242, 180, 90, 0.18);
+  --sb-amber-text: #f8ca82;
+  --sb-amber-ink: #17113b;
 
-  --sb-berry: #c8434e;
-  --sb-berry-text: #9e2a35;
-  --sb-berry-soft: #f9dfe1;
+  --sb-starlight: #cfe0ff;
+  --sb-starlight-soft: rgba(207, 224, 255, 0.15);
 
-  --sb-clay: #d97736;
-  --sb-clay-text: #9e4812;
-  --sb-clay-soft: #fae8d8;
+  --sb-success: #34d399;
+  --sb-success-soft: rgba(52, 211, 153, 0.18);
+  --sb-success-text: #86efac;
 
-  --sb-lagoon: #216e6e;
-  --sb-lagoon-soft: #d9f0ef;
+  --sb-danger: #fb7185;
+  --sb-danger-soft: rgba(251, 113, 133, 0.18);
+  --sb-danger-text: #fda4af;
 
-  --sb-shadow-sm: 2px 2px 0 var(--sb-ink);
-  --sb-shadow-md: 4px 4px 0 var(--sb-ink);
-  --sb-shadow-lg: 6px 6px 0 var(--sb-ink);
-  --sb-ring: #c44d2a;
+  /* Mastery levels L1–L5 */
+  --sb-lvl1: #fb7185;
+  --sb-lvl1-soft: rgba(251, 113, 133, 0.20);
+  --sb-lvl1-text: #fecdd3;
+  --sb-lvl1-border: rgba(251, 113, 133, 0.55);
 
-  /* Default light surface mappings */
-  --bg-canvas: var(--sb-paper);
-  --bg-surface-1: var(--sb-paper-warm);
-  --bg-surface-2: var(--sb-paper-card);
-  --bg-surface-3: var(--sb-paper-deep);
-  --bg-glass: rgba(251, 247, 238, 0.94);
-  --bg-glass-card: var(--sb-paper-card);
-  --bg-input: #fffdf8;
+  --sb-lvl2: #f0a38b;
+  --sb-lvl2-soft: rgba(240, 163, 139, 0.20);
+  --sb-lvl2-text: #ffd4c4;
+  --sb-lvl2-border: rgba(240, 163, 139, 0.55);
 
-  --text-primary: var(--sb-ink);
-  --text-secondary: var(--sb-ink-soft);
-  --text-muted: #65606f;
+  --sb-lvl3: #f2b45a;
+  --sb-lvl3-soft: rgba(242, 180, 90, 0.20);
+  --sb-lvl3-text: #fde2ad;
+  --sb-lvl3-border: rgba(242, 180, 90, 0.58);
 
-  --border-subtle: rgba(43, 42, 51, 0.14);
-  --border-default: rgba(43, 42, 51, 0.28);
-  --border-strong: var(--sb-ink);
-  --border-accent: var(--sb-terracotta-strong);
+  --sb-lvl4: #5eead4;
+  --sb-lvl4-soft: rgba(94, 234, 212, 0.18);
+  --sb-lvl4-text: #a7f3e8;
+  --sb-lvl4-border: rgba(94, 234, 212, 0.52);
 
-  --primary: var(--sb-terracotta-strong);
-  --primary-hover: var(--sb-terracotta);
-  --primary-dark: #a83b1c;
-  --violet: var(--sb-plum);
-  --success: var(--sb-forest);
-  --warning: var(--sb-ochre);
-  --danger: var(--sb-berry);
+  --sb-lvl5: #34d399;
+  --sb-lvl5-soft: rgba(52, 211, 153, 0.20);
+  --sb-lvl5-text: #a7f3d0;
+  --sb-lvl5-border: rgba(52, 211, 153, 0.55);
+
+  /* Soft twilight glows (no harsh black offset shadows) */
+  --sb-glow-sm: 0 0 0 1px rgba(138, 111, 209, 0.26), 0 4px 14px -2px rgba(91, 110, 225, 0.24);
+  --sb-glow-md: 0 0 0 1px rgba(138, 111, 209, 0.22), 0 8px 26px -6px rgba(91, 110, 225, 0.30), 0 0 18px -6px rgba(138, 111, 209, 0.24);
+  --sb-glow-hover: 0 0 0 1px rgba(242, 180, 90, 0.45), 0 10px 30px -6px rgba(91, 110, 225, 0.34), 0 0 22px -4px rgba(242, 180, 90, 0.26);
+  --sb-glow-amber: 0 0 0 1px rgba(242, 180, 90, 0.48), 0 4px 16px -2px rgba(242, 180, 90, 0.30);
+  --sb-ring: #f2b45a;
+
+  /* Shared surface mappings (used by .field / .vm-* and .sb-legacy) */
+  --bg-canvas: var(--sb-bg-top);
+  --bg-surface-1: #16113e;
+  --bg-surface-2: var(--sb-surface);
+  --bg-surface-3: var(--sb-surface-elevated);
+  --bg-glass: rgba(20, 15, 59, 0.88);
+  --bg-glass-card: rgba(34, 27, 90, 0.78);
+  --bg-input: rgba(15, 11, 46, 0.84);
+
+  --text-primary: var(--sb-text);
+  --text-secondary: #d7d0f5;
+  --text-muted: var(--sb-text-muted);
+
+  --border-subtle: rgba(138, 111, 209, 0.26);
+  --border-default: var(--sb-border);
+  --border-strong: var(--sb-border-strong);
+  --border-accent: rgba(242, 180, 90, 0.56);
+
+  --primary: var(--sb-primary);
+  --primary-hover: #7082ee;
+  --primary-dark: var(--sb-primary-btn);
+  --violet: var(--sb-secondary);
+  --success: var(--sb-success);
+  --warning: var(--sb-amber);
+  --danger: var(--sb-danger);
   --accent-ring: var(--sb-ring);
 
-  --shadow-card: 0 8px 24px -8px rgba(2, 6, 23, 0.65), inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
-  --shadow-card-hover: 0 14px 32px -10px rgba(2, 6, 23, 0.8), 0 0 0 1px rgba(129, 140, 248, 0.22), inset 0 1px 0 0 rgba(255, 255, 255, 0.07);
-  --shadow-accent: 0 8px 20px -6px rgba(99, 102, 241, 0.42);
-  --shadow-violet: 0 8px 20px -6px rgba(139, 92, 246, 0.42);
-  --shadow-floating: 0 18px 42px -10px rgba(2, 6, 23, 0.88);
+  --shadow-card: var(--sb-glow-md);
+  --shadow-card-hover: var(--sb-glow-hover);
+  --shadow-accent: 0 6px 20px -4px rgba(91, 110, 225, 0.45);
+  --shadow-violet: 0 6px 20px -4px rgba(138, 111, 209, 0.45);
+  --shadow-floating: 0 14px 36px -8px rgba(15, 11, 46, 0.78), 0 0 22px -6px rgba(138, 111, 209, 0.35);
 
   /* Radii & Motion (prefixed so Tailwind v4's built-in --radius-* scale stays intact) */
   --vm-radius-sm: 0.625rem;
@@ -138,7 +171,7 @@
 }
 
 html {
-  background-color: var(--sb-paper);
+  background-color: var(--sb-bg-top);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -147,17 +180,18 @@ body {
   font-family: 'Nunito Variable', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   margin: 0;
   padding: 0;
-  background-color: var(--sb-paper);
-  color: var(--sb-ink);
+  background: linear-gradient(180deg, var(--sb-bg-top) 0%, var(--sb-bg-bottom) 100%);
+  background-color: var(--sb-bg-top);
+  color: var(--sb-text);
   overflow-x: clip;
 }
 
-/* Warm illustrated paper backdrop with subtle watercolor washes & paper grain */
+/* Twilight sky backdrop with subtle horizon peach/amber glow & starlight grain */
 .vm-app-shell {
   position: relative;
   min-height: 100vh;
-  background-color: var(--sb-paper);
-  color: var(--sb-ink);
+  background: linear-gradient(180deg, var(--sb-bg-top) 0%, var(--sb-bg-bottom) 100%);
+  color: var(--sb-text);
   isolation: isolate;
 }
 
@@ -168,10 +202,11 @@ body {
   z-index: -1;
   pointer-events: none;
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.035'/%3E%3C/svg%3E"),
-    radial-gradient(56rem 34rem at 8% -4%, rgba(224, 168, 46, 0.14), transparent 62%),
-    radial-gradient(48rem 30rem at 92% 6%, rgba(58, 143, 183, 0.11), transparent 60%),
-    radial-gradient(46rem 30rem at 52% 102%, rgba(63, 125, 88, 0.10), transparent 64%);
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='0.028'/%3E%3C/svg%3E"),
+    radial-gradient(56rem 34rem at 12% -6%, rgba(91, 110, 225, 0.22), transparent 62%),
+    radial-gradient(48rem 30rem at 88% 8%, rgba(138, 111, 209, 0.20), transparent 60%),
+    radial-gradient(56rem 28rem at 52% 104%, rgba(232, 128, 154, 0.14), transparent 64%),
+    radial-gradient(40rem 22rem at 78% 98%, rgba(242, 180, 90, 0.11), transparent 60%);
 }
 
 /* Accessible keyboard focus ring across all interactive elements */
@@ -186,107 +221,112 @@ body {
 }
 
 .sb-panel {
-  background-color: var(--sb-paper-warm);
-  border: 2px solid var(--sb-ink);
+  background-color: var(--sb-panel-bg);
+  border: 1.5px solid var(--sb-border);
   border-radius: 22px 24px 20px 23px;
-  box-shadow: var(--sb-shadow-md);
+  box-shadow: var(--sb-glow-md);
 }
 
 .sb-card {
-  background-color: var(--sb-paper-card);
-  border: 2px solid var(--sb-ink);
+  background-color: var(--sb-surface);
+  border: 1.5px solid var(--sb-border);
   border-radius: 18px 20px 17px 21px;
-  box-shadow: var(--sb-shadow-md);
+  box-shadow: var(--sb-glow-md);
   transition: transform var(--duration-normal) var(--ease-out-smooth),
+              border-color var(--duration-normal) var(--ease-out-smooth),
               box-shadow var(--duration-normal) var(--ease-out-smooth),
               background-color var(--duration-normal) var(--ease-out-smooth);
 }
 
 .sb-card-interactive:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: var(--sb-shadow-lg);
+  transform: translateY(-2px);
+  border-color: var(--sb-border-amber);
+  background-color: var(--sb-surface-elevated);
+  box-shadow: var(--sb-glow-hover);
 }
 
 .sb-card-interactive:active {
-  transform: translate(2px, 2px);
-  box-shadow: var(--sb-shadow-sm);
+  transform: translateY(0);
+  box-shadow: var(--sb-glow-sm);
 }
 
 .sb-sticker {
-  border: 2px solid var(--sb-ink);
-  box-shadow: var(--sb-shadow-sm);
+  border: 1.5px solid var(--sb-border-strong);
+  box-shadow: var(--sb-glow-sm);
 }
 
 .sb-btn-ink {
-  border: 2px solid var(--sb-ink);
-  box-shadow: 3px 3px 0 var(--sb-ink);
+  border: 1.5px solid var(--sb-border-amber);
+  box-shadow: var(--sb-glow-amber);
   transition: transform var(--duration-fast) var(--ease-out-smooth),
               box-shadow var(--duration-fast) var(--ease-out-smooth),
               background-color var(--duration-fast) var(--ease-out-smooth),
+              border-color var(--duration-fast) var(--ease-out-smooth),
               color var(--duration-fast) var(--ease-out-smooth);
 }
 
 .sb-btn-ink:hover:not(:disabled) {
-  transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0 var(--sb-ink);
+  transform: translateY(-1px);
+  box-shadow: var(--sb-glow-hover);
 }
 
 .sb-btn-ink:active:not(:disabled) {
-  transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 var(--sb-ink);
+  transform: scale(0.98);
+  box-shadow: var(--sb-glow-sm);
 }
 
 .sb-paper-note {
-  background-color: var(--sb-paper-card);
-  border: 2px solid var(--sb-ink);
+  background-color: var(--sb-surface);
+  border: 1.5px solid var(--sb-border);
   border-radius: 16px 18px 15px 19px;
-  box-shadow: 3px 3px 0 var(--sb-ink);
+  box-shadow: var(--sb-glow-sm);
 }
 
 /* ── Legacy Bridge (.sb-legacy) for tabs not yet migrated ──────────────────
-   Restores the previous dark palette inside an ink-framed container.
+   Harmonizes the 6 unmigrated tabs with the twilight background while keeping
+   all legacy variables and selectors intact.
    NOTE: Never apply transform, filter, backdrop-filter, contain:paint, or
    overflow:hidden here so fixed Grammar popups stay anchored to the viewport. */
 .sb-legacy {
   color-scheme: dark;
-  --bg-canvas: #070b14;
-  --bg-surface-1: #0d1424;
-  --bg-surface-2: #131d33;
-  --bg-surface-3: #1b2844;
-  --bg-glass: rgba(11, 17, 32, 0.84);
-  --bg-glass-card: rgba(15, 23, 42, 0.72);
-  --bg-input: rgba(11, 18, 34, 0.82);
+  --bg-canvas: #130e3c;
+  --bg-surface-1: #1a1446;
+  --bg-surface-2: #221b5a;
+  --bg-surface-3: #2b246b;
+  --bg-glass: rgba(19, 14, 60, 0.88);
+  --bg-glass-card: rgba(34, 27, 90, 0.78);
+  --bg-input: rgba(15, 11, 46, 0.86);
 
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
+  --text-primary: var(--sb-text);
+  --text-secondary: #d7d0f5;
+  --text-muted: var(--sb-text-muted);
 
-  --border-subtle: rgba(148, 163, 184, 0.14);
-  --border-default: rgba(148, 163, 184, 0.22);
-  --border-strong: rgba(148, 163, 184, 0.34);
-  --border-accent: rgba(129, 140, 248, 0.48);
+  --border-subtle: rgba(138, 111, 209, 0.26);
+  --border-default: var(--sb-border);
+  --border-strong: var(--sb-border-strong);
+  --border-accent: rgba(242, 180, 90, 0.54);
 
-  --primary: #6366f1;
-  --primary-hover: #7578f6;
-  --primary-dark: #4f46e5;
-  --violet: #8b5cf6;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #f43f5e;
-  --accent-ring: rgba(129, 140, 248, 0.78);
+  --primary: var(--sb-primary);
+  --primary-hover: #7082ee;
+  --primary-dark: var(--sb-primary-btn);
+  --violet: var(--sb-secondary);
+  --success: var(--sb-success);
+  --warning: var(--sb-amber);
+  --danger: var(--sb-danger);
+  --accent-ring: var(--sb-ring);
 
-  background-color: #070b14;
+  background-color: #151040;
   background-image:
-    radial-gradient(48rem 28rem at 12% 0%, rgba(99, 102, 241, 0.12), transparent 62%),
-    radial-gradient(40rem 24rem at 88% 4%, rgba(139, 92, 246, 0.09), transparent 60%);
-  color: #f8fafc;
-  border: 2px solid var(--sb-ink);
+    radial-gradient(48rem 28rem at 12% 0%, rgba(91, 110, 225, 0.16), transparent 62%),
+    radial-gradient(40rem 24rem at 88% 4%, rgba(138, 111, 209, 0.14), transparent 60%);
+  color: var(--sb-text);
+  border: 1.5px solid var(--sb-border);
   border-radius: 1.5rem;
-  box-shadow: var(--sb-shadow-lg);
+  box-shadow: var(--sb-glow-md);
 }
 
 .sb-legacy :is(button, a, input, select, textarea, summary, [role="button"], [tabindex]):focus-visible {
-  outline: 2px solid var(--accent-ring);
+  outline: 2px solid var(--sb-ring);
   outline-offset: 2px;
 }
 
@@ -310,9 +350,9 @@ body {
   border-color: var(--border-strong);
 }
 .field:focus {
-  border-color: var(--primary);
-  background: rgba(15, 23, 42, 0.94);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+  border-color: var(--sb-amber);
+  background: rgba(20, 15, 59, 0.96);
+  box-shadow: 0 0 0 3px rgba(242, 180, 90, 0.22);
 }
 .field:focus-visible {
   outline: 2px solid var(--accent-ring);
@@ -321,13 +361,13 @@ body {
 
 /* Shared surface & control utilities (names preserved for existing tabs & tests) */
 .vm-panel {
-  background: linear-gradient(180deg, rgba(19, 29, 51, 0.78) 0%, rgba(13, 20, 36, 0.86) 100%);
+  background: linear-gradient(180deg, rgba(34, 27, 90, 0.82) 0%, rgba(24, 18, 68, 0.90) 100%);
   border: 1px solid var(--border-subtle);
   box-shadow: var(--shadow-card);
 }
 
 .vm-card {
-  background: linear-gradient(180deg, rgba(21, 32, 56, 0.82) 0%, rgba(14, 22, 40, 0.9) 100%);
+  background: linear-gradient(180deg, rgba(39, 31, 100, 0.85) 0%, rgba(26, 20, 74, 0.92) 100%);
   border: 1px solid var(--border-subtle);
   box-shadow: var(--shadow-card);
   transition: transform var(--duration-normal) var(--ease-out-smooth),
@@ -358,23 +398,23 @@ body {
 }
 
 .vm-btn-primary {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  background: linear-gradient(135deg, #5b6ee1 0%, #4c5ed1 100%);
   color: #ffffff;
-  box-shadow: var(--shadow-accent), inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
+  box-shadow: var(--shadow-accent), inset 0 1px 0 0 rgba(207, 224, 255, 0.22);
 }
 .vm-btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #7477f7 0%, #5b52f0 100%);
-  box-shadow: 0 10px 24px -6px rgba(99, 102, 241, 0.55), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, #6d7feb 0%, #5b6ee1 100%);
+  box-shadow: 0 8px 22px -4px rgba(91, 110, 225, 0.56), inset 0 1px 0 0 rgba(207, 224, 255, 0.28);
 }
 
 .vm-btn-violet {
-  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  background: linear-gradient(135deg, #8a6fd1 0%, #5b6ee1 100%);
   color: #ffffff;
-  box-shadow: var(--shadow-violet), inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
+  box-shadow: var(--shadow-violet), inset 0 1px 0 0 rgba(207, 224, 255, 0.22);
 }
 .vm-btn-violet:hover:not(:disabled) {
-  background: linear-gradient(135deg, #9b70f8 0%, #7477f7 100%);
-  box-shadow: 0 10px 24px -6px rgba(139, 92, 246, 0.52), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, #9b82de 0%, #6d7feb 100%);
+  box-shadow: 0 8px 22px -4px rgba(138, 111, 209, 0.56), inset 0 1px 0 0 rgba(207, 224, 255, 0.28);
 }
 
 .vm-input {
@@ -392,25 +432,30 @@ body {
   border-color: var(--border-strong);
 }
 .vm-input:focus {
-  border-color: var(--primary);
-  background: rgba(15, 23, 42, 0.94);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+  border-color: var(--sb-amber);
+  background: rgba(20, 15, 59, 0.96);
+  box-shadow: 0 0 0 3px rgba(242, 180, 90, 0.22);
 }
 
-/* Custom scrollbar (warm paper tone) */
+/* Keep disabled controls clearly legible on dark surfaces */
+:is(button, input, select, textarea):disabled {
+  cursor: not-allowed;
+}
+
+/* Custom scrollbar (twilight indigo-lavender tone) */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--sb-paper-deep);
+  background: var(--sb-bg-top);
 }
 ::-webkit-scrollbar-thumb {
-  background: #b9aa90;
+  background: #483b8c;
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--sb-terracotta-strong);
+  background: var(--sb-secondary);
 }
 
 /* ── GPU-composited Keyframes (transform & opacity only) ────────────────── */
@@ -458,13 +503,13 @@ body {
 .vm-skeleton {
   position: relative;
   overflow: hidden;
-  background-color: #16223a;
+  background-color: #241d5e;
 }
 .vm-skeleton::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(148, 163, 184, 0.14) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(207, 224, 255, 0.14) 50%, transparent 100%);
   transform: translateX(-100%);
   animation: vmSheen 1.4s var(--ease-out-smooth) infinite;
 }
@@ -479,7 +524,7 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.28) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(244, 239, 255, 0.28) 50%, transparent 100%);
   transform: translateX(-100%);
   animation: vmSheen 2.4s var(--ease-out-smooth) infinite;
 }

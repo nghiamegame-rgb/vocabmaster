@@ -4,6 +4,14 @@
 
 > **Cập nhật 2026-11-25 (đêm):** `feat/voice-picker` và `feat/export-sentences-only` **đã ghép vào `main`** (`ab94f57`) và đã push. Nhánh `feat/dictation-word-listening` sau đó cũng đã ghép (`652765f`) và push; xem mục 20.
 
+## 24. Bảng màu Hoàng Hôn (Twilight / Blue Hour) — 2026-11-26
+
+- Nhánh `feat/twilight-theme` tách từ `main` (`2398fcb`); **chưa ghép/push `main`**. Bản giấy kem sáng cũ nằm ở commit `2398fcb` trên `main`. Chi tiết: [STORYBOOK-THEME.md](STORYBOOK-THEME.md).
+- **Token & CSS (`src/index.css`):** Thay bảng màu giấy kem sáng bằng Hoàng Hôn (`#0f0b2e → #1a1446`, thẻ `#221b5a`/`#2b246b`, viền lavender 46–62%, chính `#5b6ee1` / nút chữ trắng `#4c5ed1`, hổ phách `#f2b45a`, hồng đào `#e8809a`/`#f0a38b`, chữ `#f4efff`/`#b9b2e6`). Đổi bóng cứng đen sang glow lavender/amber nhẹ; giữ tên `.sb-*`/`.vm-*` và hòa quyện `.sb-legacy` vào nền chàm-tím (không thêm `transform`/`filter`/`overflow:hidden`).
+- **Component & Tranh SVG:** `App.jsx`, `ErrorBoundary.jsx`, `Navbar.jsx`, `Dashboard.jsx` chuyển hoàn toàn sang token `var(--sb-*)`; `StorybookArt.jsx` tô lại cảnh hoàng hôn (trời gradient, sao, trăng, mây viền đào, núi viền vàng, L1–L5 và cáo nhỏ). Cập nhật assert màu chip navbar `-900 → -200` ở `navbar-sync-chip.test.js` và `navbar-sync-chip-browser.test.js`.
+- **Kiểm tra:** `npm.cmd run build` đạt (`561,76 kB` / gzip `168,16 kB`, CSS `113,40 kB`), `npm.cmd run lint` 0 lỗi / 31 cảnh báo, `npm.cmd test` **42/42**, 9 test trình duyệt **9/9** đạt, rà tương phản WCAG AA đạt **5,48:1 – 15,12:1**, ảnh chụp 1440 px & 375 px trên Dashboard và 6 tab cũ 0 tràn ngang (Flashcard và vài nút `bg-slate-*` trong 6 tab cũ vẫn mang tông xám lạnh nhẹ bên trong `.sb-legacy`, chờ G2–G5).
+- **Chưa kiểm chứng:** điện thoại thật, Safari/iOS, Firefox.
+
 ## 23. Giao diện Storybook — Giai đoạn 1 — 2026-11-26
 
 - Nhánh `feat/storybook-theme-phase1` tách từ `main` (`9df68cf`), đã push riêng lên `origin` cho Vercel Preview; **chưa ghép `main`**. Chi tiết thiết kế: [STORYBOOK-THEME.md](STORYBOOK-THEME.md).

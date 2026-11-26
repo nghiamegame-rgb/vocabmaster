@@ -37,7 +37,7 @@ try {
       assert.ok(chip, `${syncStatus}/${pushStatus}`);
       assert.equal(chip[1], key);
       assert.equal(chip[3], text);
-      assert.match(chip[2], new RegExp(`text-${colour}-900`));
+      assert.match(chip[2], new RegExp(`text-${colour}-200`));
       assert.match(chip[2], /\btruncate\b/);
       assert.match(chip[2], /\btext-xs\b/);
       assert.doesNotMatch(chip[2], /\bfixed\b/);
