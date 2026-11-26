@@ -306,7 +306,7 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
 
       {/* ── Page header ── */}
       <div className="mb-6">
-        <h1 className="sb-font-display text-3xl font-extrabold tracking-tight text-[var(--sb-ink)] mb-1 flex items-center gap-3">
+        <h1 className="sb-font-display text-3xl font-extrabold text-[var(--sb-ink)] mb-1 flex items-center gap-3">
           <Headphones size={28} className="text-[var(--sb-terracotta-strong)]" />
           Listening Review
         </h1>

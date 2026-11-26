@@ -8,6 +8,7 @@
 
 @theme {
   --font-sans: 'Nunito Variable', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Nunito Variable', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   /* Storybook semantic palette */
   --color-sb-paper: #f6efe2;
@@ -182,8 +183,11 @@ body {
 }
 
 /* ── Storybook Utility Classes ───────────────────────────────────────────── */
-.sb-font-display {
-  font-family: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
+.sb-font-display,
+.sb-heading {
+  font-family: 'Nunito Variable', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: normal;
+  word-spacing: normal;
 }
 
 .sb-font-body {

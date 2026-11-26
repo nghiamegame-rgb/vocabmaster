@@ -21,7 +21,7 @@ export default function Dictation({ store }) {
   return (
     <div className="vm-page-enter max-w-6xl mx-auto space-y-5">
       <div>
-        <h1 className="sb-heading text-3xl font-extrabold tracking-tight text-[var(--sb-ink)] mb-1 flex items-center gap-3">
+        <h1 className="sb-heading text-3xl font-extrabold text-[var(--sb-ink)] mb-1 flex items-center gap-3">
           <PenLine size={28} className="text-[var(--sb-terracotta-strong)]" /> Dictation
         </h1>
         <p className="text-[var(--sb-ink-soft)] text-sm">Nghe câu tiếng Anh và chép lại. Gõ đúng từ nào thì từ đó được mở.</p>

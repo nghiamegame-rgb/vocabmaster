@@ -125,7 +125,7 @@ export default function Navbar({ activeTab, setActiveTab, syncStatus, pushStatus
               <div className="w-8 h-8 rounded-xl bg-[#d9603b] border-2 border-[#2b2a33] shadow-[2px_2px_0_#2b2a33] flex items-center justify-center transition-transform duration-200 hover:scale-105">
                 <span className="sb-font-display text-white font-black text-sm">V</span>
               </div>
-              <span className="sb-font-display text-[var(--sb-ink)] font-extrabold text-lg tracking-tight hidden xl:block">
+              <span className="sb-font-display text-[var(--sb-ink)] font-extrabold text-lg hidden xl:block">
                 Vocab<span className="text-[#a83b1c]">Master</span>
               </span>
             </div>

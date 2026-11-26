@@ -39,10 +39,11 @@
 
 ## 3. Chữ viết (tự host, không dùng CDN)
 
-- **Tiêu đề lớn & từ vựng chính ≥ 24 px (`.sb-font-display`):** `'Fraunces Variable'`, fallback `Georgia, 'Times New Roman', serif`.
-- **Thân bài, nghĩa tiếng Việt, chú thích, nhãn, nút (`.sb-font-body` / `--font-sans`):** `'Nunito Variable'`, fallback `system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`. Chữ nhỏ không dùng Fraunces và không dùng `letter-spacing` âm (`.sb-vocab-meaning`: 16 px / weight 600 / line-height 1.55; `.sb-vocab-annotation`: 16 px / weight 600; `.sb-vocab-meta`: 14 px / weight 600).
+- **Fraunces đã bỏ theo yêu cầu người dùng; mọi chữ dùng Nunito** (`'Nunito Variable'`, fallback `system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`). Không còn khai báo `font-family` nào trỏ tới Fraunces hay serif.
+- **Tiêu đề lớn & từ vựng chính (`.sb-font-display` / `.sb-heading` / `--font-display`):** dùng `'Nunito Variable'`, độ đậm `800` (ExtraBold), `letter-spacing: normal` (không âm). Từ dài trên Flashcard và thẻ Vocabulary tự xuống dòng (`break-words`) để không tràn thẻ ở 375 px.
+- **Thân bài, nghĩa tiếng Việt, chú thích, nhãn, nút (`.sb-font-body` / `--font-sans`):** dùng `'Nunito Variable'`, `letter-spacing: normal` (`.sb-vocab-meaning`: 16 px / weight 600 / line-height 1.55; `.sb-vocab-annotation`: 16 px / weight 600; `.sb-vocab-meta`: 14 px / weight 600; nhãn/tiêu đề vừa dùng weight 700). Chữ trong SVG `JourneyMapSvg` (`StorybookArt.jsx`) cũng dùng `'Nunito Variable'`.
 - **Gạch chân Grammar (`src/utils/sentenceUnderline.js`):** Bảng màu gồm 5 màu (`yellow`, `blue`, `green`, `pink`, `black` `#17161D` nhãn `"Đen"`). Dữ liệu cũ lưu `white` được ánh xạ sang `black` khi đọc/hiển thị.
-- **Tự host:** `@fontsource-variable/fraunces` và `@fontsource-variable/nunito`, chỉ import subset `vietnamese` và `latin` trong `src/styles/fonts.css`.
+- **Tự host:** chỉ giữ `@fontsource-variable/nunito` (import subset `vietnamese` và `latin` trong `src/styles/fonts.css`); đã gỡ `@fontsource-variable/fraunces` khỏi `package.json` và bản build.
 
 ---
 

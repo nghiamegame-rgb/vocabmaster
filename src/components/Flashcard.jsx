@@ -314,7 +314,7 @@ export default function Flashcard({ words, updateWordLevel }) {
     return (
       <div className="max-w-2xl mx-auto vm-page-enter flex flex-col items-center">
         <div className="w-full mb-6">
-          <h1 className="sb-font-display text-3xl font-extrabold tracking-tight text-[var(--sb-ink)] mb-1">Flashcard Mode</h1>
+          <h1 className="sb-font-display text-3xl font-extrabold text-[var(--sb-ink)] mb-1">Flashcard Mode</h1>
           <p className="text-[var(--sb-ink-soft)] font-semibold text-sm">Filter by mastery level and vocabulary type.</p>
         </div>
         {filterBar}
@@ -340,7 +340,7 @@ export default function Flashcard({ words, updateWordLevel }) {
     return (
       <div className="max-w-2xl mx-auto vm-page-enter flex flex-col items-center">
         <div className="w-full mb-6">
-          <h1 className="sb-font-display text-3xl font-extrabold tracking-tight text-[var(--sb-ink)] mb-1">Flashcard Mode</h1>
+          <h1 className="sb-font-display text-3xl font-extrabold text-[var(--sb-ink)] mb-1">Flashcard Mode</h1>
           <p className="text-[var(--sb-ink-soft)] font-semibold text-sm">Filter by mastery level and vocabulary type.</p>
         </div>
         {filterBar}
@@ -363,12 +363,12 @@ export default function Flashcard({ words, updateWordLevel }) {
 
   // ── Card content ──────────────────────────────────────────────────────────
   const frontContent = mode === 'eng-vie' ? (
-    <div className="flex flex-col items-center justify-center h-full p-8">
-      <h2 className="sb-font-display text-4xl md:text-5xl font-extrabold text-[var(--sb-ink)] mb-2 text-center">
+    <div className="flex flex-col items-center justify-center h-full w-full max-w-full p-6 sm:p-8">
+      <h2 className="sb-font-display text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight text-[var(--sb-ink)] mb-2 text-center break-words max-w-full">
         {currentWord.english}
       </h2>
       {currentWord.annotation?.trim() && (
-        <p data-testid="flashcard-annotation" className="sb-vocab-annotation mt-1.5 max-w-prose text-center">
+        <p data-testid="flashcard-annotation" className="sb-vocab-annotation mt-1.5 max-w-full sm:max-w-prose text-center break-words">
           ({currentWord.annotation.trim()})
         </p>
       )}
@@ -381,8 +381,8 @@ export default function Flashcard({ words, updateWordLevel }) {
       </button>
     </div>
   ) : (
-    <div className="flex flex-col items-center justify-center h-full p-8">
-      <h2 className="sb-font-body text-3xl md:text-4xl font-extrabold text-[var(--sb-ink)] mb-8 text-center leading-snug">{currentWord.vietnamese}</h2>
+    <div className="flex flex-col items-center justify-center h-full w-full max-w-full p-6 sm:p-8">
+      <h2 className="sb-font-body text-2xl sm:text-3xl md:text-4xl font-extrabold text-[var(--sb-ink)] mb-8 text-center leading-snug break-words max-w-full">{currentWord.vietnamese}</h2>
       <button
         onClick={playPronunciation}
         aria-label="Pronounce word"
@@ -394,7 +394,7 @@ export default function Flashcard({ words, updateWordLevel }) {
   );
 
   const backContent = mode === 'eng-vie' ? (
-    <div className="flex flex-col items-center justify-center h-full p-6">
+    <div className="flex flex-col items-center justify-center h-full w-full max-w-full p-6">
       {currentWord.imageUrl && (
         <img
           src={currentWord.imageUrl}
@@ -402,11 +402,11 @@ export default function Flashcard({ words, updateWordLevel }) {
           className="w-full max-h-56 object-cover rounded-2xl mb-6 shadow-[var(--sb-shadow-sm)] border-2 border-[var(--sb-ink)]"
         />
       )}
-      <h2 className="sb-font-body text-3xl md:text-4xl font-extrabold text-[var(--sb-forest-text)] text-center leading-snug mb-3">{currentWord.vietnamese}</h2>
+      <h2 className="sb-font-body text-2xl sm:text-3xl md:text-4xl font-extrabold text-[var(--sb-forest-text)] text-center leading-snug mb-3 break-words max-w-full">{currentWord.vietnamese}</h2>
       <p className="text-[var(--sb-ink)] text-sm font-bold px-3.5 py-1 bg-[var(--sb-paper-card)] rounded-full border-2 border-[var(--sb-ink)]">{currentWord.wordType}</p>
     </div>
   ) : (
-    <div className="flex flex-col items-center justify-center h-full p-6">
+    <div className="flex flex-col items-center justify-center h-full w-full max-w-full p-6">
       {currentWord.imageUrl && (
         <img
           src={currentWord.imageUrl}
@@ -415,11 +415,11 @@ export default function Flashcard({ words, updateWordLevel }) {
         />
       )}
       {/* Show english + annotation on the back in vie-eng mode */}
-      <h2 className="sb-font-display text-4xl md:text-5xl font-extrabold text-[var(--sb-terracotta-text)] text-center mb-2">
+      <h2 className="sb-font-display text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight text-[var(--sb-terracotta-text)] text-center mb-2 break-words max-w-full">
         {currentWord.english}
       </h2>
       {currentWord.annotation?.trim() && (
-        <p data-testid="flashcard-annotation" className="sb-vocab-annotation mb-2 max-w-prose text-center">
+        <p data-testid="flashcard-annotation" className="sb-vocab-annotation mb-2 max-w-full sm:max-w-prose text-center break-words">
           ({currentWord.annotation.trim()})
         </p>
       )}
@@ -432,7 +432,7 @@ export default function Flashcard({ words, updateWordLevel }) {
     <div className="max-w-2xl mx-auto vm-page-enter flex flex-col items-center">
 
       <div className="w-full mb-4">
-        <h1 className="sb-font-display text-3xl font-extrabold tracking-tight text-[var(--sb-ink)] mb-1">Flashcard Mode</h1>
+        <h1 className="sb-font-display text-3xl font-extrabold text-[var(--sb-ink)] mb-1">Flashcard Mode</h1>
         <p className="text-[var(--sb-ink-soft)] font-semibold text-sm">
           Click the card to flip it. Review your vocabulary with active recall.
         </p>
