@@ -3,7 +3,12 @@ import { Plus, Trash2, PlayCircle, Download, Upload, FileSpreadsheet, Copy } fro
 import { parseLessonInput, MAX_TITLE_CHARS } from '../../utils/dictationParse';
 import { lessonProgress } from '../../utils/dictationModel';
 import { downloadDictationWorkbook } from '../../utils/dictationExport';
-import { DICTATION_AI_PROMPT } from '../../utils/dictationAiPrompt';
+import {
+  DICTATION_LEVELS,
+  buildDictationAiPrompt,
+  readDictationPromptLevel,
+  writeDictationPromptLevel,
+} from '../../utils/dictationAiPrompt';
 
 export default function DictationLibrary({ store, onPractice }) {
   const [title, setTitle] = useState('');
@@ -13,6 +18,8 @@ export default function DictationLibrary({ store, onPractice }) {
   const fileRef = useRef(null);
   const parsed = useMemo(() => parseLessonInput(text), [text]);
   // Result of "Sao chép prompt cho AI": null, { copied: true } or { copied: false } (copy by hand).
+  const [promptLevel, setPromptLevel] = useState(() => readDictationPromptLevel());
+  const currentPrompt = useMemo(() => buildDictationAiPrompt(promptLevel), [promptLevel]);
   const [promptCopy, setPromptCopy] = useState(null);
   const promptRef = useRef(null);
 
@@ -22,9 +29,15 @@ export default function DictationLibrary({ store, onPractice }) {
     promptRef.current?.setSelectionRange(0, promptRef.current.value.length);
   }, [promptCopy]);
 
+  function selectPromptLevel(levelId) {
+    const saved = writeDictationPromptLevel(levelId);
+    setPromptLevel(saved);
+    setPromptCopy(prev => (prev?.copied ? null : prev));
+  }
+
   async function copyPrompt() {
     try {
-      await navigator.clipboard.writeText(DICTATION_AI_PROMPT);
+      await navigator.clipboard.writeText(currentPrompt);
       setPromptCopy({ copied: true });
     } catch {
       setPromptCopy({ copied: false }); // no clipboard access: show it, already selected
@@ -126,6 +139,32 @@ export default function DictationLibrary({ store, onPractice }) {
           }} className="vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600/80 border border-emerald-400/40 text-white hover:bg-emerald-500">
             <FileSpreadsheet size={14} /> Xuất Excel (.xlsx)
           </button>
+          <div className="inline-flex flex-wrap items-center gap-1.5 rounded-xl bg-slate-900/70 border border-slate-400/20 px-2 py-1" role="group" aria-label="Độ khó prompt cho AI">
+            <span className="text-[11px] font-medium text-slate-400">Độ khó</span>
+            <div className="inline-flex items-center gap-0.5">
+              {DICTATION_LEVELS.map(level => {
+                const active = promptLevel === level.id;
+                return (
+                  <button
+                    key={level.id}
+                    id={`dictation-prompt-level-${level.id}`}
+                    type="button"
+                    aria-pressed={active}
+                    aria-label={`Chọn độ khó ${level.label}`}
+                    title={level.description}
+                    onClick={() => selectPromptLevel(level.id)}
+                    className={`vm-btn px-2 py-0.5 rounded-lg text-xs font-semibold ${
+                      active
+                        ? 'bg-indigo-500/30 border border-indigo-400/60 text-indigo-100'
+                        : 'border border-transparent text-slate-300 hover:bg-slate-800 hover:text-white'
+                    }`}
+                  >
+                    {level.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <button id="dictation-copy-prompt" type="button" onClick={copyPrompt} className="vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-500/20 border border-indigo-400/40 text-indigo-200 hover:bg-indigo-500/30">
             <Copy size={14} /> Sao chép prompt cho AI
           </button>
@@ -136,7 +175,7 @@ export default function DictationLibrary({ store, onPractice }) {
           <label className="block space-y-1">
             <span role="status" className="block text-xs text-amber-300">Trình duyệt không cho sao chép tự động. Prompt dưới đây đã được chọn sẵn, bạn hãy tự sao chép (Ctrl+C, hoặc nhấn giữ rồi chọn Sao chép).</span>
             <textarea
-              id="dictation-ai-prompt" ref={promptRef} readOnly rows={10} value={DICTATION_AI_PROMPT}
+              id="dictation-ai-prompt" ref={promptRef} readOnly rows={10} value={currentPrompt}
               className="w-full vm-input rounded-xl px-3 py-2 text-xs resize-y"
             />
           </label>
