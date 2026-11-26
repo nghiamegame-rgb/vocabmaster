@@ -14,7 +14,7 @@ import { useDictationStore } from './hooks/useDictationStore';
 // Loaded on first open so the main bundle does not grow.
 const Dictation = lazy(() => import('./components/Dictation'));
 
-const LEGACY_TABS = new Set(['quiz', 'listening', 'grammar', 'dictation']);
+const LEGACY_TABS = new Set(['listening', 'grammar', 'dictation']);
 
 export default function App() {
   const [activeTab,   setActiveTab]   = useState('dashboard');
@@ -96,17 +96,17 @@ export default function App() {
             updateWordLevel={updateWordLevel}
           />
         )}
+        {activeTab === 'quiz' && (
+          <Quiz
+            words={words}
+            structures={structureStore.structures}
+            updateWordLevel={updateWordLevel}
+            recordQuizResult={recordQuizResult}
+            recordStructureResult={structureStore.recordStructureResult}
+          />
+        )}
         {LEGACY_TABS.has(activeTab) && (
           <div className="sb-legacy p-4 sm:p-6">
-            {activeTab === 'quiz' && (
-              <Quiz
-                words={words}
-                structures={structureStore.structures}
-                updateWordLevel={updateWordLevel}
-                recordQuizResult={recordQuizResult}
-                recordStructureResult={structureStore.recordStructureResult}
-              />
-            )}
             {activeTab === 'listening' && (
               <ListeningReview
                 words={words}
