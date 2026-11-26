@@ -15,7 +15,7 @@
 | `--sb-paper` / `--sb-paper-card` | `#f6efe2` / `#fbf7ee` | Nền trang giấy kem ấm & nền thẻ chính |
 | `--sb-paper-warm` / `--sb-paper-deep` | `#f2e8d5` / `#ece1cc` | Nền panel, thanh nhóm, rãnh tiến độ, hover nhẹ |
 | `--sb-input-bg` / `--sb-backdrop` | `#fffdf8` / `rgba(43, 42, 51, 0.45)` | Nền ô nhập liệu (`input`, `select`, `textarea`) & nền mờ modal |
-| `--sb-ink` / `--sb-ink-soft` | `#2b2a33` / `#575361` | Chữ chính (tương phản cao trên nền giấy) & chữ phụ / nhãn |
+| `--sb-ink` / `--sb-ink-soft` | `#17161d` / `#383542` | Chữ chính (tương phản ≥ 14,78:1 trên nền giấy/panel) & chữ phụ / nhãn (≥ 9,84:1) |
 | `--sb-ink-border` / `--sb-ink-faint` | `rgba(43, 42, 51, 0.28)` / `0.16` | Chỉ dùng cho viền/đường kẻ phân tách (không dùng `--sb-ink-faint` làm màu chữ) |
 | `--sb-terracotta-strong` / `-hover` / `-text` / `-soft` | `#c44d2a` / `#ad3f1f` / `#a83b1c` / `#fae3d7` | Màu chủ đạo (nút chính `.vm-btn-primary`, tab đang chọn, loa, con trỏ đọc) |
 | `--sb-plum` / `-hover` / `-text` / `-soft` | `#7a4e8c` / `#643c75` / `#5e386e` / `#ede1f2` | Điểm nhấn phụ (`.vm-btn-violet`, Grammar, chủ đề, từ đã lưu Dictation) |
@@ -24,7 +24,7 @@
 | `--sb-ochre` / `-text` / `-soft` | `#e0a82e` / `#7a5205` / `#f8ecd0` | Sao khó ⭐, đến hạn ôn, cảnh báo chú ý |
 | `--sb-sky-strong` / `-text` / `-soft` | `#226b8c` / `#1c5874` / `#dceef6` | Trạng thái chờ, nhãn cấp độ ôn tập |
 | `--sb-clay-text` / `-soft`, `--sb-lagoon-text` / `-soft` | `#96420e` / `#fae8d8`, `#175252` / `#d9f0ef` | Huy hiệu L2, L4, loại từ & thống kê phụ |
-| `--sb-disabled-bg` / `-text` / `-border` | `#dfd5c0` / `#595462` / `rgba(43, 42, 51, 0.30)` | Trạng thái vô hiệu hóa (nút đã đánh giá, lựa chọn bị khóa) |
+| `--sb-disabled-bg` / `-text` / `-border` | `#dfd5c0` / `#3e3a48` / `rgba(43, 42, 51, 0.30)` | Trạng thái vô hiệu hóa (7,57:1 trên nền nút khóa) |
 
 ---
 
@@ -39,8 +39,9 @@
 
 ## 3. Chữ viết (tự host, không dùng CDN)
 
-- **Tiêu đề (`.sb-font-display` / `.sb-heading`):** `'Fraunces Variable'`, fallback `Georgia, 'Times New Roman', serif`.
-- **Thân bài:** `'Nunito Variable'`, fallback `system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`.
+- **Tiêu đề lớn & từ vựng chính ≥ 24 px (`.sb-font-display`):** `'Fraunces Variable'`, fallback `Georgia, 'Times New Roman', serif`.
+- **Thân bài, nghĩa tiếng Việt, chú thích, nhãn, nút (`.sb-font-body` / `--font-sans`):** `'Nunito Variable'`, fallback `system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`. Chữ nhỏ không dùng Fraunces và không dùng `letter-spacing` âm (`.sb-vocab-meaning`: 16 px / weight 600 / line-height 1.55; `.sb-vocab-annotation`: 16 px / weight 600; `.sb-vocab-meta`: 14 px / weight 600).
+- **Gạch chân Grammar (`src/utils/sentenceUnderline.js`):** Bảng màu gồm 5 màu (`yellow`, `blue`, `green`, `pink`, `black` `#17161D` nhãn `"Đen"`). Dữ liệu cũ lưu `white` được ánh xạ sang `black` khi đọc/hiển thị.
 - **Tự host:** `@fontsource-variable/fraunces` và `@fontsource-variable/nunito`, chỉ import subset `vietnamese` và `latin` trong `src/styles/fonts.css`.
 
 ---

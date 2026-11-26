@@ -327,3 +327,18 @@ Tách từ `main` (`3240dd8`). **Chỉ mới sửa và commit theo từng bướ
   - **20/20** test trình duyệt Playwright + Edge headless (`*browser*.test.js` + `underline-rendering.test.js`) đạt, bao gồm toàn bộ test đo hình học (`quiz-feedback-browser`, `underline-rendering`, `sentence-notes-browser`, `navbar-sync-chip-browser`), `grammar-*`, `dictation-*`, `vocab-*`, `listening-autofocus-browser`, `voice-settings-browser`.
   - Ảnh chụp màn hình trên Edge headless (dữ liệu mẫu cục bộ) ở **1440 px & 375 px** trên cả 7 khu vực (`Dashboard` có dữ liệu & rỗng, `Vocabulary`, `Flashcard` mặt trước/sau, `Smart Quiz` cấu hình/câu hỏi MC đã chọn đáp án, `Listening` + `VoiceSettings`, `Grammar` Luyện tập/Câu đã lưu/Ôn tập, `Dictation` Luyện nghe/Thư viện bài): **0 lỗi JS, 0 tràn ngang**, không còn mảng/khung tối sót lại.
 - **Chưa kiểm tra:** điện thoại thật, Safari/iOS, Firefox.
+
+## 24. Ngày 27/11 (đêm) — nhánh `feat/readability-fonts-underline` (chưa ghép `main`)
+
+Tách từ `main` (`0257319`). **Đã hoàn tất 3 giai đoạn trên nhánh `feat/readability-fonts-underline` và push nhánh riêng; CHƯA ghép `main`, CHƯA push `main`.** Chi tiết bảng màu & phông chữ: [STORYBOOK-THEME.md](STORYBOOK-THEME.md).
+
+1. **Gạch chân Grammar Trắng → Đen (`src/utils/sentenceUnderline.js`, `src/components/grammar/UnderlineToolbar.jsx`):** Xóa tùy chọn `white` khỏi `UNDERLINE_COLORS` và thay bằng `black` (`#17161D`, `"Đen"`, `DEFAULT_UNDERLINE_COLOR = 'black'`). Dữ liệu cũ lưu `'white'` được ánh xạ sang `'black'` khi đọc/render (`normalizeUnderlineColor` trong `validateSegment`/`buildSpans`) mà không tự ghi đè LocalStorage khi chỉ xem. Không đụng cấu trúc DOM hay logic đo hình học. Ghi nhận 4 màu còn lại (`yellow` 1.43:1, `green` 1.63:1, `blue` 2.00:1, `pink` 2.48:1 trên `#fbf7ee`) tương phản thấp — chưa tự đổi vì chưa có yêu cầu.
+2. **Phông chữ ôn từ vựng (`src/index.css`, `Flashcard.jsx`, `Vocabulary.jsx`, `Quiz.jsx`, `ListeningReview.jsx`, `ListeningParts.jsx`):** Khai báo `--font-sans: 'Nunito Variable', ...` trong `@theme`, thêm `.sb-font-body`, `.sb-vocab-meaning`, `.sb-vocab-annotation`, `.sb-vocab-meta`. Tách chú thích Flashcard (`data-testid="flashcard-annotation"`) khỏi `<h2>` (nơi từng kế thừa `tracking-tight` và rơi fallback `font-sans`) xuống dòng riêng bên dưới với Nunito 16 px; giữ Fraunces chỉ cho tiêu đề/từ ≥ 24 px.
+3. **Đậm màu mực toàn web (`src/index.css`, `App.jsx`, `Navbar.jsx`, `ErrorBoundary.jsx`, `Dashboard.jsx`, `StorybookArt.jsx`, gỡ `opacity-*` mờ chữ):** Đổi `--sb-ink` `#2b2a33` → `#17161d` (15,71–16,80:1 trên nền kem/thẻ), `--sb-ink-soft` `#575361` → `#383542` (9,84–11,18:1), `--sb-disabled-text` `#595462` → `#3e3a48` (7,57:1).
+- **Đã kiểm tra sau Giai đoạn 3:**
+  - `npm.cmd run build` đạt (4 file `.woff2` `vietnamese` + `latin`, CSS `74,82 kB` gzip `13,22 kB`, JS chính `570,23 kB` gzip `167,46 kB`).
+  - `npm.cmd run lint` **0 lỗi / 31 cảnh báo** (giữ nguyên mốc).
+  - `npm.cmd test` **42/42** đạt (có Python thật trong `PATH`).
+  - **21/21** test trình duyệt Playwright + Edge headless đạt (thêm `flashcard-typography-browser.test.js`, cập nhật `sentence-underline.test.js` và `underline-rendering.test.js`).
+  - Ảnh chụp màn hình ở **1440 px & 375 px** (Dashboard, Vocabulary, Flashcard mặt trước/sau, Smart Quiz, Listening, Grammar → Ôn tập với gạch chân `white` cũ): 0 tràn ngang, chữ rõ, gạch chân cũ hiện đen `#17161D`.
+- **Chưa kiểm tra:** điện thoại thật, Safari/iOS, Firefox.
