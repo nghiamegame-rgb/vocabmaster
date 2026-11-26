@@ -170,7 +170,7 @@ function ImageCard({ word, state, onClick, showMeaning, onToggleMeaning, index, 
       <div className="bg-[var(--sb-paper-card)] px-3 py-2 flex items-center justify-between gap-2 border-t-2 border-[var(--sb-ink)]">
         <div className="flex-1 min-w-0">
           {showMeaning ? (
-            <p className="text-[var(--sb-ink)] text-xs font-semibold truncate animate-fade-in">
+            <p className="sb-font-body text-[var(--sb-ink)] text-base font-semibold leading-snug truncate animate-fade-in">
               {word.vietnamese}
             </p>
           ) : (
@@ -306,7 +306,7 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
 
       {/* ── Page header ── */}
       <div className="mb-6">
-        <h1 className="sb-heading text-3xl font-extrabold tracking-tight text-[var(--sb-ink)] mb-1 flex items-center gap-3">
+        <h1 className="sb-font-display text-3xl font-extrabold tracking-tight text-[var(--sb-ink)] mb-1 flex items-center gap-3">
           <Headphones size={28} className="text-[var(--sb-terracotta-strong)]" />
           Listening Review
         </h1>
@@ -493,7 +493,7 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
             hint={<>
               {round.correct.english}
               {round.correct.annotation?.trim() && (
-                <span className="ml-1 text-xs font-normal text-[var(--sb-ink-soft)]">({round.correct.annotation.trim()})</span>
+                <span className="sb-font-body ml-1.5 text-sm font-medium text-[var(--sb-ink-soft)]">({round.correct.annotation.trim()})</span>
               )}
             </>}
             isPlaying={game.isPlaying}
@@ -514,13 +514,13 @@ export default function ListeningReview({ words, updateWordLevel, dictationStore
                 ? <>Excellent! +1 streak for <span className="underline underline-offset-2 ml-1">
                     {round.correct.english}
                     {round.correct.annotation?.trim() && (
-                      <span className="ml-1 text-xs font-normal text-[var(--sb-ink-soft)]">({round.correct.annotation.trim()})</span>
+                      <span className="sb-font-body ml-1.5 text-sm font-medium text-[var(--sb-ink-soft)]">({round.correct.annotation.trim()})</span>
                     )}
                   </span></>
                 : <>Wrong — streak reset. The answer was <span className="font-bold ml-1">
                     {round.correct.english}
                     {round.correct.annotation?.trim() && (
-                      <span className="ml-1 text-xs font-normal text-[var(--sb-ink-soft)]">({round.correct.annotation.trim()})</span>
+                      <span className="sb-font-body ml-1.5 text-sm font-medium text-[var(--sb-ink-soft)]">({round.correct.annotation.trim()})</span>
                     )}
                   </span></>
               }
