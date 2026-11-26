@@ -22,16 +22,22 @@ const question = (text, index) => ({
   readingItems: [],
 });
 const savedQuestion = { ...question(sentence, 1), savedId: 'gq_browser', savedAt: 1, hardMarked: false, userNotes: 'Keep these notes.' };
-const review = { gq_browser: { level: 3, wrongCount: 2, totalReviews: 4, nextReviewAt: 0 } };
+const legacySentence = 'Legacy white marks render black on warm paper.';
+const legacySavedQuestion = { ...question(legacySentence, 2), savedId: 'gq_legacy_white', savedAt: 2, hardMarked: false, userNotes: '' };
+const review = {
+  gq_browser: { level: 3, wrongCount: 2, totalReviews: 4, nextReviewAt: 0 },
+  gq_legacy_white: { level: 3, wrongCount: 0, totalReviews: 1, nextReviewAt: Date.now() + 86400000 },
+};
 const oldMarks = [{ start: 0, end: 3, color: 'pink' }];
+const legacyWhiteMarks = [{ start: 0, end: 6, color: 'white' }];
 const storageKeys = {
   saved: 'vocabmaster_grammar_saved', review: 'vocabmaster_grammar_review',
   stats: 'vocabmaster_grammar_stats', underlines: 'vocabmaster_grammar_underlines',
 };
 const initialStorage = {
-  [storageKeys.saved]: JSON.stringify([savedQuestion]),
+  [storageKeys.saved]: JSON.stringify([savedQuestion, legacySavedQuestion]),
   [storageKeys.review]: JSON.stringify(review),
-  [storageKeys.underlines]: JSON.stringify({ gq_untouched: oldMarks }),
+  [storageKeys.underlines]: JSON.stringify({ gq_untouched: oldMarks, gq_legacy_white: legacyWhiteMarks }),
   vocabmaster_grammar_pending: 'false',
 };
 
@@ -121,6 +127,8 @@ try {
       element.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
     }, { start, end });
     const name = color ? UNDERLINE_COLORS[color].label : 'Bỏ gạch chân';
+    assert.equal(await page.getByRole('button', { name: 'Đen', exact: true }).count(), 1, 'black underline option is present in toolbar');
+    assert.equal(await page.getByRole('button', { name: /Trắng/i }).count(), 0, 'white underline option is absent from toolbar');
     await page.getByRole('button', { name, exact: true }).click();
     await expectVisible(paragraph, expected);
     assert.deepEqual(await marks(key), expected, 'rendered marks match synchronous autosave');
@@ -152,7 +160,7 @@ try {
   await openGrammar();
   await startReview();
   const beforeStats = await read(storageKeys.stats);
-  const reviewMarks = await exercise(paragraphFor(sentence), savedQuestion.savedId, 'yellow', 'white');
+  const reviewMarks = await exercise(paragraphFor(sentence), savedQuestion.savedId, 'yellow', 'black');
   assert.deepEqual(await read(storageKeys.review), review, 'markup does not alter review progress');
   assert.deepEqual(await read(storageKeys.stats), beforeStats, 'markup does not record assessments or analysis activity');
   console.log('PASS Review: add, partial recolor and partial erase are immediate with analysis collapsed');
@@ -165,7 +173,7 @@ try {
   await startReview();
   await expectVisible(paragraphFor(sentence), reviewMarks);
   await collapsed();
-  assert.deepEqual(await read(storageKeys.saved), [savedQuestion], 'saved sentence identity and notes survive');
+  assert.deepEqual(await read(storageKeys.saved), [savedQuestion, legacySavedQuestion], 'saved sentence identity and notes survive');
   console.log('PASS Review: navigate away/back and reload/reopen preserve marks');
 
   await page.getByRole('button', { name: 'Đã hiểu', exact: true }).click();
@@ -178,9 +186,11 @@ try {
   console.log('PASS Review: underline edits retain an existing assessment');
 
   await page.locator('#grammar-tab-saved').click();
+  await expectVisible(paragraphFor(legacySentence), [{ start: 0, end: 6, color: 'black' }]);
+  assert.deepEqual(await marks('gq_legacy_white'), legacyWhiteMarks, 'legacy white storage is not silently rewritten on read');
   await apply(paragraphFor(sentence), savedQuestion.savedId, 0, sentence.length, null, []);
   const savedMarks = await exercise(paragraphFor(sentence), savedQuestion.savedId, 'blue', 'pink');
-  console.log('PASS Saved Sentences: immediate add, recolor and erase');
+  console.log('PASS Saved Sentences: immediate add, recolor, erase, and legacy white→black render');
 
   await page.locator('#grammar-tab-practice').click();
   await page.getByRole('button', { name: '5', exact: true }).click();
@@ -188,7 +198,7 @@ try {
   await page.locator('textarea').fill(JSON.stringify(questions));
   await page.getByRole('button', { name: 'Kiểm tra & bắt đầu', exact: true }).click();
   const practiceKey = `text:${practiceSentence}`;
-  const practiceMarks = await exercise(paragraphFor(practiceSentence), practiceKey, 'green', 'white');
+  const practiceMarks = await exercise(paragraphFor(practiceSentence), practiceKey, 'green', 'black');
   await page.getByRole('button', { name: 'Lưu câu', exact: true }).click();
   const added = (await read(storageKeys.saved)).find(q => q.sentence === practiceSentence);
   assert.ok(added?.savedId);

@@ -11,7 +11,9 @@
 
 // ── Import under test ────────────────────────────────────────────────────────
 import {
+  DEFAULT_UNDERLINE_COLOR,
   UNDERLINE_COLORS,
+  normalizeUnderlineColor,
   textKey,
   toCodepoints,
   cpLength,
@@ -185,25 +187,34 @@ assert(rtSpans[0].color === UNDERLINE_COLORS.green.hex, 'round-trip: first part 
 assert(rtSpans[1].color === UNDERLINE_COLORS.pink.hex,  'round-trip: overridden part is new color');
 assert(rtSpans[2].color === null,                        'round-trip: remainder is plain');
 
-// ── 9. White uses the existing validation and overlap rules ───────────────────
-console.log('9. white underlines');
-assertDeepEqual(Object.keys(UNDERLINE_COLORS), ['yellow', 'blue', 'green', 'pink', 'white'], 'white follows the original four colors');
-assertDeepEqual(UNDERLINE_COLORS.white, { hex: '#FFFFFF', label: 'Trắng — Đánh dấu chung' }, 'white color and label');
-const white = { start: 6, end: 11, color: 'white' };
-assertDeepEqual(validateSegment(white, cpLength(sent)), white, 'white passes segment validation');
-const whiteOverlap = applyUnderline([{ start: 0, end: 11, color: 'blue' }], 6, 11, 'white', cpLength(sent));
-assertDeepEqual(whiteOverlap, [{ start: 0, end: 6, color: 'blue' }, white], 'white replaces only the selected range');
-assertDeepEqual(buildSpans(sent, whiteOverlap), [
+// ── 9. Black replaces white; legacy white maps to black on read/render ──────
+console.log('9. black underlines and legacy white mapping');
+assert(DEFAULT_UNDERLINE_COLOR === 'black', 'default underline color is black');
+assertDeepEqual(Object.keys(UNDERLINE_COLORS), ['yellow', 'blue', 'green', 'pink', 'black'], 'black replaces white in the fifth slot');
+assert(!('white' in UNDERLINE_COLORS), 'white option is removed from UNDERLINE_COLORS');
+assertDeepEqual(UNDERLINE_COLORS.black, { hex: '#17161D', label: 'Đen' }, 'black color and Vietnamese label');
+assert(normalizeUnderlineColor('white') === 'black', 'normalizeUnderlineColor maps white to black');
+const black = { start: 6, end: 11, color: 'black' };
+const legacyWhite = { start: 6, end: 11, color: 'white' };
+assertDeepEqual(validateSegment(black, cpLength(sent)), black, 'black passes segment validation');
+assertDeepEqual(validateSegment(legacyWhite, cpLength(sent)), black, 'legacy white segment normalizes to black');
+const blackOverlap = applyUnderline([{ start: 0, end: 11, color: 'blue' }], 6, 11, 'black', cpLength(sent));
+assertDeepEqual(blackOverlap, [{ start: 0, end: 6, color: 'blue' }, black], 'black replaces only the selected range');
+assertDeepEqual(buildSpans(sent, blackOverlap), [
   { text: 'Hello ', color: UNDERLINE_COLORS.blue.hex },
-  { text: 'world', color: '#FFFFFF' },
-], 'white renders without changing the sentence text');
-assertDeepEqual(applyUnderline(whiteOverlap, 6, 11, null, cpLength(sent)), [{ start: 0, end: 6, color: 'blue' }], 'removing white preserves the neighboring color');
-assertDeepEqual(applyUnderline([white], 6, 8, 'pink', cpLength(sent)), [
-  { start: 6, end: 8, color: 'pink' }, { start: 8, end: 11, color: 'white' },
-], 'an existing color can replace part of a white underline');
+  { text: 'world', color: '#17161D' },
+], 'black renders without changing the sentence text');
+assertDeepEqual(buildSpans(sent, [legacyWhite]), [
+  { text: 'Hello ', color: null },
+  { text: 'world', color: '#17161D' },
+], 'legacy white segment renders as black');
+assertDeepEqual(applyUnderline(blackOverlap, 6, 11, null, cpLength(sent)), [{ start: 0, end: 6, color: 'blue' }], 'removing black preserves the neighboring color');
+assertDeepEqual(applyUnderline([black], 6, 8, 'pink', cpLength(sent)), [
+  { start: 6, end: 8, color: 'pink' }, { start: 8, end: 11, color: 'black' },
+], 'an existing color can replace part of a black underline');
 
 // ── 10. Persistence across fresh reads and practice → saved-key transition ────
-console.log('10. white persistence');
+console.log('10. black persistence');
 const storageDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
 const oldMarks = ['yellow', 'blue', 'green', 'pink'].map((color, i) => ({ start: i, end: i + 1, color }));
 let persisted = new Map([
@@ -216,19 +227,19 @@ const memoryStorage = () => ({
 });
 try {
   Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: memoryStorage() });
-  saveUnderlinesForKey(textKey(sent), [white]);
+  saveUnderlinesForKey(textKey(sent), [black]);
   // Recreate the storage adapter from serialized data, as after a reload.
   persisted = new Map(JSON.parse(JSON.stringify([...persisted])));
   Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: memoryStorage() });
-  assertDeepEqual(getUnderlinesForKey(textKey(sent)), [white], 'white survives a fresh storage read');
-  migrateUnderlineKey(sent, 'gq_white');
-  assertDeepEqual(getUnderlinesForKey('gq_white'), [white], 'white follows the savedId shared by Practice, Saved and Review');
+  assertDeepEqual(getUnderlinesForKey(textKey(sent)), [black], 'black survives a fresh storage read');
+  migrateUnderlineKey(sent, 'gq_black');
+  assertDeepEqual(getUnderlinesForKey('gq_black'), [black], 'black follows the savedId shared by Practice, Saved and Review');
   assertDeepEqual(getUnderlinesForKey(textKey(sent)), [], 'practice text key is moved by the existing save flow');
-  assertDeepEqual(getUnderlinesForKey('gq_old'), oldMarks, 'saving white preserves all four existing colors');
-  const removed = applyUnderline(getUnderlinesForKey('gq_white'), 6, 11, null, cpLength(sent));
-  saveUnderlinesForKey('gq_white', removed);
-  assertDeepEqual(getUnderlinesForKey('gq_white'), [], 'removing white persists');
-  assertDeepEqual(getUnderlinesForKey('gq_old'), oldMarks, 'removing white preserves other sentences');
+  assertDeepEqual(getUnderlinesForKey('gq_old'), oldMarks, 'saving black preserves all four existing colors');
+  const removed = applyUnderline(getUnderlinesForKey('gq_black'), 6, 11, null, cpLength(sent));
+  saveUnderlinesForKey('gq_black', removed);
+  assertDeepEqual(getUnderlinesForKey('gq_black'), [], 'removing black persists');
+  assertDeepEqual(getUnderlinesForKey('gq_old'), oldMarks, 'removing black preserves other sentences');
   assert(persisted.get('vocabmaster_grammar_review') === '{"gq_old":{"level":4}}', 'underline changes leave review data untouched');
 } finally {
   if (storageDescriptor) Object.defineProperty(globalThis, 'localStorage', storageDescriptor);
@@ -236,7 +247,7 @@ try {
 }
 
 // ── 11. Render actual shared components without running a browser ─────────────
-console.log('11. white toolbar and sentence rendering');
+console.log('11. black toolbar and sentence rendering');
 const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
 const server = await createServer({ optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
 try {
@@ -245,12 +256,14 @@ try {
   const { default: Sentence } = await server.ssrLoadModule('/src/components/grammar/UnderlinedSentence.jsx');
   const toolbar = renderToStaticMarkup(createElement(Toolbar, { position: { top: 40, left: 40 }, onColor() {}, onClose() {} }));
   const labels = [...toolbar.matchAll(/<button\b[^>]*aria-label="([^"]+)"/g)].map(match => match[1]);
-  assertDeepEqual(labels, ['Vàng', 'Xanh da trời', 'Xanh lá', 'Hồng', 'Trắng — Đánh dấu chung', 'Bỏ gạch chân'], 'white button appears before the unchanged remove action');
-  assert(toolbar.includes('title="Trắng — Đánh dấu chung"'), 'white tooltip uses the requested Vietnamese label');
-  const html = renderToStaticMarkup(createElement(Sentence, { sentence: sent, segments: [white], className: 'text-slate-300' }));
-  assert(html.includes('text-decoration-color:#FFFFFF'), 'the shared sentence component renders a white underline');
-  assert(html.includes('text-decoration-thickness:2.5px') && html.includes('text-underline-offset:4px'), 'white keeps existing underline thickness and offset');
-  assert(html.includes('class="text-slate-300"') && !/style="(?:[^"]*;)?color:/.test(html), 'white does not override sentence text color');
+  assertDeepEqual(labels, ['Vàng', 'Xanh da trời', 'Xanh lá', 'Hồng', 'Đen', 'Bỏ gạch chân'], 'black button appears before the unchanged remove action without white');
+  assert(toolbar.includes('title="Đen"') && !toolbar.includes('Trắng'), 'black tooltip uses Vietnamese label and white option is absent');
+  const html = renderToStaticMarkup(createElement(Sentence, { sentence: sent, segments: [black], className: 'text-slate-300' }));
+  assert(html.includes('text-decoration-color:#17161D'), 'the shared sentence component renders a black underline');
+  assert(html.includes('text-decoration-thickness:2.5px') && html.includes('text-underline-offset:4px'), 'black keeps existing underline thickness and offset');
+  assert(html.includes('class="text-slate-300"') && !/style="(?:[^"]*;)?color:/.test(html), 'black does not override sentence text color');
+  const legacyHtml = renderToStaticMarkup(createElement(Sentence, { sentence: sent, segments: [legacyWhite], className: 'text-slate-300' }));
+  assert(legacyHtml.includes('text-decoration-color:#17161D'), 'legacy white segment renders with black underline');
   const erasedHtml = renderToStaticMarkup(createElement(Sentence, { sentence: sent, segments: [], className: 'text-slate-300' }));
   assert(!erasedHtml.includes('text-decoration-line'), 'removing the underline renders plain text again');
 } finally {

@@ -3,7 +3,7 @@
  *
  * Data model: each underline is { start, end, color }
  *   - start/end: Unicode codepoint offsets into the sentence string (≥0, start < end)
- *   - color: one of UNDERLINE_COLORS keys ('yellow'|'blue'|'green'|'pink'|'white'), or null to erase
+ *   - color: one of UNDERLINE_COLORS keys ('yellow'|'blue'|'green'|'pink'|'black'), or null to erase
  *
  * Storage: via grammarStorage.js (LS_GRAMMAR_UNDERLINES = 'vocabmaster_grammar_underlines')
  *   Stored as { [sentenceKey: string]: Segment[] }
@@ -26,13 +26,20 @@
  * validateSegment returns null and the segment is silently skipped in rendering.
  */
 
+export const DEFAULT_UNDERLINE_COLOR = 'black';
+
 export const UNDERLINE_COLORS = {
   yellow: { hex: '#FACC15', label: 'Vàng' },
   blue:   { hex: '#38BDF8', label: 'Xanh da trời' },
   green:  { hex: '#4ADE80', label: 'Xanh lá' },
   pink:   { hex: '#F472B6', label: 'Hồng' },
-  white:  { hex: '#FFFFFF', label: 'Trắng — Đánh dấu chung' },
+  black:  { hex: '#17161D', label: 'Đen' },
 };
+
+/** Map legacy stored 'white' underlines to 'black' on read/render without mutating storage. */
+export function normalizeUnderlineColor(color) {
+  return color === 'white' ? 'black' : color;
+}
 
 // ── Key helpers ───────────────────────────────────────────────────────────────
 
@@ -65,11 +72,12 @@ export function cpLength(str) {
  */
 export function validateSegment(seg, sentenceLen) {
   if (!seg || typeof seg.start !== 'number' || typeof seg.end !== 'number') return null;
-  if (!seg.color || !UNDERLINE_COLORS[seg.color]) return null;
+  const color = normalizeUnderlineColor(seg.color);
+  if (!color || !UNDERLINE_COLORS[color]) return null;
   const start = Math.max(0, Math.min(Math.floor(seg.start), sentenceLen));
   const end   = Math.max(0, Math.min(Math.floor(seg.end),   sentenceLen));
   if (start >= end) return null;
-  return { start, end, color: seg.color };
+  return { start, end, color };
 }
 
 /**
@@ -120,8 +128,13 @@ function eraseRange(segments, start, end) {
  * @returns {Segment[]}             — new normalised segment list
  */
 export function applyUnderline(existing, start, end, color, sentenceLen) {
+  const resolved = color === undefined
+    ? DEFAULT_UNDERLINE_COLOR
+    : color === null
+      ? null
+      : normalizeUnderlineColor(color);
   const erased = eraseRange(existing, start, end);
-  const next   = color ? [...erased, { start, end, color }] : erased;
+  const next   = resolved ? [...erased, { start, end, color: resolved }] : erased;
   return normalize(next, sentenceLen);
 }
 
