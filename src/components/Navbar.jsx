@@ -1,9 +1,9 @@
 import { LayoutDashboard, BookOpen, Brain, Headphones, RefreshCw, Layers, BookOpenCheck, CloudOff, CloudUpload, PenLine } from 'lucide-react';
 
 const tabs = [
-  { id: 'dashboard',  label: 'Dashboard', Icon: LayoutDashboard },
+  { id: 'dashboard',  label: 'Dashboard',  Icon: LayoutDashboard },
   { id: 'vocabulary', label: 'Vocabulary', Icon: BookOpen },
-  { id: 'flashcard',  label: 'Flashcard', Icon: Layers },
+  { id: 'flashcard',  label: 'Flashcard',  Icon: Layers },
   { id: 'quiz',       label: 'Smart Quiz', Icon: Brain },
   { id: 'listening',  label: 'Listening',  Icon: Headphones },
   { id: 'grammar',    label: 'Grammar',    Icon: BookOpenCheck },
@@ -13,10 +13,10 @@ const tabs = [
 /** Sync button visual state for the current Vocabulary sync status. */
 function useSyncVisual(syncStatus) {
   const MAP = {
-    idle:     { label: 'Sync',      cls: 'text-slate-300 hover:text-white hover:bg-slate-800/80 border-slate-400/15 hover:border-slate-400/30',  spin: false, Icon: RefreshCw },
-    syncing:  { label: 'Syncing…',  cls: 'text-indigo-300 bg-indigo-500/15 border-indigo-400/30 cursor-wait',         spin: false, Icon: RefreshCw },
-    ok:       { label: 'Synced!',   cls: 'text-emerald-300 bg-emerald-500/15 border-emerald-400/30',                   spin: false, Icon: RefreshCw },
-    error:    { label: 'Failed',    cls: 'text-rose-300 bg-rose-500/15 border-rose-400/30',                       spin: false, Icon: RefreshCw },
+    idle:     { label: 'Sync',     cls: 'bg-[#fbf7ee] text-[#2b2a33] hover:bg-[#ece1cc] border-[#2b2a33] shadow-[2px_2px_0_#2b2a33]', spin: false, Icon: RefreshCw },
+    syncing:  { label: 'Syncing…', cls: 'text-indigo-900 bg-indigo-100 border-indigo-700 shadow-[2px_2px_0_#2b2a33] cursor-wait',     spin: false, Icon: RefreshCw },
+    ok:       { label: 'Synced!',  cls: 'text-emerald-900 bg-emerald-100 border-emerald-700 shadow-[2px_2px_0_#2b2a33]',              spin: false, Icon: RefreshCw },
+    error:    { label: 'Failed',   cls: 'text-rose-900 bg-rose-100 border-rose-700 shadow-[2px_2px_0_#2b2a33]',                       spin: false, Icon: RefreshCw },
   };
 
   return MAP[syncStatus] ?? MAP.idle;
@@ -32,9 +32,9 @@ function PushIndicator({ pushStatus }) {
   if (pushStatus === 'idle') return null;
 
   const MAP = {
-    pushing:   { label: 'Saving…',   cls: 'text-sky-300     bg-sky-500/15     border-sky-400/30',     Icon: CloudUpload, animate: 'vm-pulse-soft' },
-    ok:        { label: 'Saved ✓',   cls: 'text-emerald-300 bg-emerald-500/15 border-emerald-400/30', Icon: CloudUpload, animate: '' },
-    error:     { label: 'Save failed!',cls:'text-rose-300   bg-rose-500/15    border-rose-400/30',    Icon: CloudOff,    animate: '' },
+    pushing:   { label: 'Saving…',     cls: 'text-sky-900     bg-sky-100     border-sky-700',     Icon: CloudUpload, animate: 'vm-pulse-soft' },
+    ok:        { label: 'Saved ✓',     cls: 'text-emerald-900 bg-emerald-100 border-emerald-700', Icon: CloudUpload, animate: '' },
+    error:     { label: 'Save failed!',cls: 'text-rose-900    bg-rose-100    border-rose-700',    Icon: CloudOff,    animate: '' },
   };
 
   const config = MAP[pushStatus];
@@ -43,12 +43,12 @@ function PushIndicator({ pushStatus }) {
   const { label, cls, Icon, animate } = config;
 
   return (
-    <div
-      className={`
-        vm-scale-in flex items-center gap-1.5 px-1.5 sm:px-2.5 py-1 rounded-xl text-xs font-semibold
-        border transition-colors duration-200 shrink-0
-        ${cls}
-      `}
+      <div
+        className={`
+          vm-scale-in flex items-center gap-1.5 px-1 min-[360px]:px-1.5 sm:px-2.5 py-0.5 rounded-xl text-xs font-bold
+          border-2 transition-colors duration-200 shrink-0
+          ${cls}
+        `}
       title={
         pushStatus === 'error'
           ? 'Vocabulary chưa lưu/đồng bộ xong. Xem thông báo lỗi cụ thể bên dưới.'
@@ -65,10 +65,10 @@ function PushIndicator({ pushStatus }) {
 
 /* ── Sync status message (same rules and texts as the former floating toast) ── */
 const SYNC_MESSAGES = {
-  syncing:    { text: '☁️ Fetching fresh data from Google Sheets…', cls: 'text-indigo-200 bg-indigo-500/15 border-indigo-400/35' },
-  ok:         { text: '✅ Vocabulary synced successfully!',          cls: 'text-emerald-200 bg-emerald-500/15 border-emerald-400/35' },
-  error:      { text: '❌ Vocabulary gặp lỗi — xem chi tiết bên dưới.', cls: 'text-rose-200 bg-rose-500/15 border-rose-400/35' },
-  push_error: { text: '⚠️ Vocabulary chưa lưu/đồng bộ xong — xem chi tiết bên dưới.', cls: 'text-rose-200 bg-rose-500/15 border-rose-400/35' },
+  syncing:    { text: '☁️ Fetching fresh data from Google Sheets…', cls: 'text-indigo-900 bg-indigo-100 border-indigo-700' },
+  ok:         { text: '✅ Vocabulary synced successfully!',          cls: 'text-emerald-900 bg-emerald-100 border-emerald-700' },
+  error:      { text: '❌ Vocabulary gặp lỗi — xem chi tiết bên dưới.', cls: 'text-rose-900 bg-rose-100 border-rose-700' },
+  push_error: { text: '⚠️ Vocabulary chưa lưu/đồng bộ xong — xem chi tiết bên dưới.', cls: 'text-rose-900 bg-rose-100 border-rose-700' },
 };
 
 /** Which message to show: push errors take priority over the sync state. */
@@ -97,7 +97,7 @@ function SyncStatusChip({ message }) {
           key={message.key}
           data-sync-chip={message.key}
           title={message.text}
-          className={`vm-scale-in block max-w-full truncate md:mx-1.5 px-2.5 py-1 rounded-xl border text-xs font-semibold leading-4 ${message.cls}`}
+          className={`vm-scale-in block max-w-full truncate md:mx-1.5 px-2.5 py-0.5 rounded-xl border-2 text-xs font-bold leading-4 ${message.cls}`}
         >
           {message.text}
         </span>
@@ -117,16 +117,16 @@ export default function Navbar({ activeTab, setActiveTab, syncStatus, pushStatus
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a101f]/85 backdrop-blur-xl border-b border-slate-400/15 shadow-[0_8px_30px_rgba(2,6,23,0.55)]">
-        <div className="max-w-7xl mx-auto px-2 sm:px-4">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#fbf7ee]/95 backdrop-blur-sm border-b-2 border-[#2b2a33] shadow-[0_3px_0_rgba(43,42,51,0.12)]">
+        <div className="max-w-7xl mx-auto px-1.5 min-[360px]:px-2 sm:px-4">
           <div className="flex items-center h-16">
             {/* Logo */}
-            <div className="flex items-center gap-2.5 mr-2 sm:mr-8">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 ring-1 ring-white/15 transition-transform duration-200 hover:scale-105">
-                <span className="text-white font-black text-sm">V</span>
+            <div className="flex items-center gap-2.5 mr-1.5 min-[360px]:mr-2 sm:mr-5 xl:mr-6 shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-[#d9603b] border-2 border-[#2b2a33] shadow-[2px_2px_0_#2b2a33] flex items-center justify-center transition-transform duration-200 hover:scale-105">
+                <span className="sb-font-display text-white font-black text-sm">V</span>
               </div>
-              <span className="text-white font-bold text-lg tracking-tight hidden xl:block">
-                Vocab<span className="text-indigo-400">Master</span>
+              <span className="sb-font-display text-[#2b2a33] font-extrabold text-lg tracking-tight hidden xl:block">
+                Vocab<span className="text-[#a83b1c]">Master</span>
               </span>
             </div>
 
@@ -139,10 +139,10 @@ export default function Navbar({ activeTab, setActiveTab, syncStatus, pushStatus
                   aria-label={label}
                   onClick={() => setActiveTab(id)}
                   className={`
-                    vm-btn flex items-center gap-2 px-1 min-[360px]:px-1.5 sm:px-3 py-2 rounded-xl text-sm font-medium shrink-0 whitespace-nowrap
+                    vm-btn flex items-center gap-1.5 px-0.5 min-[360px]:px-1.5 sm:px-2.5 xl:px-2.5 py-1.5 rounded-xl text-sm font-bold border-2 shrink-0 whitespace-nowrap
                     ${activeTab === id
-                      ? 'vm-btn-primary text-white'
-                      : 'text-slate-300/85 hover:text-white hover:bg-slate-800/75'}
+                      ? 'bg-[#c44d2a] text-white border-[#2b2a33] shadow-[2px_2px_0_#2b2a33]'
+                      : 'border-transparent text-[#2b2a33] hover:bg-[#ece1cc] hover:border-[#2b2a33]/35'}
                   `}
                 >
                   <Icon size={16} />
@@ -164,8 +164,8 @@ export default function Navbar({ activeTab, setActiveTab, syncStatus, pushStatus
               disabled={syncStatus === 'syncing'}
               title={statusMessage ? `${statusMessage.text} — ${syncTitle}` : syncTitle}
               className={`
-                vm-btn flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl text-xs font-semibold
-                border ml-1 sm:ml-2 shrink-0
+                vm-btn flex items-center gap-1.5 px-1.5 min-[360px]:px-2 sm:px-3 py-1.5 rounded-xl text-xs font-bold
+                border-2 ml-1 sm:ml-2 shrink-0
                 disabled:cursor-wait
                 ${sync.cls}
               `}

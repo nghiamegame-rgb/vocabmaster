@@ -57,13 +57,13 @@ export default function App() {
       />
 
       <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
-        <div data-testid="vocab-sync-controls" className="vm-panel mb-5 px-4 py-3 rounded-2xl text-sm text-slate-200 flex flex-wrap gap-x-4 gap-y-2 items-center" role="status">
-          <span>Vocabulary: {syncPaused || syncStatus === 'paused' ? 'đang tạm dừng ghi cloud' : 'đồng bộ đã bật trên thiết bị'}</span>
-          <button className="vm-btn text-indigo-300 hover:text-indigo-200 underline underline-offset-4 font-medium" onClick={syncPaused ? resumeSync : pauseSync}>{syncPaused ? 'Bật đồng bộ thiết bị' : 'Tạm dừng đồng bộ'}</button>
-          <button className="vm-btn text-indigo-300 hover:text-indigo-200 underline underline-offset-4 font-medium" onClick={exportSyncBackup}>Xuất bản sao Vocabulary</button>
-          {syncNotice && <p className="w-full text-amber-300 text-xs sm:text-sm leading-relaxed">{syncNotice}</p>}
+        <div data-testid="vocab-sync-controls" className="sb-paper-note mb-5 px-4 py-3 text-sm text-[#2b2a33] flex flex-wrap gap-x-4 gap-y-2 items-center" role="status">
+          <span className="font-medium">Vocabulary: {syncPaused || syncStatus === 'paused' ? 'đang tạm dừng ghi cloud' : 'đồng bộ đã bật trên thiết bị'}</span>
+          <button className="vm-btn text-[#a83b1c] hover:text-[#7c270f] underline underline-offset-4 font-semibold" onClick={syncPaused ? resumeSync : pauseSync}>{syncPaused ? 'Bật đồng bộ thiết bị' : 'Tạm dừng đồng bộ'}</button>
+          <button className="vm-btn text-[#a83b1c] hover:text-[#7c270f] underline underline-offset-4 font-semibold" onClick={exportSyncBackup}>Xuất bản sao Vocabulary</button>
+          {syncNotice && <p className="w-full text-[#7d5608] font-medium text-xs sm:text-sm leading-relaxed">{syncNotice}</p>}
         </div>
-        {vocabDataLoadError && <p role="alert" className="mb-4 px-4 py-3 rounded-xl bg-amber-500/12 border border-amber-400/30 text-amber-200 text-sm animate-fade-in">{vocabDataLoadError}</p>}
+        {vocabDataLoadError && <p role="alert" className="mb-4 px-4 py-3 rounded-xl bg-[#f8ecd0] border-2 border-[#7d5608] text-[#5c3d04] font-medium text-sm shadow-[3px_3px_0_#2b2a33] animate-fade-in">{vocabDataLoadError}</p>}
         {activeTab === 'dashboard' && (
           <Dashboard
             words={words}
@@ -76,54 +76,58 @@ export default function App() {
             }}
           />
         )}
-        {activeTab === 'vocabulary' && (
-          <Vocabulary
-            words={words}
-            addWord={addWord}
-            deleteWord={deleteWord}
-            updateWord={updateWord}
-            toggleWordHard={toggleWordHard}
-            bulkUpdateLevel={bulkUpdateLevel}
-            vocabFilter={vocabFilter}
-            setVocabFilter={setVocabFilter}
-          />
-        )}
-        {activeTab === 'quiz' && (
-          <Quiz
-            words={words}
-            structures={structureStore.structures}
-            updateWordLevel={updateWordLevel}
-            recordQuizResult={recordQuizResult}
-            recordStructureResult={structureStore.recordStructureResult}
-          />
-        )}
-        {activeTab === 'listening' && (
-          <ListeningReview
-            words={words}
-            updateWordLevel={updateWordLevel}
-            dictationStore={dictationStore}
-          />
-        )}
-        {activeTab === 'flashcard' && (
-          <Flashcard
-            words={words}
-            updateWordLevel={updateWordLevel}
-          />
-        )}
-        {activeTab === 'grammar' && (
-          <Grammar
-            grammarStore={grammarStore}
-            addWord={addWord}
-            words={words}
-            structureStore={structureStore}
-            vocabSyncStatus={vocabCloudReadStatus}
-            vocabDataLoadError={vocabDataLoadError}
-          />
-        )}
-        {activeTab === 'dictation' && (
-          <Suspense fallback={<p className="text-slate-300 text-sm" role="status">Đang tải Dictation…</p>}>
-            <Dictation store={dictationStore} />
-          </Suspense>
+        {activeTab !== 'dashboard' && (
+          <div className="sb-legacy p-4 sm:p-6">
+            {activeTab === 'vocabulary' && (
+              <Vocabulary
+                words={words}
+                addWord={addWord}
+                deleteWord={deleteWord}
+                updateWord={updateWord}
+                toggleWordHard={toggleWordHard}
+                bulkUpdateLevel={bulkUpdateLevel}
+                vocabFilter={vocabFilter}
+                setVocabFilter={setVocabFilter}
+              />
+            )}
+            {activeTab === 'quiz' && (
+              <Quiz
+                words={words}
+                structures={structureStore.structures}
+                updateWordLevel={updateWordLevel}
+                recordQuizResult={recordQuizResult}
+                recordStructureResult={structureStore.recordStructureResult}
+              />
+            )}
+            {activeTab === 'listening' && (
+              <ListeningReview
+                words={words}
+                updateWordLevel={updateWordLevel}
+                dictationStore={dictationStore}
+              />
+            )}
+            {activeTab === 'flashcard' && (
+              <Flashcard
+                words={words}
+                updateWordLevel={updateWordLevel}
+              />
+            )}
+            {activeTab === 'grammar' && (
+              <Grammar
+                grammarStore={grammarStore}
+                addWord={addWord}
+                words={words}
+                structureStore={structureStore}
+                vocabSyncStatus={vocabCloudReadStatus}
+                vocabDataLoadError={vocabDataLoadError}
+              />
+            )}
+            {activeTab === 'dictation' && (
+              <Suspense fallback={<p className="text-slate-300 text-sm" role="status">Đang tải Dictation…</p>}>
+                <Dictation store={dictationStore} />
+              </Suspense>
+            )}
+          </div>
         )}
       </main>
     </div>

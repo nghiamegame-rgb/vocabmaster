@@ -121,7 +121,7 @@ try {
     mode = 'fail';
     await page.locator('#nav-sync-btn').click();
     await checkLayout('push_error');
-    assert.match(await chip.getAttribute('class'), /text-rose-200/);
+    assert.match(await chip.getAttribute('class'), /text-rose-900/);
     assert.deepEqual(errors, []);
     await context.close();
     console.log(`  ✓ ${width}px`);
