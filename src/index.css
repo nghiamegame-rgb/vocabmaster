@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   VocabMaster Design System — Storybook Map & Warm Paper (Phase 1)
+   VocabMaster Design System — Storybook Map & Warm Paper
    Light paper-and-ink tokens, WCAG AA contrast, GPU-only motion,
-   plus .sb-legacy bridge for tabs not yet migrated.
+   applied uniformly across Dashboard and all 6 study tabs.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @theme {
@@ -23,20 +23,6 @@
   --color-sb-berry: #c8434e;
   --color-sb-clay: #d97736;
   --color-sb-lagoon: #216e6e;
-
-  /* Legacy tokens retained for unmigrated tabs inside .sb-legacy */
-  --color-vm-canvas: #070b14;
-  --color-vm-surface-1: #0d1424;
-  --color-vm-surface-2: #131d33;
-  --color-vm-surface-3: #1b2844;
-  --color-vm-accent: #6366f1;
-  --color-vm-accent-soft: #818cf8;
-  --color-vm-violet: #8b5cf6;
-  --color-vm-teal: #2dd4bf;
-  --color-vm-success: #34d399;
-  --color-vm-warning: #fbbf24;
-  --color-vm-danger: #fb7185;
-  --color-vm-info: #38bdf8;
 }
 
 :root {
@@ -129,12 +115,6 @@
   --warning: var(--sb-ochre);
   --danger: var(--sb-berry);
   --accent-ring: var(--sb-ring);
-
-  --shadow-card: 0 8px 24px -8px rgba(2, 6, 23, 0.65), inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
-  --shadow-card-hover: 0 14px 32px -10px rgba(2, 6, 23, 0.8), 0 0 0 1px rgba(129, 140, 248, 0.22), inset 0 1px 0 0 rgba(255, 255, 255, 0.07);
-  --shadow-accent: 0 8px 20px -6px rgba(99, 102, 241, 0.42);
-  --shadow-violet: 0 8px 20px -6px rgba(139, 92, 246, 0.42);
-  --shadow-floating: 0 18px 42px -10px rgba(2, 6, 23, 0.88);
 
   /* Radii & Motion (prefixed so Tailwind v4's built-in --radius-* scale stays intact) */
   --vm-radius-sm: 0.625rem;
@@ -262,54 +242,7 @@ body {
   box-shadow: 3px 3px 0 var(--sb-ink);
 }
 
-/* ── Legacy Bridge (.sb-legacy) for tabs not yet migrated ──────────────────
-   Restores the previous dark palette inside an ink-framed container.
-   NOTE: Never apply transform, filter, backdrop-filter, contain:paint, or
-   overflow:hidden here so fixed Grammar popups stay anchored to the viewport. */
-.sb-legacy {
-  color-scheme: dark;
-  --bg-canvas: #070b14;
-  --bg-surface-1: #0d1424;
-  --bg-surface-2: #131d33;
-  --bg-surface-3: #1b2844;
-  --bg-glass: rgba(11, 17, 32, 0.84);
-  --bg-glass-card: rgba(15, 23, 42, 0.72);
-  --bg-input: rgba(11, 18, 34, 0.82);
-
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
-
-  --border-subtle: rgba(148, 163, 184, 0.14);
-  --border-default: rgba(148, 163, 184, 0.22);
-  --border-strong: rgba(148, 163, 184, 0.34);
-  --border-accent: rgba(129, 140, 248, 0.48);
-
-  --primary: #6366f1;
-  --primary-hover: #7578f6;
-  --primary-dark: #4f46e5;
-  --violet: #8b5cf6;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #f43f5e;
-  --accent-ring: rgba(129, 140, 248, 0.78);
-
-  background-color: #070b14;
-  background-image:
-    radial-gradient(48rem 28rem at 12% 0%, rgba(99, 102, 241, 0.12), transparent 62%),
-    radial-gradient(40rem 24rem at 88% 4%, rgba(139, 92, 246, 0.09), transparent 60%);
-  color: #f8fafc;
-  border: 2px solid var(--sb-ink);
-  border-radius: 1.5rem;
-  box-shadow: var(--sb-shadow-lg);
-}
-
-.sb-legacy :is(button, a, input, select, textarea, summary, [role="button"], [tabindex]):focus-visible {
-  outline: 2px solid var(--accent-ring);
-  outline-offset: 2px;
-}
-
-/* Shared form input surface (Storybook warm-paper default; overridden inside .sb-legacy) */
+/* Shared form input surface (Storybook warm paper) */
 .field {
   width: 100%;
   background: var(--sb-input-bg);
@@ -416,52 +349,6 @@ body {
   border-color: var(--sb-terracotta-strong);
   background: #ffffff;
   box-shadow: 0 0 0 3px rgba(196, 77, 42, 0.18);
-}
-
-/* Temporary dark overrides inside .sb-legacy until all 6 tabs finish Step B */
-.sb-legacy .field,
-.sb-legacy .vm-input {
-  background: var(--bg-input);
-  border: 1px solid var(--border-default);
-  color: var(--text-primary);
-}
-.sb-legacy .field::placeholder,
-.sb-legacy .vm-input::placeholder {
-  color: var(--text-muted);
-}
-.sb-legacy .field:focus,
-.sb-legacy .vm-input:focus {
-  border-color: var(--primary);
-  background: rgba(15, 23, 42, 0.94);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
-}
-.sb-legacy .vm-panel {
-  background: linear-gradient(180deg, rgba(19, 29, 51, 0.78) 0%, rgba(13, 20, 36, 0.86) 100%);
-  border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-card);
-}
-.sb-legacy .vm-card {
-  background: linear-gradient(180deg, rgba(21, 32, 56, 0.82) 0%, rgba(14, 22, 40, 0.9) 100%);
-  border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-card);
-}
-.sb-legacy .vm-card-interactive:hover {
-  transform: translateY(-2px);
-  border-color: var(--border-strong);
-  box-shadow: var(--shadow-card-hover);
-}
-.sb-legacy .vm-btn-primary {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-  border: none;
-  box-shadow: var(--shadow-accent), inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
-}
-.sb-legacy .vm-btn-violet {
-  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
-  border: none;
-  box-shadow: var(--shadow-violet), inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
-}
-.sb-legacy .vm-skeleton {
-  background-color: #16223a;
 }
 
 /* Custom scrollbar (warm paper tone) */

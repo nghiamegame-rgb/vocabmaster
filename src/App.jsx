@@ -14,8 +14,6 @@ import { useDictationStore } from './hooks/useDictationStore';
 // Loaded on first open so the main bundle does not grow.
 const Dictation = lazy(() => import('./components/Dictation'));
 
-const LEGACY_TABS = new Set([]);
-
 export default function App() {
   const [activeTab,   setActiveTab]   = useState('dashboard');
   const [vocabFilter, setVocabFilter] = useState(null); // null = show all levels
@@ -126,10 +124,6 @@ export default function App() {
           <Suspense fallback={<p className="text-[var(--sb-ink-soft)] text-sm" role="status">Đang tải Dictation…</p>}>
             <Dictation store={dictationStore} />
           </Suspense>
-        )}
-        {LEGACY_TABS.has(activeTab) && (
-          <div className="sb-legacy p-4 sm:p-6">
-          </div>
         )}
       </main>
     </div>
