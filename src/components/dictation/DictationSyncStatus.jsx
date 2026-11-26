@@ -1,13 +1,13 @@
 import { Cloud, CloudOff, RefreshCw, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 const LOOK = {
-  idle:         { Icon: Cloud,         cls: 'text-slate-300',   text: 'Chưa đồng bộ trong lần mở này.' },
-  syncing:      { Icon: RefreshCw,     cls: 'text-indigo-200',  text: 'Đang đồng bộ với Google Sheet…' },
-  pending:      { Icon: Cloud,         cls: 'text-sky-200',     text: 'Có thay đổi đang chờ gửi lên Google Sheet…' },
-  ok:           { Icon: CheckCircle2,  cls: 'text-emerald-200', text: 'Đã đồng bộ với Google Sheet.' },
-  unconfigured: { Icon: CloudOff,      cls: 'text-amber-200',   text: '' },
-  error:        { Icon: AlertTriangle, cls: 'text-rose-200',    text: '' },
-  locked:       { Icon: AlertTriangle, cls: 'text-rose-200',    text: 'Đồng bộ đang khoá vì dữ liệu trên thiết bị bị hỏng.' },
+  idle:         { Icon: Cloud,         cls: 'text-[var(--sb-ink-soft)]',            text: 'Chưa đồng bộ trong lần mở này.' },
+  syncing:      { Icon: RefreshCw,     cls: 'text-[var(--sb-terracotta-text)] font-medium', text: 'Đang đồng bộ với Google Sheet…' },
+  pending:      { Icon: Cloud,         cls: 'text-[var(--sb-sky-text)] font-medium',  text: 'Có thay đổi đang chờ gửi lên Google Sheet…' },
+  ok:           { Icon: CheckCircle2,  cls: 'text-[var(--sb-forest-text)] font-semibold', text: 'Đã đồng bộ với Google Sheet.' },
+  unconfigured: { Icon: CloudOff,      cls: 'text-[var(--sb-ochre-text)] font-medium', text: '' },
+  error:        { Icon: AlertTriangle, cls: 'text-[var(--sb-berry-text)] font-semibold', text: '' },
+  locked:       { Icon: AlertTriangle, cls: 'text-[var(--sb-berry-text)] font-semibold', text: 'Đồng bộ đang khoá vì dữ liệu trên thiết bị bị hỏng.' },
 };
 
 /** Dictation sync status — shown only inside the Dictation tab (not in the navbar). */
@@ -24,7 +24,7 @@ export default function DictationSyncStatus({ store }) {
       </span>
       {store.syncStatus !== 'locked' && (
         <button id="dictation-sync-now" type="button" onClick={store.syncNow} disabled={store.syncStatus === 'syncing'}
-          className="vm-btn ml-auto flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-900/75 border border-slate-400/20 text-slate-200 hover:text-white disabled:opacity-50">
+          className="vm-btn ml-auto flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[var(--sb-paper-card)] border border-[var(--sb-ink-border)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)] disabled:opacity-50">
           <RefreshCw size={13} /> Đồng bộ ngay
         </button>
       )}

@@ -24,13 +24,13 @@ const DICTATION_SHORTCUTS = [
 function Switch({ id, checked, onChange, label, icon: Icon }) {
   return (
     <label htmlFor={id} className="flex items-center justify-between gap-3 cursor-pointer select-none min-w-0">
-      <span className="flex items-center gap-2 text-xs font-semibold text-slate-200 min-w-0">
-        {Icon && <Icon size={14} className="text-indigo-300 shrink-0" />}
+      <span className="flex items-center gap-2 text-xs font-semibold text-[var(--sb-ink)] min-w-0">
+        {Icon && <Icon size={14} className="text-[var(--sb-terracotta-text)] shrink-0" />}
         <span className="truncate">{label}</span>
       </span>
       <button
         id={id} type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${checked ? 'bg-indigo-500 shadow-sm shadow-indigo-500/40' : 'bg-slate-600'}`}
+        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 ${checked ? 'bg-[var(--sb-terracotta-strong)]' : 'bg-[var(--sb-ink-soft)]'}`}
       >
         <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform duration-200 ${checked ? 'translate-x-4' : 'translate-x-0.5'}`} />
       </button>
@@ -39,10 +39,10 @@ function Switch({ id, checked, onChange, label, icon: Icon }) {
 }
 
 const STATUS_CELL = {
-  current: 'bg-indigo-500 text-white border-indigo-300 ring-2 ring-indigo-300/50',
-  correct: 'bg-emerald-500/25 text-emerald-200 border-emerald-400/50',
-  wrong: 'bg-rose-500/25 text-rose-200 border-rose-400/50',
-  todo: 'bg-slate-800/80 text-slate-300 border-slate-400/20',
+  current: 'bg-[var(--sb-terracotta-strong)] text-white border-[var(--sb-ink)] ring-2 ring-[var(--sb-plum)]',
+  correct: 'bg-[var(--sb-forest-soft)] text-[var(--sb-forest-text)] border-[var(--sb-forest)]',
+  wrong: 'bg-[var(--sb-berry-soft)] text-[var(--sb-berry-text)] border-[var(--sb-berry)]',
+  todo: 'bg-[var(--sb-paper-card)] text-[var(--sb-ink)] border-[var(--sb-ink-border)] hover:bg-[var(--sb-paper-deep)]',
 };
 
 export default function DictationPractice({ store, lesson, lessons, onSelectLesson, onOpenLibrary }) {
@@ -201,8 +201,8 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
   if (!lesson) {
     return (
       <div className="vm-panel rounded-2xl p-6 text-center space-y-3">
-        <p className="text-slate-200 font-semibold">Chưa có bài nào để luyện.</p>
-        <p className="text-slate-400 text-sm">Vào “Thư viện bài”, dán văn bản (mỗi dòng một câu) để tạo bài đầu tiên.</p>
+        <p className="text-[var(--sb-ink)] font-bold">Chưa có bài nào để luyện.</p>
+        <p className="text-[var(--sb-ink-soft)] text-sm">Vào “Thư viện bài”, dán văn bản (mỗi dòng một câu) để tạo bài đầu tiên.</p>
         <button type="button" onClick={onOpenLibrary} className="vm-btn vm-btn-primary px-4 py-2 rounded-xl text-sm font-semibold">Mở Thư viện bài</button>
       </div>
     );
@@ -216,7 +216,7 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
     <div className="space-y-4">
       {/* Lesson picker + keyboard toggle */}
       <div className="flex flex-wrap items-center gap-2">
-        <label htmlFor="dictation-lesson" className="text-xs font-semibold uppercase tracking-wider text-slate-300">Bài</label>
+        <label htmlFor="dictation-lesson" className="text-xs font-semibold uppercase tracking-wider text-[var(--sb-ink-soft)]">Bài</label>
         <select
           id="dictation-lesson" value={lesson.id} onChange={e => onSelectLesson(e.target.value)}
           className="vm-input rounded-xl px-3 py-1.5 text-sm min-w-0 max-w-full flex-1 sm:flex-none sm:max-w-xs"
@@ -227,8 +227,8 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
           id="dictation-autofocus-toggle" type="button" onClick={() => setAutoFocus(!autoFocusInput)} aria-pressed={autoFocusInput}
           title={autoFocusInput ? 'Đang bật: sang câu mới con trỏ tự vào ô gõ (điện thoại sẽ tự bật bàn phím). Bấm để tắt.' : 'Đang tắt: sang câu mới bàn phím không tự bật. Bấm để bật.'}
           className={`vm-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold border max-w-full ${autoFocusInput
-            ? 'bg-indigo-500/20 border-indigo-400/50 text-indigo-200 hover:bg-indigo-500/30'
-            : 'bg-slate-900/75 border-slate-400/20 text-slate-300 hover:text-white hover:border-slate-400/35'}`}
+            ? 'bg-[var(--sb-terracotta-soft)] border-[var(--sb-ink)] text-[var(--sb-terracotta-text)] hover:bg-[var(--sb-ochre-soft)]'
+            : 'bg-[var(--sb-paper-card)] border-[var(--sb-ink-border)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)]'}`}
         >
           <Keyboard size={14} className="shrink-0" /><span>Tự mở bàn phím: {autoFocusInput ? 'Bật' : 'Tắt'}</span>
         </button>
@@ -238,35 +238,35 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
         {/* ── Listen card ── */}
         <section className="vm-card rounded-2xl p-4 sm:p-5 space-y-4 lg:col-start-1 min-w-0" aria-labelledby="dictation-listen-title">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <h2 id="dictation-listen-title" className="text-xs font-bold uppercase tracking-wider text-indigo-200">Nghe và chép lại câu</h2>
-            <span id="dictation-counter" className="text-sm font-semibold text-white tabular-nums">Câu {index + 1}/{sentences.length}</span>
+            <h2 id="dictation-listen-title" className="text-xs font-bold uppercase tracking-wider text-[var(--sb-terracotta-text)]">Nghe và chép lại câu</h2>
+            <span id="dictation-counter" className="text-sm font-bold text-[var(--sb-ink)] tabular-nums">Câu {index + 1}/{sentences.length}</span>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <button
               id="dictation-play" type="button" onClick={togglePlay} aria-label={isPlaying ? 'Dừng' : 'Phát'}
-              className="vm-btn w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-700 text-white shadow-lg shadow-indigo-500/30 ring-1 ring-white/15"
+              className="vm-btn w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[var(--sb-terracotta-strong)] via-[var(--sb-terracotta)] to-[var(--sb-ochre)] border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)] text-white"
             >
               {isPlaying ? <Square size={18} /> : <Play size={20} className="ml-0.5" />}
             </button>
-            <button id="dictation-replay" type="button" onClick={() => speak(sentence.english, voiceItem)} className="vm-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-400/20 text-white">
+            <button id="dictation-replay" type="button" onClick={() => speak(sentence.english, voiceItem)} className="vm-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold bg-[var(--sb-paper-card)] hover:bg-[var(--sb-paper-deep)] border-2 border-[var(--sb-ink-border)] text-[var(--sb-ink)]">
               <RotateCcw size={15} /> Nghe lại
             </button>
             <button
               id="dictation-loop" type="button" onClick={() => updatePrefs({ loop: !prefs.loop })} aria-pressed={prefs.loop}
               title="Lặp lại câu liên tục cho tới khi dừng"
-              className={`vm-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold border ${prefs.loop ? 'bg-indigo-500/20 border-indigo-400/50 text-indigo-200' : 'bg-slate-900/75 border-slate-400/20 text-slate-300 hover:text-white'}`}
+              className={`vm-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold border-2 ${prefs.loop ? 'bg-[var(--sb-terracotta-soft)] border-[var(--sb-ink)] text-[var(--sb-terracotta-text)]' : 'bg-[var(--sb-paper-card)] border-[var(--sb-ink-border)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)]'}`}
             >
               <Repeat size={15} /> Lặp
             </button>
           </div>
           <div className="flex items-center gap-2 flex-wrap" role="group" aria-label="Tốc độ đọc">
-            <Gauge size={14} className="text-indigo-300" />
-            <span className="text-xs font-semibold text-slate-300">Tốc độ</span>
+            <Gauge size={14} className="text-[var(--sb-terracotta-text)]" />
+            <span className="text-xs font-semibold text-[var(--sb-ink-soft)]">Tốc độ</span>
             {SPEEDS.map(speed => (
               <button
                 key={speed} id={`dictation-speed-${String(speed).replace('.', '')}`} type="button" aria-pressed={prefs.speed === speed}
                 onClick={() => updatePrefs({ speed })}
-                className={`vm-btn px-3 py-1 rounded-full text-xs font-semibold border ${prefs.speed === speed ? 'vm-btn-primary border-indigo-400/40' : 'bg-slate-900/75 text-slate-300 border-slate-400/20 hover:text-white'}`}
+                className={`vm-btn px-3 py-1 rounded-full text-xs font-semibold border ${prefs.speed === speed ? 'vm-btn-primary border-[var(--sb-ink)]' : 'bg-[var(--sb-paper-card)] text-[var(--sb-ink)] border-[var(--sb-ink-border)] hover:bg-[var(--sb-paper-deep)]'}`}
               >{speed}×</button>
             ))}
           </div>
@@ -276,14 +276,14 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
               <Switch id="dictation-translation-toggle" checked={prefs.showTranslation} onChange={v => updatePrefs({ showTranslation: v })} label="Hiện bản dịch tiếng Việt" icon={Languages} />
             )}
             {hasTranslation && prefs.showTranslation && (
-              <p id="dictation-translation" className="text-sm text-indigo-100 bg-indigo-500/10 border border-indigo-400/25 rounded-xl px-3 py-2">{sentence.vietnamese}</p>
+              <p id="dictation-translation" className="text-sm text-[var(--sb-ink)] bg-[var(--sb-sky-soft)] border border-[var(--sb-sky)]/45 rounded-xl px-3 py-2">{sentence.vietnamese}</p>
             )}
           </div>
           <div className="flex items-center justify-between gap-2">
-            <button id="dictation-prev" type="button" onClick={() => goTo(index - 1)} disabled={index === 0} className="vm-btn flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-400/20 text-white disabled:opacity-40">
+            <button id="dictation-prev" type="button" onClick={() => goTo(index - 1)} disabled={index === 0} className="vm-btn flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-semibold bg-[var(--sb-paper-card)] hover:bg-[var(--sb-paper-deep)] border-2 border-[var(--sb-ink-border)] text-[var(--sb-ink)] disabled:opacity-40">
               <ChevronLeft size={16} /> Câu trước
             </button>
-            <button id="dictation-next" type="button" onClick={() => goTo(index + 1)} disabled={index >= sentences.length - 1} className="vm-btn flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-400/20 text-white disabled:opacity-40">
+            <button id="dictation-next" type="button" onClick={() => goTo(index + 1)} disabled={index >= sentences.length - 1} className="vm-btn flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-semibold bg-[var(--sb-paper-card)] hover:bg-[var(--sb-paper-deep)] border-2 border-[var(--sb-ink-border)] text-[var(--sb-ink)] disabled:opacity-40">
               Câu sau <ChevronRight size={16} />
             </button>
           </div>
@@ -292,8 +292,8 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
         {/* ── Answer card ── */}
         <section className="vm-card rounded-2xl p-4 sm:p-5 space-y-3 lg:col-start-2 lg:row-start-1 lg:row-span-2 min-w-0" aria-labelledby="dictation-answer-title">
           <div className="flex items-center justify-between gap-2">
-            <h2 id="dictation-answer-title" className="text-xs font-bold uppercase tracking-wider text-indigo-200">Câu bạn nghe được</h2>
-            <button type="button" onClick={() => sentence && speak(sentence.english, voiceItem)} aria-label="Nghe câu" className="vm-btn p-2 rounded-xl text-indigo-200 hover:text-white hover:bg-slate-800/80">
+            <h2 id="dictation-answer-title" className="text-xs font-bold uppercase tracking-wider text-[var(--sb-terracotta-text)]">Câu bạn nghe được</h2>
+            <button type="button" onClick={() => sentence && speak(sentence.english, voiceItem)} aria-label="Nghe câu" className="vm-btn p-2 rounded-xl text-[var(--sb-terracotta-text)] hover:bg-[var(--sb-paper-deep)]">
               <Volume2 size={16} />
             </button>
           </div>
@@ -308,41 +308,41 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
             className="w-full vm-input rounded-xl px-3 py-2.5 text-base sm:text-sm resize-y min-h-[84px]"
           />
           <div>
-            <div className="flex items-center justify-between text-xs text-slate-300 mb-1">
+            <div className="flex items-center justify-between text-xs text-[var(--sb-ink-soft)] mb-1">
               <span id="dictation-progress">{liveMatched}/{tokens.length} từ đúng</span>
-              {notice && <span role="status" className="text-amber-300 text-right">{notice}</span>}
+              {notice && <span role="status" className="text-[var(--sb-ochre-text)] font-medium text-right">{notice}</span>}
             </div>
-            <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden" aria-hidden="true">
-              <div className="h-full bg-emerald-500 transition-[width] duration-200" style={{ width: `${tokens.length ? (liveMatched / tokens.length) * 100 : 0}%` }} />
+            <div className="h-1.5 rounded-full bg-[var(--sb-paper-deep)] overflow-hidden" aria-hidden="true">
+              <div className="h-full bg-[var(--sb-forest-btn)] transition-[width] duration-200" style={{ width: `${tokens.length ? (liveMatched / tokens.length) * 100 : 0}%` }} />
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button id="dictation-submit" type="button" onClick={submit} className="vm-btn flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 border border-emerald-400/40">
+            <button id="dictation-submit" type="button" onClick={submit} className="vm-btn flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[var(--sb-forest-btn)] hover:bg-[var(--sb-forest-hover)] border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)]">
               <Send size={15} /> {result ? 'Câu tiếp (Enter)' : 'Nộp (Enter)'}
             </button>
-            <button id="dictation-clear" type="button" onClick={() => { setTyped(''); setResult(null); inputRef.current?.focus(); }} className="vm-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold bg-slate-800 hover:bg-slate-700 border border-slate-400/20 text-white">
+            <button id="dictation-clear" type="button" onClick={() => { setTyped(''); setResult(null); inputRef.current?.focus(); }} className="vm-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold bg-[var(--sb-paper-card)] hover:bg-[var(--sb-paper-deep)] border-2 border-[var(--sb-ink-border)] text-[var(--sb-ink)]">
               <Eraser size={15} /> Xoá hết
             </button>
-            <button id="dictation-hint" type="button" onClick={hint} disabled={Boolean(result)} className="vm-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/35 text-amber-200 disabled:opacity-40">
+            <button id="dictation-hint" type="button" onClick={hint} disabled={Boolean(result)} className="vm-btn flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold bg-[var(--sb-ochre-soft)] hover:bg-[var(--sb-paper-deep)] border-2 border-[var(--sb-ink)] text-[var(--sb-ochre-text)] disabled:opacity-40">
               <Lightbulb size={15} /> Gợi ý từ
             </button>
           </div>
 
           {result && (
             <div id="dictation-result" className="vm-feedback-in space-y-2 pt-1" role="status">
-              <p className={`text-sm font-semibold ${result.isCorrect ? 'text-emerald-300' : 'text-rose-300'}`}>
+              <p className={`text-sm font-bold ${result.isCorrect ? 'text-[var(--sb-forest-text)]' : 'text-[var(--sb-berry-text)]'}`}>
                 {result.isCorrect ? 'Chính xác! Cả câu đúng.' : `Đúng ${result.correct}/${result.total} từ.`}
               </p>
               <p className="flex flex-wrap gap-1.5 text-sm leading-relaxed" aria-label="So sánh từng từ">
                 {result.items.map((item, i) => {
-                  if (item.type === 'correct') return <span key={i} className="px-1.5 rounded-md bg-emerald-500/15 text-emerald-200">{item.typed}</span>;
-                  if (item.type === 'wrong') return <span key={i} className="px-1.5 rounded-md bg-rose-500/15"><s className="text-rose-300">{item.typed}</s> <span className="text-emerald-200">{item.expected}</span></span>;
-                  if (item.type === 'missing') return <span key={i} className="px-1.5 rounded-md border border-dashed border-amber-400/60 text-amber-200" title="Thiếu">{item.expected} <small className="text-[10px] uppercase">thiếu</small></span>;
-                  return <span key={i} className="px-1.5 rounded-md bg-slate-700/60" title="Thừa"><s className="text-slate-300">{item.typed}</s> <small className="text-[10px] uppercase text-slate-400">thừa</small></span>;
+                  if (item.type === 'correct') return <span key={i} className="px-1.5 rounded-md bg-[var(--sb-forest-soft)] text-[var(--sb-forest-text)] font-medium">{item.typed}</span>;
+                  if (item.type === 'wrong') return <span key={i} className="px-1.5 rounded-md bg-[var(--sb-berry-soft)]"><s className="text-[var(--sb-berry-text)]">{item.typed}</s> <span className="text-[var(--sb-forest-text)] font-semibold">{item.expected}</span></span>;
+                  if (item.type === 'missing') return <span key={i} className="px-1.5 rounded-md border border-dashed border-[var(--sb-ochre-text)] bg-[var(--sb-ochre-soft)] text-[var(--sb-ochre-text)] font-medium" title="Thiếu">{item.expected} <small className="text-[10px] uppercase">thiếu</small></span>;
+                  return <span key={i} className="px-1.5 rounded-md bg-[var(--sb-paper-deep)]" title="Thừa"><s className="text-[var(--sb-ink)]">{item.typed}</s> <small className="text-[10px] uppercase text-[var(--sb-ink-soft)]">thừa</small></span>;
                 })}
               </p>
-              <p className="text-sm text-white"><span className="text-slate-400 text-xs">Câu đúng: </span><span id="dictation-correct-sentence">{sentence.english}</span></p>
-              {hasTranslation && <p className="text-sm text-indigo-100"><span className="text-slate-400 text-xs">Bản dịch: </span>{sentence.vietnamese}</p>}
+              <p className="text-sm text-[var(--sb-ink)]"><span className="text-[var(--sb-ink-soft)] font-semibold text-xs">Câu đúng: </span><span id="dictation-correct-sentence" className="font-semibold">{sentence.english}</span></p>
+              {hasTranslation && <p className="text-sm text-[var(--sb-ink)]"><span className="text-[var(--sb-ink-soft)] font-semibold text-xs">Bản dịch: </span>{sentence.vietnamese}</p>}
             </div>
           )}
         </section>
@@ -350,8 +350,8 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
         {/* ── Word chips ── */}
         <section className="vm-panel rounded-2xl p-4 sm:p-5 space-y-3 lg:col-start-1 min-w-0" aria-labelledby="dictation-words-title">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <h2 id="dictation-words-title" className="text-xs font-bold uppercase tracking-wider text-indigo-200">Gõ đúng để mở từ</h2>
-            <button id="dictation-toggle-all" type="button" onClick={() => setShowAll(v => !v)} className="vm-btn flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-900/75 border border-slate-400/20 text-slate-300 hover:text-white">
+            <h2 id="dictation-words-title" className="text-xs font-bold uppercase tracking-wider text-[var(--sb-terracotta-text)]">Gõ đúng để mở từ</h2>
+            <button id="dictation-toggle-all" type="button" onClick={() => setShowAll(v => !v)} className="vm-btn flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[var(--sb-paper-card)] border border-[var(--sb-ink-border)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)]">
               {showAll ? <EyeOff size={13} /> : <Eye size={13} />} {showAll ? 'Ẩn tất cả' : 'Hiện tất cả'}
             </button>
           </div>
@@ -360,15 +360,15 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
               const open = showAll || Boolean(result) || revealed.has(i);
               if (!open) {
                 return (
-                  <li key={i} data-chip-state="hidden" className="px-2 py-1 rounded-lg bg-slate-800/90 border border-slate-400/15 text-slate-500 text-sm tracking-widest select-none" aria-label={`Từ ẩn, ${token.key.length} ký tự`}>
+                  <li key={i} data-chip-state="hidden" className="px-2 py-1 rounded-lg bg-[var(--sb-paper-deep)] border border-[var(--sb-ink-border)] text-[var(--sb-ink-soft)] text-sm tracking-widest select-none" aria-label={`Từ ẩn, ${token.key.length} ký tự`}>
                     {'•'.repeat(Math.min(token.key.length, 14))}
                   </li>
                 );
               }
               const saved = store.isWordSaved(token.text);
               return (
-                <li key={i} data-chip-state="open" data-saved={saved ? 'true' : 'false'} className={`vm-scale-in flex items-center rounded-lg border text-sm ${saved ? 'bg-violet-500/25 border-violet-400/60 text-violet-100' : 'bg-slate-800/90 border-slate-400/25 text-white'}`}>
-                  <button type="button" onMouseDown={keepTyping} onClick={() => speak(token.text, voiceItem)} className="px-2 py-1 hover:text-indigo-200" title="Nghe từ này">{token.text}</button>
+                <li key={i} data-chip-state="open" data-saved={saved ? 'true' : 'false'} className={`vm-scale-in flex items-center rounded-lg border text-sm font-medium ${saved ? 'bg-[var(--sb-plum-soft)] border-[var(--sb-plum)] text-[var(--sb-plum-text)]' : 'bg-[var(--sb-paper-card)] border-[var(--sb-ink-border)] text-[var(--sb-ink)]'}`}>
+                  <button type="button" onMouseDown={keepTyping} onClick={() => speak(token.text, voiceItem)} className="px-2 py-1 hover:text-[var(--sb-terracotta-text)]" title="Nghe từ này">{token.text}</button>
                   <button
                     type="button" onMouseDown={keepTyping} onClick={() => {
                       const status = store.toggleWord(token.text);
@@ -376,7 +376,7 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
                     }}
                     aria-pressed={saved} aria-label={saved ? `Bỏ lưu từ ${normalizeWord(token.text)}` : `Lưu từ ${normalizeWord(token.text)}`}
                     data-word={normalizeWord(token.text)}
-                    className={`pr-1.5 pl-0.5 py-1 ${saved ? 'text-violet-200' : 'text-slate-400 hover:text-violet-200'}`}
+                    className={`pr-1.5 pl-0.5 py-1 ${saved ? 'text-[var(--sb-plum-text)]' : 'text-[var(--sb-ink-soft)] hover:text-[var(--sb-plum-text)]'}`}
                   >
                     {saved ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
                   </button>
@@ -388,7 +388,7 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
 
         {/* ── Sentence list ── */}
         <section className="vm-panel rounded-2xl p-4 sm:p-5 space-y-3 lg:col-start-1 min-w-0" aria-labelledby="dictation-list-title">
-          <h2 id="dictation-list-title" className="text-xs font-bold uppercase tracking-wider text-indigo-200">Danh sách câu</h2>
+          <h2 id="dictation-list-title" className="text-xs font-bold uppercase tracking-wider text-[var(--sb-terracotta-text)]">Danh sách câu</h2>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(2.5rem,1fr))] gap-1.5">
             {sentences.map((s, i) => {
               const status = i === index ? 'current' : s.lastResult || 'todo';
@@ -402,23 +402,23 @@ export default function DictationPractice({ store, lesson, lessons, onSelectLess
               );
             })}
           </div>
-          <p id="dictation-legend" className="text-xs text-slate-300">
-            <span className="text-emerald-300">Đúng {progress.correct}</span> · <span className="text-rose-300">Sai {progress.wrong}</span> · <span>Chưa làm {progress.todo}</span>
+          <p id="dictation-legend" className="text-xs text-[var(--sb-ink-soft)]">
+            <span className="text-[var(--sb-forest-text)] font-semibold">Đúng {progress.correct}</span> · <span className="text-[var(--sb-berry-text)] font-semibold">Sai {progress.wrong}</span> · <span>Chưa làm {progress.todo}</span>
           </p>
         </section>
 
         {/* ── Shortcuts ── */}
         <section className="vm-panel rounded-2xl p-4 sm:p-5 lg:col-start-2 lg:row-start-3 min-w-0" aria-labelledby="dictation-keys-title">
-          <h2 id="dictation-keys-title" className="text-xs font-bold uppercase tracking-wider text-indigo-200 mb-2">Phím tắt</h2>
+          <h2 id="dictation-keys-title" className="text-xs font-bold uppercase tracking-wider text-[var(--sb-terracotta-text)] mb-2">Phím tắt</h2>
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs">
             {DICTATION_SHORTCUTS.map(([keys, label]) => (
               <div key={keys} className="contents">
-                <dt><kbd className="px-1.5 py-0.5 rounded-md bg-slate-800 border border-slate-400/25 text-slate-100 font-mono whitespace-nowrap">{keys}</kbd></dt>
-                <dd className="text-slate-300">{label}</dd>
+                <dt><kbd className="px-1.5 py-0.5 rounded-md bg-[var(--sb-paper-deep)] border border-[var(--sb-ink-border)] text-[var(--sb-ink)] font-semibold font-mono whitespace-nowrap">{keys}</kbd></dt>
+                <dd className="text-[var(--sb-ink)]">{label}</dd>
               </div>
             ))}
           </dl>
-          <p className="text-[11px] text-slate-500 mt-2">Phím tắt không chạy khi bạn đang gõ ở ô khác (tìm kiếm, thư viện).</p>
+          <p className="text-[11px] text-[var(--sb-ink-soft)] mt-2">Phím tắt không chạy khi bạn đang gõ ở ô khác (tìm kiếm, thư viện).</p>
         </section>
       </div>
     </div>

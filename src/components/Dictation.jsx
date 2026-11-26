@@ -21,24 +21,24 @@ export default function Dictation({ store }) {
   return (
     <div className="vm-page-enter max-w-6xl mx-auto space-y-5">
       <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-white mb-1 flex items-center gap-3">
-          <PenLine size={28} className="text-indigo-400" /> Dictation
+        <h1 className="sb-heading text-3xl font-extrabold tracking-tight text-[var(--sb-ink)] mb-1 flex items-center gap-3">
+          <PenLine size={28} className="text-[var(--sb-terracotta-strong)]" /> Dictation
         </h1>
-        <p className="text-slate-300 text-sm">Nghe câu tiếng Anh và chép lại. Gõ đúng từ nào thì từ đó được mở.</p>
+        <p className="text-[var(--sb-ink-soft)] text-sm">Nghe câu tiếng Anh và chép lại. Gõ đúng từ nào thì từ đó được mở.</p>
       </div>
 
-      {store.storageError && <p role="alert" className="px-4 py-3 rounded-xl bg-amber-500/12 border border-amber-400/30 text-amber-200 text-sm">{store.storageError}</p>}
+      {store.storageError && <p role="alert" className="px-4 py-3 rounded-xl bg-[var(--sb-ochre-soft)] border-2 border-[var(--sb-ochre)] text-[var(--sb-ochre-text)] font-medium text-sm">{store.storageError}</p>}
       <DictationSyncStatus store={store} />
 
       <div className="flex flex-wrap items-center gap-3">
-        <div role="tablist" aria-label="Mục Dictation" className="flex items-center gap-1 bg-slate-950/60 border border-slate-400/15 rounded-xl p-1 w-fit max-w-full flex-wrap">
+        <div role="tablist" aria-label="Mục Dictation" className="flex items-center gap-1 bg-[var(--sb-paper-deep)] border border-[var(--sb-ink-border)] rounded-xl p-1 w-fit max-w-full flex-wrap">
           {SECTIONS.map(({ id, label, Icon }) => (
             <button
               key={id} id={`dictation-section-${id}`} role="tab" type="button" aria-selected={section === id} onClick={() => setSection(id)}
-              className={`vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium ${section === id ? 'bg-slate-700/90 text-white shadow-sm ring-1 ring-white/10' : 'text-slate-300 hover:text-white hover:bg-slate-800/60'}`}
+              className={`vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold ${section === id ? 'bg-[var(--sb-paper-card)] text-[var(--sb-ink)] border border-[var(--sb-ink)] shadow-sm' : 'text-[var(--sb-ink-soft)] hover:text-[var(--sb-ink)] hover:bg-[var(--sb-paper-card)]/60'}`}
             >
               <Icon size={14} /> {label}
-              {id === 'words' && <span className="text-xs opacity-70">({store.words.length})</span>}
+              {id === 'words' && <span className="text-xs opacity-75">({store.words.length})</span>}
             </button>
           ))}
         </div>
