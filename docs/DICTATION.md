@@ -1,6 +1,6 @@
 # Dictation (luyện nghe chép chính tả) — thiết kế kỹ thuật
 
-Trạng thái: nhánh `feat/dictation` (25/11/2026). Đồng bộ mới chỉ được kiểm tra bằng mô phỏng, **chưa chạy với Apps Script/Vercel/Sheet thật**. Người dùng tự cài đặt theo [DICTATION-SETUP.md](DICTATION-SETUP.md).
+Trạng thái (cập nhật 26/11/2026): mọi phần trong tài liệu này (mục 1–12) **đã ghép vào `main` (`652765f`) và deploy (Vercel Production Ready)**. Đồng bộ **đã cài và chạy với Apps Script/Vercel/Sheet thật** từ 25/11 tối (bằng chứng ở TRANG-THAI-DU-AN mục 18); các test tự động vẫn dùng mô phỏng. Cách cài/đổi secret: [DICTATION-SETUP.md](DICTATION-SETUP.md). Chưa xác minh: điện thoại thật, đồng bộ giữa hai thiết bị thật, Safari/Firefox.
 
 ## 1. File
 

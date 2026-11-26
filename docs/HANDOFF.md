@@ -1,25 +1,27 @@
 # Bàn giao workspace VocabMaster
 
-> **Cập nhật 2026-11-25 (đêm):** `feat/voice-picker` và `feat/export-sentences-only` **đã ghép vào `main`** (`ab94f57`) và đã push. Nhánh `feat/dictation-word-listening` (chưa ghép/push) xem mục 20.
+> **Cập nhật 2026-11-26 (rạng sáng):** toàn bộ phần Dictation (`feat/dictation`, `feat/voice-picker`, `feat/export-sentences-only`, `feat/dictation-word-listening`) **đã ghép vào `main` (`652765f`), đã push; Vercel Production Ready**; đồng bộ Google Sheet Dictation **đã cài và chạy thật** (Sheet + Apps Script + 2 biến Vercel; bằng chứng ở TRANG-THAI mục 18). Các câu "chưa ghép/push/deploy" trong các mục 18, 20 và ghi chú cũ bên dưới là lịch sử tại thời điểm viết (đã đánh dấu "sau đó đã ghép"). Tình hình hiện tại: [TRANG-THAI-DU-AN.md](TRANG-THAI-DU-AN.md) mục 1, 2, 18.
+
+> **Cập nhật 2026-11-25 (đêm):** `feat/voice-picker` và `feat/export-sentences-only` **đã ghép vào `main`** (`ab94f57`) và đã push. Nhánh `feat/dictation-word-listening` sau đó cũng đã ghép (`652765f`) và push; xem mục 20.
 
 ## 20. Luyện nghe từ đã lưu trong Dictation + prompt cho AI — 2026-11-25
 
-- Nhánh `feat/dictation-word-listening` tách từ `main` (`ab94f57`), chưa ghép/push/deploy.
+- Nhánh `feat/dictation-word-listening` tách từ `main` (`ab94f57`); **sau đó đã ghép vào `main` (fast-forward `652765f`) và deploy**.
 - **Phần A:** Dictation → Từ đã lưu có "Luyện nghe" (bố cục Listening Review, ô chữ) và "Danh sách". Tách phần lõi sang `src/components/listening/`; Listening Review dùng chung, hành vi không đổi (so sánh 18 trạng thái trước/sau; test cũ đạt). Chi tiết: [DICTATION.md](DICTATION.md) mục 11.
 - **Kiểm tra phần A:** `npm test` 41/41; lint **32** cảnh báo/0 lỗi (trước 34); build đạt, JS chính 541,25 kB, chunk Dictation 44 kB; trình duyệt 18/18. Sửa 2 test cũ (`dictation-browser`, `dictation-sync-browser`) để bấm "Danh sách" trước.
 - **Phần B:** nút "Sao chép prompt cho AI" ở Thư viện bài; nội dung ở `src/utils/dictationAiPrompt.js` (khớp nguyên văn yêu cầu). [DICTATION.md](DICTATION.md) mục 12.
 - **Kiểm tra sau phần B:** `npm test` 42/42; lint 32/0; build đạt, JS chính 541,26 kB, chunk Dictation 47,40 kB; trình duyệt 19/19.
 - **Chưa kiểm chứng:** điện thoại thật, giọng thật, đồng bộ Sheet thật, clipboard trên iPhone, chất lượng câu do chatbot viết.
 
-> **Cập nhật 2026-11-25 (tối):** `feat/dictation` **đã ghép vào `main`** (fast-forward `98b5ba3`) và đã push. Nhánh `feat/voice-picker` thêm chọn giọng đọc + Chế độ thi cho Dictation/Listening; xem mục 18. Chưa ghép, chưa push, chưa deploy.
+> **Cập nhật 2026-11-25 (tối):** `feat/dictation` **đã ghép vào `main`** (fast-forward `98b5ba3`) và đã push. Nhánh `feat/voice-picker` thêm chọn giọng đọc + Chế độ thi cho Dictation/Listening; xem mục 18. Sau đó đã ghép (fast-forward `d549392`) và deploy.
 
-> **Cập nhật 2026-11-25 (chiều):** nhánh `feat/dictation` thêm tab Dictation (chép chính tả), đồng bộ Google Sheet riêng và nguồn "Từ chép chính tả" trong Listening. Xem [DICTATION.md](DICTATION.md), [DICTATION-SETUP.md](DICTATION-SETUP.md) và TRANG-THAI-DU-AN mục 3b. Chưa ghép `main`, chưa deploy, đồng bộ thật chưa thử.
+> **Cập nhật 2026-11-25 (chiều):** nhánh `feat/dictation` thêm tab Dictation (chép chính tả), đồng bộ Google Sheet riêng và nguồn "Từ chép chính tả" trong Listening. Xem [DICTATION.md](DICTATION.md), [DICTATION-SETUP.md](DICTATION-SETUP.md) và TRANG-THAI-DU-AN mục 3b. Sau đó đã ghép `main` và deploy; đồng bộ thật đã cài và chạy (26/11).
 
 > **Lưu ý 2026-11-25:** tình hình mới nhất (các nhánh đã ghép vào `main` và push, theme, quiz đọc từ + ảnh, giữ ghi chú Ôn tập, việc còn mở) nằm ở [TRANG-THAI-DU-AN.md](TRANG-THAI-DU-AN.md). Dòng "Chưa push/deploy" ngay dưới chỉ đúng cho thời điểm 24/11 chiều.
 
 ## 18. Chọn giọng đọc và Chế độ thi — 2026-11-25
 
-- Nhánh `feat/voice-picker` tách từ `main` (`98b5ba3`), chưa ghép/push/deploy. Chi tiết: [DICTATION.md](DICTATION.md) mục 10.
+- Nhánh `feat/voice-picker` tách từ `main` (`98b5ba3`); **sau đó đã ghép (fast-forward `d549392`) và deploy**. Chi tiết: [DICTATION.md](DICTATION.md) mục 10.
 - Nút "Giọng đọc" trong Dictation và Listening: chọn giọng tiếng Anh, "Nghe thử", tốc độ 0.8–1.1, Chế độ thi (giọng ngẫu nhiên mỗi câu; nghe lại giữ giọng). Cài đặt chỉ lưu trên từng máy (`vocabmaster_voice_prefs`).
 - `playAudio` chỉ thêm tuỳ chọn `voice`; Flashcard/Vocabulary/Smart Quiz không đổi. Tốc độ 0.75×/1×/1.25× của Dictation giờ nhân vào tốc độ đã chọn (mặc định 0.9 → như cũ).
 - **Kiểm tra:** `npm test` 39/39; lint 34 cảnh báo/0 lỗi (không đổi); build đạt, JS chính 529,38 → 539,96 kB (gzip 159,19 → 162,84 kB); trình duyệt 16/16 (thêm `voice-settings-browser`). Máy chạy test cần Python thật trong PATH cho 2 test Excel (TRANG-THAI mục 7).
@@ -57,7 +59,7 @@
 
 ## 19. Dictation: xuất Excel chỉ gồm câu tiếng Anh — 2026-11-25
 
-- Nhánh `feat/export-sentences-only` tách từ `main` (`98b5ba3`), chưa ghép/push/deploy; độc lập với `feat/voice-picker` (mục 18 nằm trên nhánh đó).
+- Nhánh `feat/export-sentences-only` tách từ `main` (`98b5ba3`); **sau đó đã ghép (merge commit `ab94f57`) và deploy**; độc lập với `feat/voice-picker` (mục 18 nằm trên nhánh đó).
 - Nút "Xuất Excel (.xlsx)" (Dictation → Thư viện bài): một sheet "Câu tiếng Anh", một cột, mỗi dòng một câu đang dùng, không trùng; thông báo "Đã xuất Excel: N câu." hoặc "Chưa có câu nào để xuất." (không tải file). Chi tiết: [DICTATION.md](DICTATION.md) mục 6.
 - Không đổi: xuất/nhập bản sao .json, đồng bộ Google Sheet (proxy, Apps Script), Từ đã lưu, Luyện nghe.
 - **Kiểm tra trên nhánh này:** `npm test` 38/38; lint 34 cảnh báo/0 lỗi (không đổi); build đạt; trình duyệt 16/16 (thêm `dictation-export-browser`). Chưa mở file bằng Excel/Google Sheets thật. `test/helpers/inspect-xlsx.js` trả thêm độ rộng cột.

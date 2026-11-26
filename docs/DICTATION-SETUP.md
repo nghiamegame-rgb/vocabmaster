@@ -1,5 +1,7 @@
 # Cài đặt đồng bộ Dictation với Google Sheet (Nghĩa tự làm)
 
+> **Trạng thái 26/11/2026:** các bước 1–8 **đã làm xong trên production** (Sheet "VocabMaster - Dictation", Apps Script "VocabMaster - Dictation Backend", Script Property + 2 biến Vercel, deploy `652765f` Ready; Sheet đã nhận dữ liệu thật). Giữ tài liệu này để **cài lại từ đầu** hoặc **đổi secret / cập nhật mã Apps Script** (mục cuối). Không ghi secret hay URL Web app vào tài liệu.
+
 Khi chưa làm các bước dưới đây, tab **Dictation** vẫn dùng bình thường: bài, kết quả và từ đã lưu nằm trên từng thiết bị. Dòng trạng thái trong tab sẽ báo *"Chưa cài đặt đồng bộ Google Sheet"*.
 
 Làm xong thì mọi thiết bị dùng chung một file Google Sheet, gồm 2 tab dữ liệu **"Từ vựng"** và **"Câu hoàn chỉnh"**.
@@ -113,3 +115,17 @@ Dòng trạng thái trong tab Dictation cho biết lỗi:
 2. **Triển khai** → **Quản lý việc triển khai** → bấm ✏️ trên bản đang dùng → ô **Phiên bản**: chọn **Phiên bản mới** → **Triển khai**.
 
 URL `/exec` giữ nguyên nên không phải sửa Vercel.
+
+## Đổi secret hoặc cập nhật mã Apps Script (sau khi đã cài xong)
+
+**Đổi secret:**
+1. Chọn chuỗi mới (cách tạo ở bước 3).
+2. Apps Script → **Cài đặt dự án** → **Thuộc tính của tập lệnh** → sửa giá trị `DICTATION_SYNC_SECRET` → lưu.
+3. Vercel → Settings → Environment Variables → sửa `DICTATION_SYNC_SECRET` thành **đúng cùng chuỗi** → lưu.
+4. Deploy lại Vercel (Deployments → bản trên cùng → **⋯** → **Redeploy**, hoặc đẩy một commit mới).
+5. Tab Dictation phải hiện "Đã đồng bộ với Google Sheet."; nếu báo secret chưa khớp thì hai chuỗi đang khác nhau.
+
+**Cập nhật mã `dictation-apps-script.js` sau khi sửa trong repo:**
+1. Dán mã mới vào dự án Apps Script (thay toàn bộ), bấm **Lưu**.
+2. **Triển khai** → **Quản lý các bản triển khai** → bút chì ở bản "Dictation v1" → **Phiên bản: Phiên bản mới** → **Triển khai**. URL Web app giữ nguyên nên không cần sửa biến Vercel.
+3. Chỉ đổi cấu trúc các tab Sheet khi có người dùng đồng ý; dữ liệu cũ nằm ở tab "Sao lưu".

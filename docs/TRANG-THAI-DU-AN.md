@@ -1,12 +1,14 @@
 # VocabMaster — Trạng thái dự án (bàn giao cho AI/agent phiên sau)
 
-**Cập nhật lần cuối: 2026-11-25 đêm (giờ Việt Nam).** File này mô tả tình hình *hiện tại* của dự án sau hai phiên làm việc dài (24/11 và đêm 24→25/11). Nếu nó mâu thuẫn với `docs/HANDOFF.md`, `docs/PROJECT_CONTEXT.md` hay `docs/QUIZ-FEEDBACK.md`, **file này và mã nguồn thật thắng** (các file kia có chỗ đã cũ, xem mục 11).
+**Cập nhật lần cuối: 2026-11-26 ~01:50 (giờ Việt Nam).** File này mô tả tình hình *hiện tại* của dự án sau các phiên làm việc dài (24/11, đêm 24→25/11 và 25/11 chiều–đêm). Nếu nó mâu thuẫn với `docs/HANDOFF.md`, `docs/PROJECT_CONTEXT.md` hay `docs/QUIZ-FEEDBACK.md`, **file này và mã nguồn thật thắng** (các file kia có chỗ đã cũ, xem mục 11).
 
 ## 0. Người dùng và cách làm việc
 
 - Chủ dự án tên **Nghĩa**, **không phải lập trình viên**, giao tiếp **tiếng Việt**. Giải thích ngắn, từng bước đơn giản, đưa lệnh chép-dán được. Tránh thuật ngữ nếu không cần.
 - Web là SPA học tiếng Anh "VocabMaster" (thư mục `C:\web toiec`, tên package `web-toiec`). Mục tiêu học hiện tại là **VSTEP B1–B2** (chữ "TOEIC" chỉ còn ở dữ liệu cũ).
 - Quy trình quen thuộc: AI (Claude Code hoặc Gemini) sửa mã **trên một nhánh** và push nhánh đó → người dùng tự **ghép nhánh vào `main` và push** bằng terminal → Vercel tự deploy `main`. Không tự merge/push/deploy `main` nếu người dùng chưa bảo.
+- Với việc lớn, Claude (trong chat) viết **prompt cho Claude Code** (chia 2–3 giai đoạn, nhánh riêng `feat/...`, có mục "KHÔNG ĐƯỢC ĐỤNG"); người dùng gửi cho Claude Code rồi dán báo cáo lại; Claude (chat) kiểm tra bản chạy thật bằng trình duyệt tích hợp. Skill `vocabmaster-deploy` có sẵn cho việc triển khai Vercel/Apps Script.
+- Người dùng cho phép Claude thao tác Vercel/Google Sheet/Apps Script thay mình bằng trình duyệt (đã đăng nhập sẵn), **trừ việc gõ secret/mật khẩu: người dùng tự dán** (đã làm với secret Dictation). Người dùng muốn ghi chú tiến độ nằm trong các file `.md` của thư mục dự án để AI/agent phiên sau đọc tiếp.
 
 ## 1. Tóm tắt trong một phút
 
@@ -14,16 +16,17 @@
 - Ngày 24/11 đã hoàn thành và ghép vào `main`: (1) 17 mục sửa lỗi theo báo cáo phân tích; (2) triển khai Vercel + Apps Script; (3) nâng cấp giao diện "Midnight Indigo & Glass Slate" kèm hiệu ứng; (4) Smart Quiz Multiple Choice tự đọc từ đúng và hiện ảnh; (5) chuyển khung ảnh vào trong thẻ câu hỏi; (6) Grammar → Ôn tập giữ trạng thái "Hiện ghi chú" khi sang câu tiếp.
 - Không có việc dở dang về mã. Việc còn mở chủ yếu là việc người dùng tự làm (mục 9) và vài điều chưa được xác minh (mục 10).
 - **Ngày 25/11 (đã ghép vào `main`, đã push, người dùng báo web chạy chuẩn):** nút "Tự mở bàn phím" ở Listening và chip thông báo đồng bộ trong thanh menu (mục 3a); phân tích quy mô/chi phí khi lên ~5.000 từ (mục 14).
-- **Ngày 25/11 (đêm), nhánh `feat/dictation-word-listening` — chỉ có trên máy, chưa push/ghép:** luyện nghe từ đã lưu ngay trong Dictation và nút sao chép prompt cho AI. Xem mục 17.
-- **Ngày 25/11 (tối), `feat/voice-picker` và `feat/export-sentences-only` — đã ghép vào `main` (`ab94f57`, 21:39) và push (trạng thái Vercel chưa kiểm tra):** chọn giọng đọc, tốc độ và "Chế độ thi (giọng ngẫu nhiên)" cho Dictation + Listening. Xem mục 3c.
-- **Ngày 25/11 (chiều), `feat/dictation` — đã ghép vào `main` (fast-forward `98b5ba3`, 20:50) và đã push (trạng thái Vercel chưa kiểm tra):** tab mới **Dictation** (luyện nghe chép chính tả), đồng bộ Google Sheet riêng (người dùng tự cài theo `docs/DICTATION-SETUP.md`), Listening thêm nguồn "Từ chép chính tả". Xem mục 3b.
+- **Ngày 25/11 (chiều → đêm): toàn bộ phần Dictation đã ghép vào `main`, đã push và đang chạy trên production (kiểm tra 26/11 ~01:45).** Bốn nhánh `feat/dictation`, `feat/voice-picker`, `feat/export-sentences-only`, `feat/dictation-word-listening` → `main` = `origin/main` = `652765f`. Vercel: bản Production mới nhất là `652765f` ("Dictation: nút Sao chép prompt cho AI"), trạng thái **Ready** (mục 2). Gồm: tab **Dictation** (mục 3b), chọn giọng đọc + Chế độ thi (3c), file Excel chỉ chứa câu tiếng Anh (16), luyện nghe từ đã lưu trong Dictation + nút sao chép prompt cho AI (17).
+- **Dictation đã được cài đặt đồng bộ Google Sheet thật (25/11 tối)** theo `docs/DICTATION-SETUP.md`: Sheet "VocabMaster - Dictation", Apps Script "VocabMaster - Dictation Backend" (Web app, deployment "Dictation v1"), Script Property `DICTATION_SYNC_SECRET`, 2 biến Vercel `DICTATION_APPS_SCRIPT_URL` + `DICTATION_SYNC_SECRET` (Production, loại Secret). Production hiện dòng "Đã đồng bộ với Google Sheet." và Sheet đã nhận bản ghi thật. Chi tiết và bằng chứng: mục 18. **Secret và URL Web app không ghi trong tài liệu.**
 - **Gợi ý bắt đầu ngày mai:** xem mục 15. Chưa có việc nào được người dùng giao sẵn.
 
 ## 2. Trạng thái git và triển khai
 
-Đọc từ `git` đêm 25/11: `main` = `origin/main` = `ab94f57` (ghép `feat/voice-picker` rồi `feat/export-sentences-only` lúc 21:38–21:39). Nhánh đang làm việc: `feat/dictation-word-listening` (tách từ `ab94f57`).
+**Hiện tại (đọc từ `.git/logs/HEAD` và trang Vercel, 26/11 ~01:45):** `main` = `origin/main` = `652765f`, nhánh đang đứng là `main`. Chuỗi trên `main` hôm 25/11: `f4e19dd` → `98b5ba3` (FF `feat/dictation`, 20:50: commit `054b013`, `18bd71c`, `743efbc`, `6c5b7c0`, `98b5ba3`) → `d549392` (FF `feat/voice-picker`: `2ba7806`, `d549392`) → `ab94f57` (**merge commit** `feat/export-sentences-only`: `173b6a5`, `b656550`; 21:39) → `652765f` (FF `feat/dictation-word-listening`, ~22:18: `ac2a019`, `652765f`). Cả bốn nhánh Dictation đã vào `main`, có thể xóa (không bắt buộc).
 
-Bảng dưới là ảnh chụp cũ lúc ~01:15 ngày 25/11:
+**Vercel (Deployments, đọc 26/11 ~01:45 bằng trình duyệt tích hợp đã đăng nhập):** các bản **Production** từ nhánh `main` đều **Ready**: `652765f`, `ab94f57`, `98b5ba3`, `f4e19dd`, `99a25d6`, … Domain production: `vocabmaster-kappa.vercel.app`. Bản Preview cho từng nhánh `feat/*` cũng có. Dự án Vercel: `1thanhvien/vocabmaster`.
+
+Bảng dưới là **ảnh chụp cũ lúc ~01:15 ngày 25/11 (chỉ để tham khảo lịch sử; hash `main` đã đổi, xem đoạn trên)**:
 
 | Mục | Giá trị |
 |---|---|
@@ -33,8 +36,8 @@ Bảng dưới là ảnh chụp cũ lúc ~01:15 ngày 25/11:
 | Nhánh phụ | Đã ghép vào `main` (theo reflog): `feat/quiz-feedback` (đã chứa `feat/theme-animation`), `fix/quiz-image-slot`, `fix/review-notes-persist`, `fix/listening-autofocus-sync-toast`, `fix/audit-2026-11` (đầu nhánh hiện `b78928a`; chưa đối chiếu có commit nào sau merge `70c0cc4` hay không). `feature/toeic-grammar` là nhánh cũ (merge ngày 02/11): bản local `a87d6be` khác bản `origin` `4a4aff0` — **đừng xóa hay force-push khi chưa kiểm tra**. Tham chiếu git nằm trong `.git/packed-refs` (file `refs/heads/main` loose có thể không tồn tại — bình thường). Các nhánh đã ghép có thể xóa, không bắt buộc |
 
 **Cảnh báo trung thực:**
-- Người dùng báo lúc ~01:10 ngày 25/11 rằng **web đã chạy chuẩn** sau khi deploy `f4e19dd` (không nói rõ đã thử riêng bàn phím/giọng đọc trên điện thoại hay chưa). Mình chưa tự xem được trang Vercel Deployments (repo private, không có Vercel CLI) nên không có bằng chứng độc lập về trạng thái "Ready".
-- Tài liệu (`TRANG-THAI-DU-AN.md`, con trỏ trong `AGENTS.md`/`HANDOFF.md`) đã được commit trong `f4e19dd`. Bản chỉnh sửa tài liệu ngày 25/11 lúc ~01:15 (file này) **có thể chưa commit** — chạy `git status`; nếu `docs/TRANG-THAI-DU-AN.md` hiện "modified" thì `git add docs` → `git commit -m "Docs: cập nhật trạng thái dự án"` → `git push origin main`.
+- Trạng thái "Ready" của Vercel **đã được kiểm tra độc lập ngày 26/11** (xem đoạn trên). Người dùng cũng báo web chạy ổn sau mỗi lần ghép (ảnh chụp màn hình tab Dictation, Từ đã lưu, Thư viện bài trên production). Chưa có ai báo đã thử riêng trên **điện thoại thật** (mục 10).
+- Tài liệu: các commit tài liệu của Claude Code đã vào `main` (tới `652765f`). **Bản cập nhật tài liệu 26/11 (Claude chat ghi thẳng vào file, gồm file này, `docs/HANDOFF.md`, `docs/DICTATION.md`, `docs/DICTATION-SETUP.md`) có thể chưa commit** — chạy `git status`; nếu các file đó hiện "modified" thì `git add docs` → `git commit -m "Docs: cập nhật trạng thái dự án 26/11"` → `git push origin main`. Nên commit trước khi ghép nhánh mới, vì nhánh của Claude Code cũng sửa `TRANG-THAI-DU-AN.md` và Git sẽ chặn ghép nếu file đang sửa dở chưa commit.
 - Thư mục làm việc có thể hiện `src/components/Grammar.jsx` bị sửa "ảo" (BOM/xuống dòng, xem mục 7). Không phải thay đổi thật.
 
 ## 3. Những gì đã làm ngày 24/11 (theo thứ tự)
@@ -68,13 +71,13 @@ Tách từ `main` `99a25d6`. **Đã ghép vào `main` (fast-forward → `f4e19dd
 Tách từ `main` `f4e19dd`; 3 commit mã + 1 commit tài liệu. Chi tiết kỹ thuật: [DICTATION.md](DICTATION.md).
 
 1. **Tab Dictation** (commit `054b013`): 3 mục Luyện nghe · Từ đã lưu · Thư viện bài; chip từ mở khi gõ đúng, lưu từ bằng bookmark, lưới câu, phím tắt (Enter, Ctrl+Enter, Shift+Enter, Ctrl+↑/↓, Ctrl+/), tốc độ 0.75/1/1.25×, nút "Tự mở bàn phím" dùng chung với Listening. Kho riêng `vocabmaster_dictation_*`, xoá = tombstone. Thanh menu có 7 tab: **chữ trên tab giờ chỉ hiện từ 1280 px** (trước là 1024 px) và lề tab hẹp hơn dưới 360 px để không tràn.
-2. **Đồng bộ Google Sheet** (commit `18bd71c`): `dictation-apps-script.js` (dự án Apps Script + Sheet riêng, tab "Từ vựng", "Câu hoàn chỉnh", "Meta", "Sao lưu"), proxy `api/dictation-sync.js` (env `DICTATION_APPS_SCRIPT_URL`, `DICTATION_SYNC_SECRET`), trạng thái trong tab, xuất Excel 2 sheet, bản sao .json. **Người dùng chưa tạo Sheet/Apps Script/env** → trên web thật tab sẽ báo "Chưa cài đặt đồng bộ" tới khi làm theo `docs/DICTATION-SETUP.md`.
+2. **Đồng bộ Google Sheet** (commit `18bd71c`): `dictation-apps-script.js` (dự án Apps Script + Sheet riêng, tab "Từ vựng", "Câu hoàn chỉnh", "Meta", "Sao lưu"), proxy `api/dictation-sync.js` (env `DICTATION_APPS_SCRIPT_URL`, `DICTATION_SYNC_SECRET`), trạng thái trong tab, xuất Excel 2 sheet, bản sao .json. **Đã cài đặt thật ngày 25/11 tối** (mục 18); trên production dòng trạng thái hiện "Đã đồng bộ với Google Sheet.". Nếu một bản deploy thiếu 2 biến Vercel thì tab báo "Chưa cài đặt đồng bộ".
 3. **Listening** (commit `743efbc`): chọn "Nguồn: Từ vựng chính | Từ chép chính tả"; nguồn mới ẩn bộ lọc Level/Type/Khó/Due, đọc từ đơn, gõ lại, "Chỉ từ hay sai"; chỉ cộng bộ đếm nghe trên từ Dictation, không đụng Vocabulary/L1–L5.
 4. Bundle chính 509 → 529 kB (gzip 152 → 159 kB); tab Dictation và phần nghe từ Dictation là chunk tải lười riêng (35 kB + 5 kB).
 
 ## 3c. Việc ngày 25/11 (tối) — nhánh `feat/voice-picker` (đã vào `main`)
 
-Tách từ `main` `98b5ba3`. Chưa push, chưa ghép, chưa deploy. Chi tiết: [DICTATION.md](DICTATION.md) mục 10.
+Tách từ `main` `98b5ba3`. **Đã ghép vào `main` (fast-forward `d549392`) và deploy cùng `ab94f57`.** Chi tiết: [DICTATION.md](DICTATION.md) mục 10.
 
 - Nút "Giọng đọc" (Dictation và Listening): danh sách giọng tiếng Anh của máy (tên + accent, Natural/Online lên đầu), "Nghe thử", thanh tốc độ 0.8–1.1 (mặc định 0.9), công tắc "Chế độ thi".
 - Chế độ thi: mỗi câu/mỗi lượt nghe mới một giọng khác giọng trước; nghe lại giữ giọng; tốc độ lệch ±0.05; ưu tiên Mỹ/Anh/Úc/Canada/Ấn Độ, bỏ giọng "đồ chơi" của Apple. Không đổi pitch. Dùng Google dự phòng thì bỏ qua và có ghi chú.
@@ -146,16 +149,18 @@ Chỉ áp dụng cho **Multiple Choice của từ vựng** (không áp dụng Li
 5. ~~Commit và push các file tài liệu mới (mục 2).~~ Đã commit (`f4e19dd`) và vào `main` cùng lần ghép 25/11.
 6. ~~Ghép nhánh `fix/listening-autofocus-sync-toast`~~ — đã ghép và push (25/11 01:04).
 7. ~~Commit bản cập nhật tài liệu~~: các sửa đổi ~01:15 của file này đã được commit cùng tài liệu Dictation trên nhánh `feat/dictation` (sẽ vào `main` khi ghép).
-8. Dictation: ~~ghép vào `main` và push~~ (xong 25/11). Còn: tự cài đồng bộ theo `docs/DICTATION-SETUP.md` (Sheet, Apps Script, Script Property, 2 biến Vercel, redeploy) — chưa biết đã làm chưa; thử trên điện thoại.
-9. Giọng đọc: ~~ghép và push~~ (xong 25/11). Còn: nghe thử giọng thật trên máy tính và điện thoại (đặc biệt Chế độ thi).
-10. Ghép `feat/dictation-word-listening` vào `main`, push, rồi thử luyện nghe từ đã lưu trên điện thoại.
+8. Dictation: ~~ghép vào `main` và push~~ (xong 25/11) và ~~cài đồng bộ Sheet/Apps Script/Vercel~~ (xong 25/11 tối, mục 18). Còn: thử trên **điện thoại thật** (đồng bộ giữa thiết bị, lưu từ, phím).
+9. Giọng đọc: ~~ghép và push~~ (xong 25/11). Còn: nghe thử giọng thật trên điện thoại (đặc biệt Chế độ thi); trên máy tính người dùng đã thấy danh sách giọng (Google US/UK, Microsoft David/Mark/Zira).
+10. ~~Ghép `feat/dictation-word-listening` vào `main`, push~~ (xong, `652765f`). Còn: thử luyện nghe từ đã lưu và nút "Sao chép prompt cho AI" trên điện thoại.
+11. Commit và push các sửa tài liệu 26/11 nếu `git status` còn báo modified (mục 2).
+12. Google Drive: lần thao tác đầu ngày 25/11 có thể tạo nhầm một Google Sheet trống "Bảng tính không có tiêu đề"; 26/11 tìm bằng connector Drive không thấy file nào (chưa chắc tuyệt đối). Nếu người dùng thấy trong Drive thì xóa file trống đó, **không** xóa "VocabMaster - Dictation".
 
 ## 10. Chưa xác minh / rủi ro đã chấp nhận
 
 - **Chưa xác minh (giọng đọc, 25/11 tối)**: giọng thật trên Windows/Edge/Chrome/điện thoại (test dùng danh sách giọng giả); chất lượng giọng Natural/Online khi mất mạng; Safari/iOS; câu dài với giọng Google của Chrome có thể bị ngắt (hiện tượng đã biết của Chrome, chưa thử).
-- **Chưa xác minh (Dictation, 25/11 chiều)**: đồng bộ với Apps Script/Vercel/Sheet **thật** (chỉ test bằng Apps Script chạy trong VM + route giả); giọng đọc thật và tốc độ 0.75/1.25× trên điện thoại; Safari/Firefox; phím tắt trên Mac (Ctrl+↑ có thể trùng Mission Control).
+- **Dictation (đồng bộ thật)**: ghi/đọc Sheet **đã chạy thật** (mục 18, bằng chứng `Meta!B1` = revision 187). **Chưa xác minh**: đồng bộ giữa hai thiết bị thật (điện thoại ↔ máy tính); giọng đọc và tốc độ 0.75/1.25× trên điện thoại; Safari/Firefox; phím tắt trên Mac (Ctrl+↑ có thể trùng Mission Control).
 - **Chưa xác minh (25/11)**: bàn phím **thật** trên điện thoại khi bật/tắt "Tự mở bàn phím" (chỉ test Edge headless giả lập cảm ứng; iOS Safari thường không tự bật bàn phím khi `focus()` không do người dùng chạm, Android Chrome thường có — đây là suy luận, chưa thử); chip đồng bộ trên máy thật/Safari/Firefox.
-- **Chưa xác minh**: trạng thái "Ready" của Vercel Deployments (chỉ có lời người dùng nói web chạy chuẩn); giọng đọc **thật** trên điện thoại (iOS Safari, Android Chrome) — chỉ test với `speechSynthesis`/`Audio` giả; Safari/Firefox/màn cảm ứng thật; mã Apps Script trong repo có khớp bản đang chạy hay không.
+- **Chưa xác minh**: giọng đọc **thật** trên điện thoại (iOS Safari, Android Chrome) — test chỉ dùng `speechSynthesis`/`Audio` giả; Safari/Firefox/màn cảm ứng thật; mã Apps Script **Grammar/Vocabulary** trong repo có khớp bản đang chạy hay không (riêng Dictation đã đối chiếu SHA-256, mục 18). Trạng thái "Ready" của Vercel đã kiểm tra 26/11 (mục 2).
 - **Rủi ro đã chấp nhận**: proxy `/api/*` chưa xác thực từng người dùng nên ai biết URL đều đọc/ghi được (secret chỉ chặn gọi thẳng Apps Script). Người dùng biết và chấp nhận; nếu muốn siết thêm cần thiết kế đăng nhập, là việc riêng.
 - Đừng gọi endpoint production để thử ghi/xóa, đừng xóa LocalStorage hay dữ liệu cloud khi kiểm tra.
 
@@ -169,6 +174,8 @@ Chỉ áp dụng cho **Multiple Choice của từ vựng** (không áp dụng Li
 | `docs/BAO-CAO-PHAN-TICH-WEB.md`, `docs/BAO-CAO-SUA-LOI.md` | Báo cáo phân tích và 17 mục sửa | Chính xác cho thời điểm 24/11 chiều |
 | `docs/THEME-ANIMATION.md` | Theme/animation do Gemini | Đúng |
 | `docs/QUIZ-FEEDBACK.md` | Quiz feedback do Gemini | Đúng trừ vị trí ảnh (mục 4) |
+| `docs/DICTATION.md` | Thiết kế kỹ thuật tab Dictation (dữ liệu, chấm, đồng bộ, giọng đọc, luyện nghe từ, prompt AI) | Đúng tới `652765f` |
+| `docs/DICTATION-SETUP.md` | Cài đồng bộ Dictation (Sheet, Apps Script, secret, Vercel) + đổi secret/cập nhật mã | Đúng; việc cài đã làm xong 25/11 |
 | `docs/VOCABULARY-RECOVERY.md`, `STRUCTURES-SYNC-SETUP.md`, `GRAMMAR-VSTEP.md` | Runbook phục hồi, thiết lập, prompt VSTEP | Dùng khi cần |
 
 Khi cập nhật tài liệu: chỉ ghi điều đã xác minh, đánh dấu phần suy luận và chưa kiểm tra (đúng quy ước của `AGENTS.md`).
@@ -177,6 +184,7 @@ Khi cập nhật tài liệu: chỉ ghi điều đã xác minh, đánh dấu ph�
 
 - Ghép nhánh bằng merge commit: hoàn tác bằng `git revert -m 1 <hash merge>` rồi `git push origin main` (Vercel tự deploy lại). Hash các merge ở mục 2.
 - **Ngoại lệ — lần ghép 25/11 là fast-forward, không có merge commit** nên `-m 1` không dùng được. Hoàn tác phần mã bằng `git revert --no-edit 576ed98 f19518e` rồi `git push origin main` (giữ nguyên commit tài liệu `f4e19dd`).
+- **Hoàn tác phần Dictation (25/11):** `ab94f57` là merge commit → `git revert -m 1 ab94f57` (bỏ cả export Excel mới); các phần còn lại vào bằng fast-forward → revert từng commit mã (ví dụ `git revert --no-edit 652765f ac2a019` cho luyện nghe từ đã lưu + nút prompt), rồi `git push origin main`. Revert mã **không** xóa dữ liệu trong Google Sheet Dictation.
 - Chỉ thay đổi giao diện/logic; **dữ liệu trong Google Sheet không bị ảnh hưởng** bởi việc revert mã giao diện.
 - Với thay đổi backend Grammar (sheet `Review`): **không** đưa Apps Script về bản cũ sau khi đã chuyển (xem HANDOFF mục 17).
 
@@ -212,21 +220,41 @@ Theo thứ tự hợp lý, chỉ làm khi người dùng đồng ý:
 2. Smart Quiz → Listening & Typing vẫn tự bật bàn phím mỗi câu: đề xuất dùng chung nút tắt với Listening (nhánh riêng, prompt cho Claude Code).
 3. Nếu người dùng thấy dữ liệu đang lớn lên nhanh: đo kích thước thật (mục 14), rồi cân nhắc cảnh báo gần giới hạn / nâng `MAX_QUESTIONS` / dọn snapshot Drive.
 4. Dọn các việc tay còn mở ở mục 9 (Apps Script rác, repo Private, Ctrl+F5 mọi thiết bị).
+5. Dictation: hỏi người dùng đã thử trên điện thoại chưa (đồng bộ bài, luyện nghe từ đã lưu, Chế độ thi) và giọng đọc có dễ nghe không; nếu muốn thêm giọng Úc/Canada thì phải xem danh sách giọng của thiết bị đó (hiện máy tính chỉ có giọng Mỹ và Anh). Bộ câu luyện: người dùng xuất Excel (một cột câu) → nút "Sao chép prompt cho AI" → chatbot khác viết thêm câu mức VSTEP ≤ 5 điểm (≈ A2–B1) → dán vào "Nạp bài mới".
 
 ## 16. Ngày 25/11 (đêm) — nhánh `feat/export-sentences-only`
 
-Tách từ `main` `98b5ba3` (độc lập với `feat/voice-picker`). Chỉ có trên máy: **chưa push, chưa ghép**.
+Tách từ `main` `98b5ba3` (độc lập với `feat/voice-picker`). **Đã ghép vào `main` (merge commit `ab94f57`) và deploy.**
 
 - Dictation → Thư viện bài → "Xuất Excel (.xlsx)": file chỉ còn **một sheet "Câu tiếng Anh", một cột, mỗi dòng một câu tiếng Anh** (bỏ câu đã xoá và câu trùng) để đưa chatbot đọc. Không có câu thì không tải file. Bản sao .json và tab trên Google Sheet không đổi.
 - Kiểm tra trên nhánh này: `npm test` 38/38 (thêm `dictation-export`, cần Python), trình duyệt 16/16 (thêm `dictation-export-browser`), lint 34/0, build đạt.
 - Chưa mở file bằng Excel/Google Sheets thật.
-- Việc người dùng: ghép nhánh vào `main` và push.
+- Đã xong: người dùng ghép và push (25/11 21:39). Việc còn lại: xác nhận bằng file thật (WPS/Excel) sau khi đổi — ảnh file người dùng gửi ngày 25/11 là của bản cũ (2 sheet); bản mới (một sheet, một cột) chưa có xác nhận.
 
 ## 17. Ngày 25/11 (đêm) — nhánh `feat/dictation-word-listening`
 
-Tách từ `main` `ab94f57`. Chỉ có trên máy: **chưa push, chưa ghép**.
+Tách từ `main` `ab94f57`. **Đã ghép vào `main` (fast-forward `652765f`, ~22:18) và deploy; trên production có "Luyện nghe/Danh sách" trong Từ đã lưu và nút "Sao chép prompt cho AI" (kiểm tra 26/11).**
 
 - **Phần A:** Dictation → Từ đã lưu mở thẳng "Luyện nghe" (giống Listening Review, ô chỉ có chữ, lọc theo Tên bài / hay nghe sai / chưa luyện); danh sách cũ ở tab "Danh sách". Listening Review không đổi hành vi. Chi tiết: [DICTATION.md](DICTATION.md) mục 11.
 - **Phần B:** Thư viện bài có nút "Sao chép prompt cho AI" (nội dung ở `src/utils/dictationAiPrompt.js`).
 - Kiểm tra sau phần B (mới nhất): `npm test` 42/42, trình duyệt 19/19, lint 32/0, build đạt. Chưa thử trên điện thoại thật.
 - Kiểm tra sau phần A: `npm test` 41/41, trình duyệt 18/18 (thêm `dictation-word-practice-browser`), lint 32 cảnh báo/0 lỗi (mốc mới, đừng làm tăng), build JS chính ~541 kB + chunk Dictation ~44 kB.
+
+## 18. Dictation — cài đặt đồng bộ thật và kiểm tra production (25–26/11)
+
+**Đã tạo (do Claude thao tác trong trình duyệt tích hợp, người dùng đã đăng nhập sẵn; tên để tìm lại, không ghi ID/URL/secret):**
+- Google Sheet **"VocabMaster - Dictation"** (tab "Từ vựng", "Câu hoàn chỉnh", "Meta", "Sao lưu" do Apps Script tự tạo).
+- Dự án Apps Script **"VocabMaster - Dictation Backend"** gắn với Sheet đó; mã dán từ `dictation-apps-script.js` (đối chiếu SHA-256 sau khi dán: khớp file trong repo; file trên Windows là CRLF nên lớn hơn ~362 byte so với bản LF, nội dung giống). Triển khai **Web app** (deployment "Dictation v1"; Thực thi bằng tài khoản người dùng, Quyền truy cập: Bất kỳ ai). Script Property `DICTATION_SYNC_SECRET`.
+- Vercel (`1thanhvien/vocabmaster`): 2 biến Production loại **Secret** `DICTATION_APPS_SCRIPT_URL` (URL Web app) và `DICTATION_SYNC_SECRET` (**phải trùng** Script Property). Biến chỉ có tác dụng với bản deploy **sau** khi thêm; bản `652765f` trên `main` đã dùng chúng.
+- Secret do **người dùng tự dán** vào cả hai nơi (Claude không nhập secret). Claude chỉ so sánh hai nơi bằng mã băm để chắc hai giá trị giống hệt, không đọc/ghi lại secret.
+
+**Bằng chứng kiểm tra:**
+- 25/11 20:52 (Claude, trình duyệt tích hợp) và 21:43/21:44/22:19 (ảnh người dùng gửi): production, tab Dictation hiện **"Đã đồng bộ với Google Sheet."**
+- 26/11 ~01:45 (Claude, đọc Sheet đã đăng nhập, chỉ lấy số liệu, không in nội dung): `Meta` có `Revision` = **187**, `Đang ghi` trống (không có lần ghi dở), `Schema` = 1; tab "Sao lưu" có bản lưu mới nhất `revision 186` lúc `2026-11-25T18:08Z` (≈ 01:08 ngày 26/11 giờ Việt Nam); hai tab "Từ vựng" và "Câu hoàn chỉnh" có hàng dữ liệu (dữ liệu thử của người dùng, không ghi số lượng vì có thể gồm hàng đã xóa). Nghĩa là đường **ghi** lên Sheet đã chạy thật, không chỉ đọc.
+- Vercel Deployments: `652765f` Production **Ready** (mục 2). Trên production có các nút/tab mới: "Giọng đọc", "Từ đã lưu" → "Luyện nghe"/"Danh sách", "Thư viện bài" → "Xuất Excel (.xlsx)" và "Sao chép prompt cho AI" (kiểm tra bằng DOM, không bấm ghi dữ liệu).
+
+**Việc cần nhớ khi sửa tiếp:**
+- Sửa `dictation-apps-script.js` trong repo **không** tự cập nhật bản đang chạy: phải dán lại mã vào dự án Apps Script, lưu, rồi **Triển khai → Quản lý các bản triển khai → sửa → Phiên bản mới → Triển khai** (URL Web app giữ nguyên). Đổi cấu trúc Sheet là việc cần người dùng cho phép.
+- Đổi secret: đổi Script Property **và** biến Vercel cùng một giá trị rồi deploy lại Vercel (hoặc đẩy commit mới). Lệch secret → tab báo "Máy chủ từ chối: secret … chưa khớp" (bảng lỗi trong `DICTATION-SETUP.md`).
+- Đừng gọi endpoint production để thử ghi/xóa, đừng xóa dữ liệu trong Sheet hay LocalStorage khi kiểm tra. Trình duyệt tích hợp của Claude có LocalStorage riêng (trống), không phải dữ liệu thật của người dùng; chip "Vocabulary: đang tạm dừng ghi cloud / có bản sao cũ" thấy ở đó là bảo vệ dữ liệu của trình duyệt đó, đừng bấm "Bật đồng bộ thiết bị" ở đó.
+- Thao tác trình duyệt tích hợp (kinh nghiệm 25/11): tab mới chỉ mở được khi chính người dùng bấm; ảnh chụp màn hình có thể cũ khi pane bị ẩn → ưu tiên `find`/`read_page` (bấm theo ref) và đọc DOM bằng JavaScript; menu Apps Script cần bấm bằng ref; ô React nhập qua native setter + sự kiện `input`/`change`; đặt lại khung nhìn bằng `resize_window` preset `desktop` khi xong.
