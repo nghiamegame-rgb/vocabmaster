@@ -1,59 +1,108 @@
-import { useState } from 'react';
 import {
   BookOpen, CheckCircle, HelpCircle, TrendingUp, Star, Volume2,
+  Layers, Brain, Headphones, BookOpenCheck, PenLine, MapPin, ArrowRight,
 } from 'lucide-react';
+import { CompassBadge, EmptyTrailScene, JourneyMapSvg } from './storybook/StorybookArt';
 
 const LEVEL_META = [
-  { level: 1, label: 'L1 — New',        color: 'bg-rose-500',     dot: 'bg-rose-400'     },
-  { level: 2, label: 'L2 — Familiar',   color: 'bg-orange-500',   dot: 'bg-orange-400'   },
-  { level: 3, label: 'L3 — Learning',   color: 'bg-amber-500',    dot: 'bg-amber-400'    },
-  { level: 4, label: 'L4 — Proficient', color: 'bg-teal-500',     dot: 'bg-teal-400'     },
-  { level: 5, label: 'L5 — Mastered',   color: 'bg-emerald-500',  dot: 'bg-emerald-400'  },
+  {
+    level: 1,
+    label: 'L1 — New',
+    stage: 'Trại khởi hành',
+    bar: 'bg-[#c8434e]',
+    pill: 'bg-[#f9dfe1] text-[#9e2a35] border-[#2b2a33]',
+  },
+  {
+    level: 2,
+    label: 'L2 — Familiar',
+    stage: 'Đồi làm quen',
+    bar: 'bg-[#d97736]',
+    pill: 'bg-[#fae8d8] text-[#9e4812] border-[#2b2a33]',
+  },
+  {
+    level: 3,
+    label: 'L3 — Learning',
+    stage: 'Rừng đang học',
+    bar: 'bg-[#e0a82e]',
+    pill: 'bg-[#f8ecd0] text-[#7d5608] border-[#2b2a33]',
+  },
+  {
+    level: 4,
+    label: 'L4 — Proficient',
+    stage: 'Cầu thành thạo',
+    bar: 'bg-[#216e6e]',
+    pill: 'bg-[#d9f0ef] text-[#175151] border-[#2b2a33]',
+  },
+  {
+    level: 5,
+    label: 'L5 — Mastered',
+    stage: 'Đỉnh tinh thông',
+    bar: 'bg-[#3f7d58]',
+    pill: 'bg-[#ddeee2] text-[#295a3d] border-[#2b2a33]',
+  },
 ];
 
-function StatCard({ icon: Icon, label, value, gradient, suffix = '' }) {
+const REGION_LINKS = [
+  { tab: 'vocabulary', region: 'Làng từ vựng',       name: 'Vocabulary', Icon: BookOpen,      badge: 'bg-[#fae3d7] text-[#a83b1c]' },
+  { tab: 'flashcard',  region: 'Trạm thẻ',           name: 'Flashcard',  Icon: Layers,        badge: 'bg-[#f8ecd0] text-[#7d5608]' },
+  { tab: 'quiz',       region: 'Thử thách',          name: 'Smart Quiz', Icon: Brain,         badge: 'bg-[#dceef6] text-[#1f5d7a]' },
+  { tab: 'listening',  region: 'Đài nghe hải đăng',  name: 'Listening',  Icon: Headphones,    badge: 'bg-[#d9f0ef] text-[#175151]' },
+  { tab: 'grammar',    region: 'Tháp cấu trúc',      name: 'Grammar',    Icon: BookOpenCheck, badge: 'bg-[#ede1f2] text-[#5e386e]' },
+  { tab: 'dictation',  region: 'Xưởng chép chính tả', name: 'Dictation', Icon: PenLine,       badge: 'bg-[#ddeee2] text-[#295a3d]' },
+];
+
+function StatCard({ icon: Icon, label, value, strip, badgeBg, suffix = '' }) {
   return (
-    <div className={`relative overflow-hidden rounded-2xl p-5 sm:p-6 ${gradient} border border-white/15 shadow-[0_12px_28px_-10px_rgba(2,6,23,0.75)] vm-card-interactive transition-all duration-200`}>
-      <div className="flex items-start justify-between gap-3">
+    <div className="relative overflow-hidden sb-card sb-card-interactive p-5 sm:p-6">
+      <div className={`absolute top-0 left-0 right-0 h-2 ${strip}`} aria-hidden="true" />
+      <div className="flex items-start justify-between gap-3 pt-1">
         <div>
-          <p className="text-white/80 text-xs sm:text-sm font-medium mb-1.5">{label}</p>
-          <p className="text-white text-3xl font-extrabold tracking-tight">
-            {value}<span className="text-lg font-medium opacity-85">{suffix}</span>
+          <p className="text-[#575361] text-xs sm:text-sm font-bold mb-1.5">{label}</p>
+          <p className="sb-font-display text-[#2b2a33] text-3xl font-extrabold tracking-tight tabular-nums">
+            {value}<span className="text-lg font-bold opacity-80">{suffix}</span>
           </p>
         </div>
-        <div className="w-11 h-11 rounded-xl bg-white/15 ring-1 ring-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
-          <Icon size={21} className="text-white" />
+        <div className={`w-11 h-11 rounded-xl sb-sticker ${badgeBg} flex items-center justify-center shrink-0`}>
+          <Icon size={21} aria-hidden="true" />
         </div>
       </div>
     </div>
   );
 }
 
-function MasteryBar({ level, label, count, total, color, onClick }) {
+function MasteryBar({ level, label, stage, count, total, bar, pill, isFoxHere, onClick }) {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
   return (
     <button
       id={`mastery-level-${level}`}
       onClick={onClick}
-      className="w-full text-left group p-4 rounded-xl vm-card vm-card-interactive"
+      className="w-full text-left group p-4 sb-card sb-card-interactive"
     >
-      <div className="flex items-center justify-between mb-2.5">
-        <div className="flex items-center gap-2.5">
-          <div className={`w-2.5 h-2.5 rounded-full ring-4 ring-white/5 ${color}`} />
-          <span className="text-slate-100 font-semibold text-sm">{label}</span>
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={`inline-flex items-center px-2 py-0.5 rounded-lg border text-xs font-extrabold ${pill}`}>
+            L{level}
+          </span>
+          <span className="text-[#2b2a33] font-bold text-sm">{label}</span>
+          <span className="text-xs font-semibold text-[#575361]">· {stage}</span>
+          {isFoxHere && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#fae3d7] text-[#a83b1c] border border-[#2b2a33] text-[11px] font-bold">
+              <MapPin size={11} aria-hidden="true" /> Cáo đang dừng chân
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-slate-300 text-xs">{count} words</span>
-          <span className="text-white font-bold text-sm tabular-nums">{pct}%</span>
+          <span className="text-[#575361] font-semibold text-xs">{count} words</span>
+          <span className="text-[#2b2a33] font-extrabold text-sm tabular-nums">{pct}%</span>
         </div>
       </div>
-      <div className="w-full h-2.5 bg-slate-900/90 rounded-full overflow-hidden ring-1 ring-white/5">
+      <div className="w-full h-3 bg-[#ece1cc] rounded-full overflow-hidden border-2 border-[#2b2a33]">
         <div
-          className={`h-full rounded-full progress-fill ${color}`}
+          className={`h-full rounded-full progress-fill ${bar}`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <p className="text-slate-400 text-xs mt-2 group-hover:text-indigo-300 transition-colors">
+      <p className="text-[#575361] text-xs font-semibold mt-2 group-hover:text-[#a83b1c] transition-colors">
         Click to filter vocabulary →
       </p>
     </button>
@@ -62,12 +111,27 @@ function MasteryBar({ level, label, count, total, color, onClick }) {
 
 export default function Dashboard({ words, hasReadableWords = true, stats, setActiveTab, setVocabFilter }) {
   const totalWords = words.length;
-  const accuracy   = stats.totalQuestions > 0
+  const accuracy = stats.totalQuestions > 0
     ? Math.round((stats.correctAnswers / stats.totalQuestions) * 100)
     : 0;
 
   const masteredCount = words.filter(w => w.level === 5).length;
   const level1Count   = words.filter(w => w.level === 1).length;
+
+  const levelCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  for (const w of words) {
+    if (levelCounts[w.level] !== undefined) levelCounts[w.level] += 1;
+  }
+
+  let foxLevel = 1;
+  let maxCount = 0;
+  for (const level of [1, 2, 3, 4, 5]) {
+    if (levelCounts[level] > 0 && levelCounts[level] >= maxCount) {
+      maxCount = levelCounts[level];
+      foxLevel = level;
+    }
+  }
+  const activeStageMeta = LEVEL_META.find(m => m.level === foxLevel) || LEVEL_META[0];
 
   function handleMasteryClick(level) {
     setVocabFilter(level);
@@ -75,88 +139,179 @@ export default function Dashboard({ words, hasReadableWords = true, stats, setAc
   }
 
   return (
-    <div className="vm-page-enter">
-      <div className="mb-8">
-        <h1 className="text-3xl font-extrabold tracking-tight text-white mb-1.5">Dashboard</h1>
-        <p className="text-slate-300 text-sm sm:text-base">Track your vocabulary learning progress</p>
-        <div className="mt-4 flex items-start gap-2.5 rounded-2xl border border-indigo-400/25 bg-indigo-500/10 backdrop-blur-sm px-4 py-3 text-sm text-indigo-100 shadow-sm sm:items-center">
-          <Volume2 size={16} className="mt-0.5 shrink-0 text-indigo-300 sm:mt-0" aria-hidden="true" />
-          <p>🔊 Mẹo học tập: Hãy đọc thành tiếng mỗi từ vựng, sau đó nghe phát âm chuẩn để ghi nhớ tốt hơn và cải thiện kỹ năng Nghe VSTEP!</p>
+    <div className="vm-page-enter space-y-7">
+      {/* Hero Header */}
+      <div>
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#fbf7ee] border-2 border-[#2b2a33] shadow-[2px_2px_0_#2b2a33] text-xs font-extrabold text-[#a83b1c] mb-3">
+          <CompassBadge className="w-5 h-5" />
+          <span>Hành trình đến VSTEP · Bản đồ hành trình</span>
+        </div>
+
+        <h1 className="sb-font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-[#2b2a33] mb-1.5">
+          Dashboard
+        </h1>
+        <p className="text-[#575361] font-semibold text-sm sm:text-base">
+          Track your vocabulary learning progress
+        </p>
+
+        <div className="mt-4 sb-paper-note flex items-start gap-2.5 px-4 py-3 text-sm text-[#2b2a33] sm:items-center">
+          <Volume2 size={17} className="mt-0.5 shrink-0 text-[#a83b1c] sm:mt-0" aria-hidden="true" />
+          <p className="font-medium leading-relaxed">
+            🔊 Mẹo học tập: Hãy đọc thành tiếng mỗi từ vựng, sau đó nghe phát âm chuẩn để ghi nhớ tốt hơn và cải thiện kỹ năng Nghe VSTEP!
+          </p>
         </div>
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={BookOpen}
           label="Total Words"
           value={hasReadableWords ? totalWords : '—'}
-          gradient="bg-gradient-to-br from-indigo-600/95 via-indigo-700/90 to-violet-800/95"
+          strip="bg-[#d9603b]"
+          badgeBg="bg-[#fae3d7] text-[#a83b1c]"
         />
         <StatCard
           icon={Star}
           label="Mastered (L5)"
           value={hasReadableWords ? masteredCount : '—'}
-          gradient="bg-gradient-to-br from-emerald-600/95 via-emerald-700/90 to-teal-800/95"
+          strip="bg-[#3f7d58]"
+          badgeBg="bg-[#ddeee2] text-[#295a3d]"
         />
         <StatCard
           icon={CheckCircle}
           label="Quiz Accuracy"
           value={accuracy}
           suffix="%"
-          gradient="bg-gradient-to-br from-sky-600/95 via-blue-700/90 to-indigo-800/95"
+          strip="bg-[#3a8fb7]"
+          badgeBg="bg-[#dceef6] text-[#1f5d7a]"
         />
         <StatCard
           icon={HelpCircle}
           label="Questions Answered"
           value={stats.totalQuestions}
-          gradient="bg-gradient-to-br from-amber-600/95 via-orange-700/90 to-rose-800/90"
+          strip="bg-[#e0a82e]"
+          badgeBg="bg-[#f8ecd0] text-[#7d5608]"
         />
       </div>
 
-      {/* Mastery Levels */}
-      <div className="vm-panel rounded-2xl p-5 sm:p-6">
-        <div className="flex items-center gap-2.5 mb-5">
-          <TrendingUp size={20} className="text-indigo-400" />
-          <h2 className="text-white font-bold tracking-tight text-lg">Mastery Levels</h2>
+      {/* Mastery Levels — Journey Map */}
+      <div className="sb-panel p-5 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl sb-sticker bg-[#fae3d7] text-[#a83b1c] flex items-center justify-center shrink-0">
+              <TrendingUp size={19} aria-hidden="true" />
+            </div>
+            <div>
+              <h2 className="sb-font-display text-[#2b2a33] font-extrabold tracking-tight text-xl leading-tight">
+                Mastery Levels
+              </h2>
+              <p className="text-xs font-semibold text-[#575361]">
+                5 chặng trên con đường chinh phục VSTEP
+              </p>
+            </div>
+          </div>
+
+          {totalWords > 0 && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#fbf7ee] border-2 border-[#2b2a33] text-xs font-bold text-[#2b2a33]">
+              <MapPin size={13} className="text-[#a83b1c]" aria-hidden="true" />
+              Cáo nhỏ đang ở: {activeStageMeta.stage} (L{foxLevel})
+            </span>
+          )}
         </div>
 
         {totalWords === 0 ? (
-          <div className="text-center py-10">
-            <BookOpen size={48} className="text-slate-500 mx-auto mb-3" />
-            <p className="text-slate-300 font-medium">No words yet</p>
-            <p className="text-slate-400 text-sm mt-1">Add words in the Vocabulary tab to get started</p>
+          <div className="sb-card p-6 sm:p-8 text-center space-y-3">
+            <EmptyTrailScene />
+            <p className="sb-font-display text-lg font-extrabold text-[#2b2a33]">
+              Cáo nhỏ đã gói ghém hành trang, sẵn sàng cùng bạn mở chặng đầu tiên!
+            </p>
+            <div>
+              <p className="text-[#2b2a33] font-bold">No words yet</p>
+              <p className="text-[#575361] text-sm mt-1">
+                Add words in the Vocabulary tab to get started
+              </p>
+            </div>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab('vocabulary')}
+                className="sb-btn-ink inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c44d2a] hover:bg-[#d9603b] text-white text-sm font-bold"
+              >
+                Đến Làng từ vựng
+                <ArrowRight size={16} aria-hidden="true" />
+              </button>
+            </div>
           </div>
         ) : (
-          <div className="space-y-3">
-            {LEVEL_META.map(({ level, label, color }) => (
-              <MasteryBar
-                key={level}
-                level={level}
-                label={label}
-                count={words.filter(w => w.level === level).length}
-                total={totalWords}
-                color={color}
-                onClick={() => handleMasteryClick(level)}
-              />
-            ))}
+          <div className="space-y-4">
+            {/* Illustrated Trail Map */}
+            <div className="rounded-2xl border-2 border-[#2b2a33] bg-[#fbf7ee] p-2 sm:p-3 shadow-[3px_3px_0_#2b2a33] overflow-hidden">
+              <JourneyMapSvg levelCounts={levelCounts} foxLevel={foxLevel} />
+            </div>
+
+            {/* 5 Interactive Stage Cards */}
+            <div className="space-y-3">
+              {LEVEL_META.map(({ level, label, stage, bar, pill }) => (
+                <MasteryBar
+                  key={level}
+                  level={level}
+                  label={label}
+                  stage={stage}
+                  count={levelCounts[level]}
+                  total={totalWords}
+                  bar={bar}
+                  pill={pill}
+                  isFoxHere={foxLevel === level}
+                  onClick={() => handleMasteryClick(level)}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>
 
+      {/* Map Regions (Quick Signposts) */}
+      <div>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <h2 className="sb-font-display text-lg font-extrabold text-[#2b2a33]">
+            Các vùng đất trên bản đồ
+          </h2>
+          <span className="text-xs font-semibold text-[#575361]">Chọn điểm đến để luyện tập</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {REGION_LINKS.map(({ tab, region, name, Icon, badge }) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className="sb-card sb-card-interactive p-3.5 text-left flex flex-col justify-between gap-2.5"
+            >
+              <div className={`w-9 h-9 rounded-xl sb-sticker ${badge} flex items-center justify-center`}>
+                <Icon size={17} aria-hidden="true" />
+              </div>
+              <div>
+                <p className="text-sm font-extrabold text-[#2b2a33] leading-snug">{region}</p>
+                <p className="text-xs font-semibold text-[#575361]">{name}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Quick Tips */}
       {totalWords > 0 && (
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="vm-panel border-indigo-400/25 rounded-2xl p-4 sm:p-5">
-            <p className="text-indigo-300 text-sm font-semibold">💡 Spaced Repetition</p>
-            <p className="text-slate-300 text-xs mt-1.5 leading-relaxed">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="sb-card p-4 sm:p-5">
+            <p className="text-[#a83b1c] text-sm font-extrabold">💡 Spaced Repetition</p>
+            <p className="text-[#575361] text-xs sm:text-sm font-medium mt-1.5 leading-relaxed">
               Answer correctly 2×, 4×, 8×, 15× in a row to advance through L1→L2→L3→L4→L5.
             </p>
           </div>
-          <div className="vm-panel border-emerald-400/25 rounded-2xl p-4 sm:p-5">
-            <p className="text-emerald-300 text-sm font-semibold">🎯 Current focus</p>
-            <p className="text-slate-300 text-xs mt-1.5 leading-relaxed">
-              You have <strong className="text-white">{level1Count}</strong> new / struggling words to review.
+          <div className="sb-card p-4 sm:p-5">
+            <p className="text-[#295a3d] text-sm font-extrabold">🎯 Current focus</p>
+            <p className="text-[#575361] text-xs sm:text-sm font-medium mt-1.5 leading-relaxed">
+              You have <strong className="text-[#2b2a33] font-extrabold">{level1Count}</strong> new / struggling words to review.
             </p>
           </div>
         </div>
