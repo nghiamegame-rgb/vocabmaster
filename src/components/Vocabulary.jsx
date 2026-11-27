@@ -2,11 +2,12 @@ import { memo, useCallback, useMemo, useState, useRef } from 'react';
 import {
   Plus, Trash2, Pencil, Volume2, Download, Upload, X, Check,
   BookOpen, AlertCircle, Image as ImageIcon, CheckSquare, Square,
-  ChevronDown, ChevronLeft, ChevronRight, Tag, Layers, Search, Star,
+  ChevronDown, Tag, Layers, Search, Star,
 } from 'lucide-react';
 import { playAudio } from '../utils/audio';
 import { isDueForReview } from '../hooks/useVocabStore';
 import { normalizeWordInput } from '../utils/vocabWord';
+import Pagination, { PAGE_SIZE } from './Pagination';
 
 /* ------------------------------------------------------------------ */
 /* Constants                                                            */
@@ -32,47 +33,6 @@ const TYPE_META = {
   Family:      { color: 'bg-[var(--sb-sky-soft)]        text-[var(--sb-sky-text)]        border-[var(--sb-sky)]',        icon: '🌳' },
   Preposition: { color: 'bg-[var(--sb-lagoon-soft)]     text-[var(--sb-lagoon-text)]     border-[var(--sb-lagoon)]',     icon: '🔗' },
 };
-
-const PAGE_SIZE = 24;
-
-function Pagination({ page, pageCount, onChange, position }) {
-  return (
-    <nav aria-label={`Vocabulary pages (${position})`} className="flex items-center justify-end gap-2 text-sm">
-      <button
-        type="button"
-        onClick={() => onChange(page - 1)}
-        disabled={page === 1}
-        aria-label="Previous page"
-        className="vm-btn p-2 bg-[var(--sb-paper-card)] border-2 border-[var(--sb-ink)] text-[var(--sb-ink)] rounded-xl disabled:opacity-45 disabled:cursor-not-allowed hover:bg-[var(--sb-paper-deep)] shadow-[var(--sb-shadow-sm)]"
-      >
-        <ChevronLeft size={16} />
-      </button>
-      <label className="flex items-center gap-2 text-[var(--sb-ink-soft)] font-semibold">
-        Page
-        <select
-          aria-label="Vocabulary page"
-          value={page}
-          onChange={e => onChange(Number(e.target.value))}
-          className="vm-input rounded-xl px-2.5 py-1.5 text-[var(--sb-ink)] font-bold"
-        >
-          {Array.from({ length: pageCount }, (_, i) => (
-            <option key={i + 1} value={i + 1}>{i + 1}</option>
-          ))}
-        </select>
-        / {pageCount}
-      </label>
-      <button
-        type="button"
-        onClick={() => onChange(page + 1)}
-        disabled={page === pageCount}
-        aria-label="Next page"
-        className="vm-btn p-2 bg-[var(--sb-paper-card)] border-2 border-[var(--sb-ink)] text-[var(--sb-ink)] rounded-xl disabled:opacity-45 disabled:cursor-not-allowed hover:bg-[var(--sb-paper-deep)] shadow-[var(--sb-shadow-sm)]"
-      >
-        <ChevronRight size={16} />
-      </button>
-    </nav>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /* WordCard                                                             */

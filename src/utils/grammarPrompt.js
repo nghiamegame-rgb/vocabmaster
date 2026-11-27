@@ -81,7 +81,7 @@ FINAL SELF-CHECK BEFORE RESPONDING:
 3. Locate each phrase/text as one uninterrupted exact substring of its sentence; keep generalizations in pattern, never in text.
 4. Check natural Vietnamese, selected-topic focus, concise explanations, useful reading items, and the B1–B2 policy: about 70% B1 / 30% B2 for this count, nothing above B2, no deliberate C1 exposure, and no needlessly elaborate or deeply nested sentences (simplify if found).
 5. Check that common, practical B1–B2 grammar was chosen over novelty: repeated patterns are fine when purpose, use, construction or context differ meaningfully; no exact duplicates, superficial substitutions or near-identical examples of supplied Grammar sentences; and no rare, literary or advanced structure was added merely to avoid repetition.
-6. Check vocabulary: supplied saved words are used normally; every other word is familiar, high-utility (about A2–B1) and accurate, with no obscure, literary or needlessly academic substitutes and no inaccurate synonyms; readingItems contain no words added merely to populate the array (empty is fine).
+6. Check vocabulary: only 2-3 star saved words are used as targets; no 1-star or misspelled entry is used as a target or supporting word; every other word is familiar, high-utility (about A2–B1) and accurate, with no obscure, literary or needlessly academic substitutes and no inaccurate synonyms; readingItems do not highlight any 1-star or misspelled entry and contain no words added merely to populate the array (empty is fine).
 OUTPUT: JSON array only.`;
 }
 

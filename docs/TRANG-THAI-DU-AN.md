@@ -358,3 +358,37 @@ Tách từ `main` (`51975c4`, đã chứa `feat/readability-fonts-underline`). *
   - **21/21** test trình duyệt Playwright + Edge headless đạt (gồm `flashcard-typography-browser`, `underline-rendering`, `sentence-notes-browser`, `grammar-review-browser`, `quiz-feedback-browser`, `navbar-sync-chip-browser` ở 1280/1024/768/640/375/320 px, `voice-settings-browser`, `dictation-*`, `vocab-*`).
   - Đã chụp và đọc ảnh màn hình 1440 px & 375 px (Flashcard mặt trước/sau, Vocabulary lưới thẻ, Dashboard, Smart Quiz, Listening, Grammar → Ôn tập, Dictation): không còn chữ serif, không tràn ngang, đủ dấu tiếng Việt.
 - **Chưa kiểm tra:** điện thoại thật, Safari/iOS, Firefox.
+
+## 26. Ngày 27/11 (tối) — lọc từ mục tiêu VSTEP B1 cho prompt Grammar (chưa commit)
+
+Đang sửa cục bộ trên `main` (`4de9031`), **chưa commit, chưa push, chưa deploy**.
+
+- **Chỉ sửa nội dung prompt (không đổi schema JSON, không đổi logic đếm corpus):**
+  1. `src/utils/grammarBatch.js` (`buildBatchInstructions`): chèn khối `VSTEP B1 TARGET FILTER` ngay sau câu `"Use ONLY the supplied Vocabulary as target-word candidates."` (chấm thầm 1–3 sao mức độ hữu ích VSTEP B1, chỉ chọn từ 2–3 sao làm target, loại hoàn toàn từ 1 sao / hiếm / chuyên ngành / sai chính tả kể cả khi count = 0, ưu tiên count thấp và từ 3 sao trong nhóm 2–3 sao, không fallback sang từ 1 sao). Bỏ hai câu cũ buộc giữ mọi từ học thuật/chuyên ngành làm target; sửa ví dụ `debris` thành `if "debris" IS a saved 2-3 star target, use it normally`; giữ nguyên yêu cầu khung ngữ pháp B1–B2 và từ nền A2–B1.
+  2. `src/utils/grammarPrompt.js` (`buildGrammarPrompt`): cập nhật mục `FINAL SELF-CHECK` số 6 để kiểm tra chỉ dùng từ 2–3 sao làm target, không dùng từ 1 sao/sai chính tả làm target hay từ nền, và `readingItems` không highlight từ 1 sao/sai chính tả.
+  3. `test/grammar-b1-prompt.test.js`: cập nhật các chuỗi bắt buộc/cấm theo prompt mới và thêm kiểm tra khối `VSTEP B1 TARGET FILTER` xuất hiện đúng 1 lần cho cả chế độ inline và Excel (`WORKBOOK`).
+- **Đã kiểm tra:**
+  - `npm.cmd test`: **42/42** đạt (có Python trong `PATH`, gồm `grammar-b1-prompt.test.js`).
+  - `npm.cmd run lint`: **0 lỗi / 31 cảnh báo** (giữ nguyên mốc).
+  - Dựng thử prompt với `data.vocab` gồm từ 3 sao (`opinion`, `appreciate`) và từ 1 sao/sai chính tả (`pottery`, `drainage`, `asume`) ở cả hai chế độ inline và Excel (`WORKBOOK`): khối `VSTEP B1 TARGET FILTER` xuất hiện đúng 1 lần ở mỗi chế độ, không bị nhân đôi.
+- **Chưa kiểm tra:** hiệu quả tuân thủ thực tế khi dán prompt mới vào chatbot AI thật.
+
+## 27. Ngày 27/11 (tối) — phân trang và tối ưu tìm kiếm cho Grammar → "Câu đã lưu" (chưa commit)
+
+Đang sửa cục bộ trên `main` (`4de9031`, cùng với mục 26), **chưa commit, chưa push, chưa deploy**.
+
+- **Thay đổi:**
+  1. Tách component phân trang dùng chung ra `src/components/Pagination.jsx` (kèm `export const PAGE_SIZE = 24`), thêm prop `label` và `selectLabel` với mặc định giữ nguyên các `aria-label` cũ của Vocabulary (`Vocabulary pages (top/bottom)`, `Vocabulary page`, `Previous page`, `Next page`). Cập nhật `src/components/Vocabulary.jsx` dùng component chung này (gỡ `ChevronLeft`/`ChevronRight` thừa).
+  2. Cập nhật `src/components/grammar/GrammarSaved.jsx`:
+     - Phân trang với `const PAGE_SIZE = 10;`, chỉ render `visibleQuestions`, hiện `Pagination` ở trên và dưới danh sách khi `pageCount > 1` (`label="Saved sentence pages"`, `selectLabel="Saved sentence page"`), đổi dòng kết quả sang `"N kết quả (hiển thị a–b)"` (khi `filtered.length === 0` giữ `"0 kết quả"`).
+     - Reset `page` về `1` khi đổi ô tìm kiếm, bộ lọc chủ đề hoặc nút "Khó (⭐)". Khi xóa câu cuối của trang cuối, `currentPage = Math.min(page, pageCount)` tự lùi về trang trước, không để trang rỗng.
+     - Khi đổi trang: cuộn lên đầu danh sách (`listRef`), đóng toàn bộ phân tích đang mở (`setExpanded({})`) và thoát chế độ sửa ghi chú (`setEditingNote(null)`).
+     - Tối ưu tìm kiếm bằng `useMemo` tính sẵn chuỗi viết thường cho mỗi câu theo `savedQuestions` (giữ nguyên toàn bộ các trường được tìm trước đó), tránh gọi `JSON.stringify` lặp lại mỗi phím gõ.
+     - Không đổi store/storage/sync (`savedQuestions`, `underlines`, `sentenceNotes`), gạch chân, ghi chú theo đoạn chọn/cả câu, đánh dấu Khó hay badge Cloud/Lưu cục bộ.
+  3. Thêm 2 test mới: `test/grammar-saved-pagination.test.js` (Node SSR: 0/1/10/11/25/254 câu) và `test/grammar-saved-pagination-browser.test.js` (Playwright + Edge: 25 câu chuyển trang, đóng phân tích & thoát sửa ghi chú khi đổi trang, tìm kiếm đưa về trang 1, xóa hết trang cuối tự lùi trang trước, kèm kiểm tra 254 câu).
+- **Đã kiểm tra:**
+  - `npm.cmd test`: **43/43** đạt (có Python trong `PATH`, gồm `vocabulary-render.test.js` và `grammar-saved-pagination.test.js`).
+  - `npm.cmd run lint`: **0 lỗi / 31 cảnh báo** (giữ nguyên mốc).
+  - `npm.cmd run build`: đạt (`dist/assets/index-*.js` `575,85 kB` / gzip `169,94 kB`).
+  - **7/7** test trình duyệt Playwright + Edge headless đạt trên Vite dev server thật: `grammar-saved-pagination-browser` (254 câu: mở tab ~450 ms, tìm kiếm ~29 ms, chỉ mount 10 thẻ), `grammar-topic-browser`, `sentence-notes-browser`, `grammar-review-notes-persist-browser`, `underline-rendering`, `grammar-review-browser`, `vocab-star-browser`. Các test cũ đều có ≤ 8 câu nên không cần sửa.
+- **Chưa kiểm tra:** điện thoại thật, Safari/iOS, Firefox, và thao tác tay trực tiếp với dữ liệu thật trên trình duyệt của người dùng.

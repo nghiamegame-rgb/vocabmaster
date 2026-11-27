@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import {
   Bookmark, Search, Filter, Star, StarOff,
   ChevronDown, ChevronUp, Trash2, StickyNote, X, Cloud, HardDrive
@@ -11,6 +11,9 @@ import UnderlinedSentence from './UnderlinedSentence';
 import { notesForSentence } from '../../utils/sentenceNotes';
 import GrammarTopicBadge from './GrammarTopicBadge';
 import { getSentenceTopicLabel } from '../../utils/grammarTopic';
+import Pagination from '../Pagination';
+
+const PAGE_SIZE = 10;
 
 /**
  * GrammarSaved — Saved Questions library with search, filter, review progress.
@@ -30,33 +33,59 @@ export default function GrammarSaved({
   const [search,      setSearch]      = useState('');
   const [topicFilter, setTopicFilter] = useState('All');
   const [hardOnly,    setHardOnly]    = useState(false);
+  const [page,        setPage]        = useState(1);
   const [expanded,    setExpanded]    = useState({}); // { [savedId]: bool }
   const [editingNote, setEditingNote] = useState(null); // savedId
   const [noteText,    setNoteText]    = useState('');
+  const listRef = useRef(null);
+
+  // Precompute lowercase searchable text per saved question so typing does not re-stringify everything.
+  const searchIndex = useMemo(() => {
+    const map = new Map();
+    for (const q of savedQuestions) {
+      const optionValues = Object.values(q.options || {})
+        .filter(v => typeof v === 'string')
+        .join('\n');
+      const haystack = [
+        q.sentence || '',
+        typeof q.topic === 'string' ? q.topic : '',
+        q.shortExplanation || '',
+        q.vietnameseSentence || '',
+        q.userNotes || '',
+        getSentenceTopicLabel(q),
+        JSON.stringify(q.grammarPoints || []),
+        JSON.stringify(q.readingItems || []),
+        JSON.stringify([q.structures, q.readingNotes]),
+        optionValues,
+      ].join('\n').toLowerCase();
+      map.set(q, haystack);
+    }
+    return map;
+  }, [savedQuestions]);
 
   // ── Filter & search ───────────────────────────────────────────────────────
   const filtered = useMemo(() => {
+    const s = search.toLowerCase();
     return savedQuestions.filter(q => {
       if (hardOnly && !q.hardMarked) return false;
       if (topicFilter !== 'All' && q.topic !== topicFilter) return false;
-      if (search) {
-        const s = search.toLowerCase();
-        const matches =
-          q.sentence?.toLowerCase().includes(s) ||
-          (typeof q.topic === 'string' && q.topic.toLowerCase().includes(s)) ||
-          q.shortExplanation?.toLowerCase().includes(s) ||
-          q.vietnameseSentence?.toLowerCase().includes(s) ||
-          q.userNotes?.toLowerCase().includes(s) ||
-          getSentenceTopicLabel(q).toLowerCase().includes(s) ||
-          JSON.stringify(q.grammarPoints || []).toLowerCase().includes(s) ||
-          JSON.stringify(q.readingItems || []).toLowerCase().includes(s) ||
-          JSON.stringify([q.structures, q.readingNotes]).toLowerCase().includes(s) ||
-          Object.values(q.options || {}).some(v => v.toLowerCase().includes(s));
-        if (!matches) return false;
-      }
+      if (s && !searchIndex.get(q)?.includes(s)) return false;
       return true;
     });
-  }, [savedQuestions, search, topicFilter, hardOnly]);
+  }, [savedQuestions, searchIndex, search, topicFilter, hardOnly]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  // Deleting the last question on the last page steps back instead of showing an empty page.
+  const currentPage = Math.min(page, pageCount);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const visibleQuestions = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+
+  function changePage(nextPage) {
+    setPage(Math.max(1, Math.min(nextPage, pageCount)));
+    setExpanded({});
+    setEditingNote(null);
+    listRef.current?.scrollIntoView({ block: 'start' });
+  }
 
   // ── Note editing ──────────────────────────────────────────────────────────
   function startEditNote(q) {
@@ -116,12 +145,12 @@ export default function GrammarSaved({
           <input
             type="text"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => { setSearch(e.target.value); setPage(1); }}
             placeholder="Tìm kiếm câu hỏi, từ khoá, chủ đề..."
             className="w-full vm-input rounded-xl pl-9 pr-9 py-2.5 text-sm"
           />
           {search && (
-            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--sb-ink-soft)] hover:text-[var(--sb-ink)] transition-colors">
+            <button onClick={() => { setSearch(''); setPage(1); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--sb-ink-soft)] hover:text-[var(--sb-ink)] transition-colors">
               <X size={14} />
             </button>
           )}
@@ -133,7 +162,7 @@ export default function GrammarSaved({
           {/* Topic filter */}
           <select
             value={topicFilter}
-            onChange={e => setTopicFilter(e.target.value)}
+            onChange={e => { setTopicFilter(e.target.value); setPage(1); }}
             className="vm-input rounded-xl px-3 py-1.5 text-xs"
           >
             <option value="All">Tất cả chủ đề</option>
@@ -144,7 +173,7 @@ export default function GrammarSaved({
 
           {/* Hard only toggle */}
           <button
-            onClick={() => setHardOnly(v => !v)}
+            onClick={() => { setHardOnly(v => !v); setPage(1); }}
             className={`vm-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border ${
               hardOnly
                 ? 'bg-[var(--sb-ochre-soft)] text-[var(--sb-ochre-text)] border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)]'
@@ -155,7 +184,11 @@ export default function GrammarSaved({
             Khó (⭐)
           </button>
 
-          <span className="ml-auto text-[var(--sb-ink-soft)] text-xs font-medium">{filtered.length} kết quả</span>
+          <span className="ml-auto text-[var(--sb-ink-soft)] text-xs font-medium">
+            {filtered.length > 0
+              ? `${filtered.length} kết quả (hiển thị ${pageStart + 1}–${Math.min(pageStart + PAGE_SIZE, filtered.length)})`
+              : '0 kết quả'}
+          </span>
         </div>
       </div>
 
@@ -176,8 +209,21 @@ export default function GrammarSaved({
       )}
 
       {/* Question cards */}
-      <div className="space-y-3">
-        {filtered.map(q => {
+      {filtered.length > 0 && (
+        <div ref={listRef} className="scroll-mt-24 space-y-3">
+          {pageCount > 1 && (
+            <Pagination
+              page={currentPage}
+              pageCount={pageCount}
+              onChange={changePage}
+              position="top"
+              label="Saved sentence pages"
+              selectLabel="Saved sentence page"
+            />
+          )}
+
+          <div className="space-y-3">
+            {visibleQuestions.map(q => {
           const open   = expanded[q.savedId];
           const level  = getReviewLevel(q.savedId);
           const wrongs = getWrongCount(q.savedId);
@@ -315,7 +361,20 @@ export default function GrammarSaved({
             </div>
           );
         })}
-      </div>
+          </div>
+
+          {pageCount > 1 && (
+            <Pagination
+              page={currentPage}
+              pageCount={pageCount}
+              onChange={changePage}
+              position="bottom"
+              label="Saved sentence pages"
+              selectLabel="Saved sentence page"
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }
