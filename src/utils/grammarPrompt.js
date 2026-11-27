@@ -62,6 +62,7 @@ Keep optional readingNotes as an array of plain Vietnamese strings for general c
 
 JSON CONTRACT (types only, not content to copy):
 Return exactly ONE valid JSON array. No Markdown code fences, introduction, commentary or trailing text. Use double-quoted keys and string values, valid escaping, no comments, and no trailing commas. Avoid extra unsupported properties.
+JSON SAFETY (the app uses a strict parser; one stray character rejects the whole batch): inside every string value NEVER type the double-quote character. When an explanation mentions an English word or phrase, wrap it in single quotes ('so that'), never in double quotes or curly quotes. Use only straight ASCII double quotes as JSON delimiters, never curly quotes. Do not use backslashes, tab characters or line breaks inside a string value; keep each string on one line. The English sentences themselves must not contain double quotes. No trailing commas, no comments, a comma between every pair of objects and array items. Before answering, re-read each string value and make sure it contains no double-quote character.
 Each array element is an object with these required properties:
 - "schemaVersion": number, exactly 2.
 - "type": string, exactly "sentence-analysis".
@@ -76,13 +77,13 @@ grammarPoints[].phrase and readingItems[].text MUST be exact, CONTIGUOUS substri
 Topic and grammar point category keys must be from: ${GRAMMAR_TOPICS.join(', ')}.
 Generate exactly ${count} items with unique ids s1 through s${count}. One complete sentence per item; never use placeholders or exercises.
 FINAL SELF-CHECK BEFORE RESPONDING:
-1. Parse your output mentally as one JSON array: correct quotes/escaping, no comments/trailing commas or extra text, exactly ${count} items.
+1. Parse your output mentally as one JSON array: correct quotes/escaping, no double-quote character inside any string value, no comments/trailing commas or extra text, exactly ${count} items.
 2. Check every required name, type, version and category against the contract; no unsupported fields.
 3. Locate each phrase/text as one uninterrupted exact substring of its sentence; keep generalizations in pattern, never in text.
 4. Check natural Vietnamese, selected-topic focus, concise explanations, useful reading items, and the B1–B2 policy: about 70% B1 / 30% B2 for this count, nothing above B2, no deliberate C1 exposure, and no needlessly elaborate or deeply nested sentences (simplify if found).
 5. Check that common, practical B1–B2 grammar was chosen over novelty: repeated patterns are fine when purpose, use, construction or context differ meaningfully; no exact duplicates, superficial substitutions or near-identical examples of supplied Grammar sentences; and no rare, literary or advanced structure was added merely to avoid repetition.
 6. Check vocabulary: only 2-3 star saved words are used as targets; no 1-star or misspelled entry is used as a target or supporting word; every other word is familiar, high-utility (about A2–B1) and accurate, with no obscure, literary or needlessly academic substitutes and no inaccurate synonyms; readingItems do not highlight any 1-star or misspelled entry and contain no words added merely to populate the array (empty is fine).
-OUTPUT: JSON array only.`;
+OUTPUT: JSON array only, inside a single \`\`\`json code block, with no text before or after it.`;
 }
 
 export function validateGrammarJSON(parsed, { count, topic } = {}) {

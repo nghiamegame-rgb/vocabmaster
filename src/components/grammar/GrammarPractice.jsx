@@ -223,7 +223,8 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
 
         {importReview && <div className="bg-[var(--sb-ochre-soft)] border-2 border-[var(--sb-ochre)] rounded-xl p-4 space-y-3 text-sm animate-fade-in">
           <p className="text-[var(--sb-ochre-text)] font-bold">Kiểm tra trước khi bắt đầu</p>
-          {importReview.normalizations.length > 0 && <p className="text-[var(--sb-ink)]">Đã tự khớp {importReview.normalizations.length} trích dẫn về đúng chữ trong câu; câu tiếng Anh và lời giải được giữ nguyên.</p>}
+          {importReview.normalizations.some(n => n.field === 'JSON') && <p className="text-[var(--sb-ink)]">{importReview.normalizations.find(n => n.field === 'JSON').reason}.</p>}
+          {importReview.normalizations.filter(n => n.field !== 'JSON').length > 0 && <p className="text-[var(--sb-ink)]">Đã tự khớp {importReview.normalizations.filter(n => n.field !== 'JSON').length} trích dẫn về đúng chữ trong câu; câu tiếng Anh và lời giải được giữ nguyên.</p>}
           {importReview.optionalIssues.length > 0 && <>
             <p className="text-[var(--sb-ink)]">Các mục đọc hiểu dưới đây chưa hợp lệ. Bạn có thể sửa JSON, hoặc đánh dấu từng mục để chỉ loại mục đó khỏi bộ câu sắp luyện.</p>
             {importReview.optionalIssues.map(issue => <label key={issue.key} className="flex items-start gap-2 text-[var(--sb-ink)] break-words">

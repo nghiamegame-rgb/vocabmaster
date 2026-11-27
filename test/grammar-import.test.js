@@ -29,7 +29,7 @@ test('ChatGPT, Gemini, Claude and incidental-text envelopes produce the same val
 
 test('parser refuses ambiguous blocks, malformed roots and non-JSON syntax rather than rescuing fragments', () => {
   const raw = json(item());
-  for (const text of [`Results: ${raw}\nAnother: ${raw}`, `Result: {"questions":${raw}}`, '[{"sentence":"broken", "grammarPoints":[{"category":"Prepositions"}]}', '[{"sentence":"broken",}]', '```json\n[/* comment */]\n```', 'Before [{"text":"unfinished"} After']) assert.throws(() => parseGrammarInput(text));
+  for (const text of [`Results: ${raw}\nAnother: ${raw}`, `Result: {"questions":${raw}}`, '[{"sentence":"broken", "grammarPoints":[{"category":"Prepositions"}]}', '[{"sentence":"broken" "topic":"Prepositions"}]', '```json\n[/* comment */]\n```', 'Before [{"text":"unfinished"} After']) assert.throws(() => parseGrammarInput(text));
   assert.equal(prepareGrammarImport('{"questions":[]}', config).errors[0].field, 'JSON');
   const bracketed = item({ sentence: 'The label says "[optional]" near the box.' });
   assert.deepEqual(parseGrammarInput(`Output:\n${json(bracketed)}\nDone.`), [bracketed]);

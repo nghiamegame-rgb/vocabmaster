@@ -392,3 +392,18 @@ Tách từ `main` (`51975c4`, đã chứa `feat/readability-fonts-underline`). *
   - `npm.cmd run build`: đạt (`dist/assets/index-*.js` `575,85 kB` / gzip `169,94 kB`).
   - **7/7** test trình duyệt Playwright + Edge headless đạt trên Vite dev server thật: `grammar-saved-pagination-browser` (254 câu: mở tab ~450 ms, tìm kiếm ~29 ms, chỉ mount 10 thẻ), `grammar-topic-browser`, `sentence-notes-browser`, `grammar-review-notes-persist-browser`, `underline-rendering`, `grammar-review-browser`, `vocab-star-browser`. Các test cũ đều có ≤ 8 câu nên không cần sửa.
 - **Chưa kiểm tra:** điện thoại thật, Safari/iOS, Firefox, và thao tác tay trực tiếp với dữ liệu thật trên trình duyệt của người dùng.
+
+## 28. Ngày 28/11 — chống lỗi JSON nháy kép cho Grammar (prompt + tự sửa nhẹ + ngữ cảnh lỗi, chưa commit)
+
+Đang sửa cục bộ trên `main` (`9289ca8`), **chưa commit, chưa push, chưa deploy**.
+
+- **Thay đổi:**
+  1. **Prompt (`src/utils/grammarPrompt.js`, `test/grammar-b1-prompt.test.js`):** thêm khối `JSON SAFETY` ngay sau câu `"Return exactly ONE valid JSON array..."` (cấm ký tự `"` trong mọi giá trị chuỗi, bọc từ/cụm tiếng Anh trong nháy đơn `'...'`, chỉ dùng nháy thẳng ASCII làm delimiter, không xuống dòng/tab/backslash trong chuỗi, không dấu phẩy thừa/comment); bổ sung `"no double-quote character inside any string value"` ở `FINAL SELF-CHECK` mục 1; đổi dòng cuối thành ``OUTPUT: JSON array only, inside a single ```json code block, with no text before or after it.``. Cập nhật `test/grammar-b1-prompt.test.js` kiểm tra các chuỗi bắt buộc mới cho cả chế độ inline và Excel (`WORKBOOK`).
+  2. **Parser (`src/utils/grammarImport.js`, `src/components/grammar/GrammarPractice.jsx`):** giữ nguyên đường chính `JSON.parse` (và `scanJsonContainers` cho JSON hợp lệ kèm chữ xung quanh / từ chối nhiều khối hoặc root là object) để dữ liệu hợp lệ không bị đụng tới. Chỉ khi parse thất bại mới thử `repairLooseJson(content)` (hàm thuần, export để test: cắt `[`..`]`, đổi nháy cong `“ ”` thành `"`, escape `"` chưa đóng chuỗi nếu ký tự không-khoảng-trắng kế tiếp không phải `,` `:` `}` `]`, escape xuống dòng/tab thô trong chuỗi, bỏ dấu phẩy thừa trước `}`/`]` ngoài chuỗi). Khi dùng bản sửa, `prepareGrammarImport` ghi thêm thông báo nhẹ vào `normalizations`: `"Đã tự sửa dấu nháy/dấu phẩy trong JSON"` (`GrammarPractice.jsx` hiển thị riêng dòng này trong khung kiểm tra, không gộp vào số lượng chuẩn hóa trích dẫn). Các bước kiểm tra `phrase`/`text` nguyên văn và câu tiếng Anh bất biến giữ nguyên.
+  3. **Thông báo lỗi có ngữ cảnh (`src/utils/grammarImport.js`):** khi vẫn không parse được, đọc `position N` từ thông báo lỗi và nối thêm ~60 ký tự quanh vị trí hỏng (`Lỗi gần: "…"`).
+  4. **Test (`test/grammar-json-repair.test.js`, `test/grammar-import.test.js`):** thêm 7 test cho nháy kép chưa escape trong `explanation`, nháy cong, dấu phẩy thừa (kể cả dấu phẩy nằm trong chuỗi), xuống dòng/tab thô, JSON hợp lệ không bị sửa, lỗi không sửa được có đoạn `Lỗi gần: "..."`, và `phrase` sai vẫn bị báo lỗi. Cập nhật 1 mẫu lỗi cũ có dấu phẩy thừa trong `test/grammar-import.test.js` sang lỗi thiếu dấu phẩy giữa 2 thuộc tính.
+- **Đã kiểm tra:**
+  - `npm.cmd test`: **44/44** đạt (có Python trong `PATH`, gồm `grammar-b1-prompt.test.js`, `grammar-import.test.js`, `grammar-json-repair.test.js`, `quiz-parse.test.js`).
+  - `npm.cmd run lint`: **0 lỗi / 31 cảnh báo** (giữ nguyên mốc).
+  - `npm.cmd run build`: đạt (`dist/assets/index-DpeT9T0m.js` `579,02 kB` / gzip `170,93 kB`).
+- **Chưa kiểm tra:** thử trực tiếp trên trình duyệt với JSON lỗi thực tế từ chatbot AI (ChatGPT/Gemini/Claude).

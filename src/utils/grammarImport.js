@@ -63,20 +63,169 @@ export function scanJsonContainers(content) {
   return containers;
 }
 
-export function parseGrammarInput(input) {
+export function repairLooseJson(content) {
+  if (typeof content !== 'string') return '';
+  const firstBracket = content.indexOf('[');
+  const lastBracket = content.lastIndexOf(']');
+  let text = firstBracket !== -1 && lastBracket > firstBracket
+    ? content.slice(firstBracket, lastBracket + 1)
+    : content;
+  text = text.replace(/[“”]/g, '"');
+
+  let out = '';
+  let inString = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (!inString) {
+      if (ch === '"') inString = true;
+      out += ch;
+      continue;
+    }
+    if (ch === '\\') {
+      if (i + 1 < text.length) {
+        const next = text[i + 1];
+        if (next === '\r' || next === '\n' || next === '\t') {
+          out += '\\\\';
+        } else {
+          out += ch + next;
+          i++;
+        }
+      } else {
+        out += '\\\\';
+      }
+      continue;
+    }
+    if (ch === '\r') {
+      if (text[i + 1] === '\n') i++;
+      out += '\\n';
+      continue;
+    }
+    if (ch === '\n') {
+      out += '\\n';
+      continue;
+    }
+    if (ch === '\t') {
+      out += '\\t';
+      continue;
+    }
+    if (ch === '"') {
+      let j = i + 1;
+      while (j < text.length && /\s/.test(text[j])) j++;
+      const nextNonWs = text[j];
+      if (nextNonWs === ',' || nextNonWs === ':' || nextNonWs === '}' || nextNonWs === ']') {
+        inString = false;
+        out += '"';
+      } else {
+        out += '\\"';
+      }
+      continue;
+    }
+    out += ch;
+  }
+
+  let cleaned = '';
+  inString = false;
+  for (let i = 0; i < out.length; i++) {
+    const ch = out[i];
+    if (inString) {
+      cleaned += ch;
+      if (ch === '\\' && i + 1 < out.length) {
+        cleaned += out[++i];
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+      cleaned += ch;
+      continue;
+    }
+    if (ch === ',') {
+      let j = i + 1;
+      while (j < out.length && /\s/.test(out[j])) j++;
+      if (out[j] === '}' || out[j] === ']') continue;
+    }
+    cleaned += ch;
+  }
+  return cleaned;
+}
+
+function formatJsonErrorContext(source, errorMessage) {
+  const match = String(errorMessage || '').match(/\bposition\s+(\d+)/i);
+  if (!match || typeof source !== 'string' || !source.length) return '';
+  const pos = Number(match[1]);
+  if (!Number.isFinite(pos) || pos < 0) return '';
+  const half = 30;
+  const start = Math.max(0, pos - half);
+  const end = Math.min(source.length, pos + half);
+  const snippet = source.slice(start, end).replace(/[\r\n\t]+/g, ' ');
+  const prefix = start > 0 ? '…' : '';
+  const suffix = end < source.length ? '…' : '';
+  return ` Lỗi gần: "${prefix}${snippet}${suffix}"`;
+}
+
+function parseGrammarInputDetailed(input) {
   const raw = input.trim();
   if (!raw) throw new Error('Chưa có JSON. Hãy dán kết quả từ AI.');
   const fenced = raw.match(/^```(?:json)?\s*\n?([\s\S]*?)\s*```$/i);
   const content = fenced ? fenced[1].trim() : raw;
-  try { return JSON.parse(content); } catch {
-    const containers = scanJsonContainers(content);
-    if (containers.length !== 1) throw new Error(containers.length > 1 ? 'Có nhiều khối JSON; không thể xác định bộ câu cần nhập. Chỉ dán một mảng JSON.' : 'Không tìm thấy một mảng JSON rõ ràng. Hãy dán mảng bắt đầu bằng [ và kết thúc bằng ].');
+  try {
+    return { parsed: JSON.parse(content), repaired: false };
+  } catch (directError) {
+    let containers = null;
+    let scanError = null;
     try {
-      const parsed = JSON.parse(containers[0]);
-      if (!Array.isArray(parsed)) throw new Error('Khối tìm thấy là object, không phải mảng.');
-      return parsed;
-    } catch (error) { throw new Error(`Khối JSON tìm thấy chưa hợp lệ: ${error.message} Kiểm tra dấu nháy kép, dấu phẩy và ngoặc; không dùng comment hoặc dấu phẩy cuối.`); }
+      containers = scanJsonContainers(content);
+    } catch (err) {
+      scanError = err;
+    }
+
+    if (containers && containers.length > 1) {
+      throw new Error('Có nhiều khối JSON; không thể xác định bộ câu cần nhập. Chỉ dán một mảng JSON.');
+    }
+    if (containers && containers.length === 1) {
+      try {
+        const parsed = JSON.parse(containers[0]);
+        if (!Array.isArray(parsed)) throw new Error('Khối tìm thấy là object, không phải mảng.');
+        return { parsed, repaired: false };
+      } catch (containerError) {
+        if (containerError.message === 'Khối tìm thấy là object, không phải mảng.') throw containerError;
+        const repairedText = repairLooseJson(content);
+        try {
+          const parsed = JSON.parse(repairedText);
+          if (Array.isArray(parsed)) return { parsed, repaired: true };
+        } catch { /* fall through to error with context */ }
+        const context = formatJsonErrorContext(containers[0], containerError.message);
+        throw new Error(`Khối JSON tìm thấy chưa hợp lệ: ${containerError.message}${context} Kiểm tra dấu nháy kép, dấu phẩy và ngoặc; không dùng comment hoặc dấu phẩy cuối.`);
+      }
+    }
+
+    if (content.includes('[') && content.includes(']')) {
+      const repairedText = repairLooseJson(content);
+      try {
+        const parsed = JSON.parse(repairedText);
+        if (Array.isArray(parsed)) return { parsed, repaired: true };
+      } catch (repairError) {
+        if (scanError) {
+          const context = formatJsonErrorContext(content, directError.message) || formatJsonErrorContext(repairedText, repairError.message);
+          throw new Error(`${scanError.message}${context}`);
+        }
+        const context = formatJsonErrorContext(repairedText, repairError.message) || formatJsonErrorContext(content, directError.message);
+        throw new Error(`Khối JSON tìm thấy chưa hợp lệ: ${repairError.message}${context} Kiểm tra dấu nháy kép, dấu phẩy và ngoặc; không dùng comment hoặc dấu phẩy cuối.`);
+      }
+    }
+
+    if (scanError) {
+      const context = formatJsonErrorContext(content, directError.message);
+      throw new Error(`${scanError.message}${context}`);
+    }
+    throw new Error('Không tìm thấy một mảng JSON rõ ràng. Hãy dán mảng bắt đầu bằng [ và kết thúc bằng ].');
   }
+}
+
+export function parseGrammarInput(input) {
+  return parseGrammarInputDetailed(input).parsed;
 }
 
 export function formatGrammarIssue(issue) {
@@ -88,8 +237,12 @@ export function formatGrammarIssue(issue) {
 export function prepareGrammarImport(input, config = {}) {
   const result = { questions: [], errors: [], optionalIssues: [], duplicates: [], normalizations: [], config };
   let parsed;
-  try { parsed = parseGrammarInput(input); } catch (error) {
+  let repaired = false;
+  try { ({ parsed, repaired } = parseGrammarInputDetailed(input)); } catch (error) {
     result.errors.push({ field: 'JSON', reason: error.message }); return result;
+  }
+  if (repaired) {
+    result.normalizations.push({ field: 'JSON', reason: 'Đã tự sửa dấu nháy/dấu phẩy trong JSON' });
   }
   if (!Array.isArray(parsed) || !parsed.length) {
     result.errors.push({ field: 'JSON', reason: 'Cần một mảng không rỗng chứa các câu phân tích.' }); return result;
