@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Volume2 } from 'lucide-react';
 import { isGrammarDueForReview } from '../../utils/grammarStorage';
-import { getAvailableTopics } from '../../utils/grammarPrompt';
-import { getSentenceTopicLabel } from '../../utils/grammarTopic';
+import { buildTopicOptions } from '../../utils/grammarTopic';
 import { getGrammarSentence } from '../../utils/grammarSentence';
 import { speakWithSettings } from '../../utils/voiceSpeech';
 import VoiceSettings from '../VoiceSettings';
@@ -28,7 +27,37 @@ export default function GrammarReview({ savedQuestions, reviewProgress, onRecord
   }, []);
 
   useEffect(() => () => stopSpeech(), [stopSpeech]);
-  const filtered = savedQuestions.filter(q => (topic === 'All' || q.topic === topic) && (!starredOnly || q.hardMarked));
+  const topicOptions = useMemo(
+    () => buildTopicOptions(savedQuestions, reviewProgress, starredOnly),
+    [savedQuestions, reviewProgress, starredOnly]
+  );
+  const groupedTopicOptions = useMemo(() => {
+    const top = [];
+    const groups = new Map();
+    for (const opt of topicOptions) {
+      if (!opt.group) {
+        top.push(opt);
+      } else {
+        if (!groups.has(opt.group)) groups.set(opt.group, []);
+        groups.get(opt.group).push(opt);
+      }
+    }
+    return { top, groups: [...groups.entries()] };
+  }, [topicOptions]);
+  const effectiveTopic = useMemo(() => {
+    if (topic === 'All') return 'All';
+    const selected = topicOptions.find(opt => opt.value === topic);
+    return selected && !selected.disabled ? topic : 'All';
+  }, [topic, topicOptions]);
+  function handleStarredOnlyChange(checked) {
+    setStarredOnly(checked);
+    if (topic !== 'All') {
+      const nextOptions = buildTopicOptions(savedQuestions, reviewProgress, checked);
+      const selected = nextOptions.find(opt => opt.value === topic);
+      if (!selected || selected.disabled) setTopic('All');
+    }
+  }
+  const filtered = savedQuestions.filter(q => (effectiveTopic === 'All' || q.topic === effectiveTopic) && (!starredOnly || q.hardMarked));
   const subsets = {
     due: filtered.filter(q => isGrammarDueForReview(reviewProgress[q.savedId])),
     wrong: filtered.filter(q => (reviewProgress[q.savedId]?.wrongCount ?? 0) > 0),
@@ -70,11 +99,23 @@ export default function GrammarReview({ savedQuestions, reviewProgress, onRecord
     <h2 className="sb-heading text-xl text-[var(--sb-ink)] font-bold tracking-tight">Ôn tập cấu trúc câu</h2>
     <p className="text-sm text-[var(--sb-ink-soft)] leading-relaxed">Tự nhận diện cấu trúc và đánh giá mức hiểu; xem phân tích khi cần. Đã hiểu tăng một cấp; cần ôn lại giảm một cấp (L1–L5). Chuyển câu khi chưa đánh giá sẽ giữ nguyên tiến độ.</p>
     <div className="flex flex-wrap items-center gap-3">
-      <select aria-label="Lọc chủ đề ôn tập" value={topic} onChange={e => setTopic(e.target.value)} className="max-w-full vm-input rounded-xl px-3 py-2 text-sm">
-        <option value="All">Tất cả chủ đề</option>
-        {getAvailableTopics(savedQuestions.filter(q => typeof q.topic === 'string')).map(t => <option key={t} value={t}>{getSentenceTopicLabel({ topic: t })}</option>)}
+      <select aria-label="Lọc chủ đề ôn tập" value={effectiveTopic} onChange={e => setTopic(e.target.value)} className="max-w-full vm-input rounded-xl px-3 py-2 text-sm">
+        {groupedTopicOptions.top.map(opt => (
+          <option key={opt.value} value={opt.value} disabled={opt.disabled} className={opt.disabled ? 'text-[var(--sb-ink-soft)] opacity-60' : undefined}>
+            {opt.label}
+          </option>
+        ))}
+        {groupedTopicOptions.groups.map(([groupLabel, options]) => (
+          <optgroup key={groupLabel} label={groupLabel}>
+            {options.map(opt => (
+              <option key={opt.value} value={opt.value} disabled={opt.disabled} className={opt.disabled ? 'text-[var(--sb-ink-soft)] opacity-60' : undefined}>
+                {opt.label}
+              </option>
+            ))}
+          </optgroup>
+        ))}
       </select>
-      <label className="text-[var(--sb-ink)] font-medium text-sm flex gap-2 items-center cursor-pointer"><input type="checkbox" checked={starredOnly} onChange={e => setStarredOnly(e.target.checked)} className="accent-[var(--sb-ochre-text)]" />Chỉ câu đánh dấu sao ⭐</label>
+      <label className="text-[var(--sb-ink)] font-medium text-sm flex gap-2 items-center cursor-pointer"><input type="checkbox" checked={starredOnly} onChange={e => handleStarredOnlyChange(e.target.checked)} className="accent-[var(--sb-ochre-text)]" />Chỉ câu đánh dấu sao ⭐</label>
     </div>
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">{[['due', 'Đến hạn ôn'], ['wrong', 'Từng cần ôn lại / sai'], ['all', 'Tất cả']].map(([key, label]) => <button key={key} onClick={() => setReviewMode(key)}
       className={`vm-btn p-4 rounded-2xl font-semibold border-2 ${reviewMode === key ? 'bg-[var(--sb-plum-soft)] border-[var(--sb-ink)] text-[var(--sb-plum-text)] shadow-[var(--sb-shadow-sm)]' : 'vm-panel text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)]'}`}>{label} ({subsets[key].length})</button>)}</div>
@@ -117,7 +158,7 @@ export default function GrammarReview({ savedQuestions, reviewProgress, onRecord
       <VoiceSettings />
     </div>
     <GrammarSentenceCard key={current} question={q} onAssess={assess} assessed={assessments[current]} onQuickAdd={onQuickAdd}
-      analysisTopic={topic === 'All' ? undefined : topic}
+      analysisTopic={effectiveTopic === 'All' ? undefined : effectiveTopic}
       onNext={() => {
         stopSpeech();
         setReviewError('');
