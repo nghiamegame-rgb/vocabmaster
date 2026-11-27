@@ -1,19 +1,22 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Copy, Check, Zap, ChevronDown, ChevronUp, AlertCircle, Upload, RefreshCw } from 'lucide-react';
 import {
-  GRAMMAR_TOPICS,
   GRAMMAR_COUNTS,
-  getTopicLabel,
   buildGrammarPrompt,
 } from '../../utils/grammarPrompt';
+import { buildGenerationTopicOptions, groupTopicOptions } from '../../utils/grammarTopic';
 import { prepareGrammarImport, completeGrammarImport, formatGrammarIssue } from '../../utils/grammarImport';
 import GrammarExportPanel from './GrammarExportPanel';
 
 /**
  * GrammarPractice — Step 1: Configure → Copy prompt → Paste JSON → Start quiz.
  */
-export default function GrammarPractice({ onStartSession, batch, onNewBatch, settings = { count: 10, topic: 'Mixed' }, onSettingsChange, corpus = { data: { vocab: [], grammar: [] }, unresolved: 0, invalidWords: 0 }, stale = false, syncStatuses = [], exportSource, exportPackage, onExportPrepared, exportLoadError }) {
+export default function GrammarPractice({ onStartSession, batch, onNewBatch, settings = { count: 10, topic: 'Mixed' }, onSettingsChange, savedQuestions = [], corpus = { data: { vocab: [], grammar: [] }, unresolved: 0, invalidWords: 0 }, stale = false, syncStatuses = [], exportSource, exportPackage, onExportPrepared, exportLoadError }) {
   const { count, topic } = settings;
+  const groupedTopicOptions = useMemo(
+    () => groupTopicOptions(buildGenerationTopicOptions(savedQuestions)),
+    [savedQuestions]
+  );
   const [copiedPrompt, setCopied] = useState('');
   const [promptOpen, setPromptOpen] = useState(false);
   const [jsonInput,  setJsonInput]  = useState('');
@@ -114,8 +117,15 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
               onChange={e => { onSettingsChange?.({ count, topic: e.target.value }); resetImportReview(); }}
               className="w-full vm-input rounded-xl px-3 py-2 text-sm"
             >
-              {GRAMMAR_TOPICS.map(t => (
-                <option key={t} value={t}>{getTopicLabel(t)}</option>
+              {groupedTopicOptions.top.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+              {groupedTopicOptions.groups.map(([groupLabel, options]) => (
+                <optgroup key={groupLabel} label={groupLabel}>
+                  {options.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </div>

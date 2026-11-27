@@ -3,7 +3,14 @@ import { test } from 'node:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
-import { buildTopicOptions, getSentenceTopicLabel, GRAMMAR_TOPIC_PRIORITY } from '../src/utils/grammarTopic.js';
+import {
+  buildGenerationTopicOptions,
+  buildTopicOptions,
+  getSentenceTopicLabel,
+  GRAMMAR_TOPIC_PRIORITY,
+  GRAMMAR_TOPIC_TARGET_MAX,
+  GRAMMAR_TOPIC_TARGET_MIN,
+} from '../src/utils/grammarTopic.js';
 import { TOPIC_LABELS } from '../src/utils/grammarPrompt.js';
 
 globalThis.window ??= {}; // audio.js (imported via GrammarReview -> VoiceSettings) checks 'speechSynthesis' in window
@@ -120,6 +127,86 @@ test('buildTopicOptions orders topics by VSTEP priority, numbers them, counts to
   for (const opt of empty.slice(1)) {
     assert.equal(opt.count, 0);
     assert.equal(opt.disabled, true);
+  }
+});
+
+test('buildGenerationTopicOptions orders by VSTEP priority, shows target short/enough/excess boundaries, keeps 0-count enabled, and puts unknown topics last', () => {
+  const make = (topic, n) => Array.from({ length: n }, (_, i) => ({ savedId: `${topic}-${i}`, topic }));
+  const saved = [
+    ...make('Mixed', 3),
+    ...make('Tenses', GRAMMAR_TOPIC_TARGET_MIN - 1), // 19 -> thiếu 1
+    ...make('Word Forms', GRAMMAR_TOPIC_TARGET_MIN), // 20 -> đủ
+    ...make('Subject-Verb Agreement', GRAMMAR_TOPIC_TARGET_MAX), // 40 -> đủ
+    ...make('Prepositions', GRAMMAR_TOPIC_TARGET_MAX + 1), // 41 -> thừa 1
+    ...make('Zebra Custom', 2),
+    ...make('Alpha Custom', GRAMMAR_TOPIC_TARGET_MIN),
+  ];
+
+  const options = buildGenerationTopicOptions(saved);
+  assert.deepEqual(
+    options.map(o => o.value),
+    ['Mixed', ...GRAMMAR_TOPIC_PRIORITY, 'Alpha Custom', 'Zebra Custom']
+  );
+
+  // Mixed at top, unnumbered, no target status, never disabled
+  assert.equal(options[0].value, 'Mixed');
+  assert.equal(options[0].group, null);
+  assert.equal(options[0].count, 3);
+  assert.equal(options[0].status, null);
+  assert.equal(options[0].disabled, false);
+  assert.equal(options[0].label, 'Tổng hợp — 3 câu');
+
+  // Boundary checks: MIN-1, MIN, MAX, MAX+1, and 0
+  const tenses = options.find(o => o.value === 'Tenses');
+  assert.equal(tenses.group, 'Trọng tâm (1–6)');
+  assert.equal(tenses.status, 'short');
+  assert.equal(tenses.disabled, false);
+  assert.equal(tenses.label, `1. Các thì — ${GRAMMAR_TOPIC_TARGET_MIN - 1} câu · thiếu 1`);
+
+  const wordForms = options.find(o => o.value === 'Word Forms');
+  assert.equal(wordForms.group, 'Trọng tâm (1–6)');
+  assert.equal(wordForms.status, 'enough');
+  assert.equal(wordForms.disabled, false);
+  assert.equal(wordForms.label, `2. Từ loại — ${GRAMMAR_TOPIC_TARGET_MIN} câu · đủ`);
+
+  const sva = options.find(o => o.value === 'Subject-Verb Agreement');
+  assert.equal(sva.status, 'enough');
+  assert.equal(sva.label, `3. Hòa hợp chủ ngữ – động từ — ${GRAMMAR_TOPIC_TARGET_MAX} câu · đủ`);
+
+  const prep = options.find(o => o.value === 'Prepositions');
+  assert.equal(prep.status, 'excess');
+  assert.equal(prep.label, `4. Giới từ — ${GRAMMAR_TOPIC_TARGET_MAX + 1} câu · thừa 1`);
+
+  // 0-count topic is NOT disabled
+  const passive = options.find(o => o.value === 'Passive Voice');
+  assert.equal(passive.count, 0);
+  assert.equal(passive.status, 'short');
+  assert.equal(passive.disabled, false);
+  assert.equal(passive.label, `5. Câu bị động — 0 câu · thiếu ${GRAMMAR_TOPIC_TARGET_MIN}`);
+
+  // Group boundaries
+  assert.equal(options.find(o => o.value === 'Relative Clauses').group, 'Quan trọng (7–12)');
+  assert.equal(options.find(o => o.value === 'Reported Speech').group, 'Bổ sung (13–18)');
+
+  // Unknown topics last, numbered 19, 20, alphabetical, in "Khác"
+  const alpha = options.find(o => o.value === 'Alpha Custom');
+  assert.equal(alpha.group, 'Khác');
+  assert.equal(alpha.status, 'enough');
+  assert.equal(alpha.disabled, false);
+  assert.equal(alpha.label, `19. Alpha Custom — ${GRAMMAR_TOPIC_TARGET_MIN} câu · đủ`);
+
+  const zebra = options.find(o => o.value === 'Zebra Custom');
+  assert.equal(zebra.group, 'Khác');
+  assert.equal(zebra.status, 'short');
+  assert.equal(zebra.disabled, false);
+  assert.equal(zebra.label, `20. Zebra Custom — 2 câu · thiếu ${GRAMMAR_TOPIC_TARGET_MIN - 2}`);
+
+  // Empty savedQuestions: nothing disabled, no "Khác"
+  const empty = buildGenerationTopicOptions([]);
+  assert.equal(empty.length, 1 + GRAMMAR_TOPIC_PRIORITY.length);
+  for (const opt of empty) {
+    assert.equal(opt.count, 0);
+    assert.equal(opt.disabled, false);
   }
 });
 

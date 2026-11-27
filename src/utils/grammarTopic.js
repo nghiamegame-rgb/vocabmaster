@@ -29,13 +29,26 @@ export const GRAMMAR_TOPIC_GROUPS = [
   'Khác',
 ];
 
+export const GRAMMAR_TOPIC_TARGET_MIN = 20;
+export const GRAMMAR_TOPIC_TARGET_MAX = 40;
+
 const PRIORITY_SET = new Set(GRAMMAR_TOPIC_PRIORITY);
 
 function formatTopicOptionLabel(base, count, dueCount) {
   return `${base} — ${count} câu${dueCount > 0 ? ` · ${dueCount} đến hạn` : ''}`;
 }
 
-export function buildTopicOptions(savedQuestions = [], reviewProgress = {}, starredOnly = false) {
+function getTargetStatus(count) {
+  if (count < GRAMMAR_TOPIC_TARGET_MIN) {
+    return { status: 'short', suffix: ` · thiếu ${GRAMMAR_TOPIC_TARGET_MIN - count}` };
+  }
+  if (count > GRAMMAR_TOPIC_TARGET_MAX) {
+    return { status: 'excess', suffix: ` · thừa ${count - GRAMMAR_TOPIC_TARGET_MAX}` };
+  }
+  return { status: 'enough', suffix: ' · đủ' };
+}
+
+function collectTopicEntries(savedQuestions = [], reviewProgress = {}, starredOnly = false) {
   const list = Array.isArray(savedQuestions) ? savedQuestions : [];
   const progress = reviewProgress && typeof reviewProgress === 'object' ? reviewProgress : {};
   const counts = new Map();
@@ -59,9 +72,66 @@ export function buildTopicOptions(savedQuestions = [], reviewProgress = {}, star
     }
   }
 
-  const mixedCount = counts.get('Mixed') || 0;
-  const mixedDue = dueCounts.get('Mixed') || 0;
-  const options = [
+  const entries = [
+    {
+      value: 'Mixed',
+      name: getSentenceTopicLabel({ topic: 'Mixed' }),
+      rank: null,
+      group: null,
+      count: counts.get('Mixed') || 0,
+      dueCount: dueCounts.get('Mixed') || 0,
+    },
+  ];
+
+  GRAMMAR_TOPIC_PRIORITY.forEach((key, index) => {
+    const rank = index + 1;
+    const group = rank <= 6
+      ? GRAMMAR_TOPIC_GROUPS[0]
+      : rank <= 12
+        ? GRAMMAR_TOPIC_GROUPS[1]
+        : GRAMMAR_TOPIC_GROUPS[2];
+    entries.push({
+      value: key,
+      name: getSentenceTopicLabel({ topic: key }),
+      rank,
+      group,
+      count: counts.get(key) || 0,
+      dueCount: dueCounts.get(key) || 0,
+    });
+  });
+
+  const sortedUnknown = [...unknownTopics].sort((a, b) => a.localeCompare(b));
+  sortedUnknown.forEach((key, index) => {
+    entries.push({
+      value: key,
+      name: Object.hasOwn(TOPIC_LABELS, key) ? getSentenceTopicLabel({ topic: key }) : key,
+      rank: GRAMMAR_TOPIC_PRIORITY.length + index + 1,
+      group: GRAMMAR_TOPIC_GROUPS[3],
+      count: counts.get(key) || 0,
+      dueCount: dueCounts.get(key) || 0,
+    });
+  });
+
+  return { totalCount, totalDue, entries };
+}
+
+export function groupTopicOptions(options = []) {
+  const top = [];
+  const groups = new Map();
+  for (const opt of options) {
+    if (!opt.group) {
+      top.push(opt);
+    } else {
+      if (!groups.has(opt.group)) groups.set(opt.group, []);
+      groups.get(opt.group).push(opt);
+    }
+  }
+  return { top, groups: [...groups.entries()] };
+}
+
+export function buildTopicOptions(savedQuestions = [], reviewProgress = {}, starredOnly = false) {
+  const { totalCount, totalDue, entries } = collectTopicEntries(savedQuestions, reviewProgress, starredOnly);
+  return [
     {
       value: 'All',
       label: formatTopicOptionLabel('Tất cả chủ đề', totalCount, totalDue),
@@ -70,52 +140,41 @@ export function buildTopicOptions(savedQuestions = [], reviewProgress = {}, star
       group: null,
       disabled: false,
     },
-    {
-      value: 'Mixed',
-      label: formatTopicOptionLabel(getSentenceTopicLabel({ topic: 'Mixed' }), mixedCount, mixedDue),
-      count: mixedCount,
-      dueCount: mixedDue,
-      group: null,
-      disabled: mixedCount === 0,
-    },
+    ...entries.map(entry => ({
+      value: entry.value,
+      label: formatTopicOptionLabel(entry.rank ? `${entry.rank}. ${entry.name}` : entry.name, entry.count, entry.dueCount),
+      count: entry.count,
+      dueCount: entry.dueCount,
+      group: entry.group,
+      disabled: entry.count === 0,
+    })),
   ];
+}
 
-  GRAMMAR_TOPIC_PRIORITY.forEach((key, index) => {
-    const rank = index + 1;
-    const count = counts.get(key) || 0;
-    const dueCount = dueCounts.get(key) || 0;
-    const group = rank <= 6
-      ? GRAMMAR_TOPIC_GROUPS[0]
-      : rank <= 12
-        ? GRAMMAR_TOPIC_GROUPS[1]
-        : GRAMMAR_TOPIC_GROUPS[2];
-    options.push({
-      value: key,
-      label: formatTopicOptionLabel(`${rank}. ${getSentenceTopicLabel({ topic: key })}`, count, dueCount),
-      count,
-      dueCount,
-      group,
-      disabled: count === 0,
-    });
+export function buildGenerationTopicOptions(savedQuestions = []) {
+  const { entries } = collectTopicEntries(savedQuestions, {}, false);
+  return entries.map(entry => {
+    const base = entry.rank ? `${entry.rank}. ${entry.name}` : entry.name;
+    if (!entry.rank) {
+      return {
+        value: entry.value,
+        label: `${base} — ${entry.count} câu`,
+        count: entry.count,
+        status: null,
+        group: entry.group,
+        disabled: false,
+      };
+    }
+    const { status, suffix } = getTargetStatus(entry.count);
+    return {
+      value: entry.value,
+      label: `${base} — ${entry.count} câu${suffix}`,
+      count: entry.count,
+      status,
+      group: entry.group,
+      disabled: false,
+    };
   });
-
-  const sortedUnknown = [...unknownTopics].sort((a, b) => a.localeCompare(b));
-  sortedUnknown.forEach((key, index) => {
-    const rank = GRAMMAR_TOPIC_PRIORITY.length + index + 1;
-    const count = counts.get(key) || 0;
-    const dueCount = dueCounts.get(key) || 0;
-    const name = Object.hasOwn(TOPIC_LABELS, key) ? getSentenceTopicLabel({ topic: key }) : key;
-    options.push({
-      value: key,
-      label: formatTopicOptionLabel(`${rank}. ${name}`, count, dueCount),
-      count,
-      dueCount,
-      group: GRAMMAR_TOPIC_GROUPS[3],
-      disabled: count === 0,
-    });
-  });
-
-  return options;
 }
 
 // Saved Sentences classifies by the sentence's topic, not the selected batch or

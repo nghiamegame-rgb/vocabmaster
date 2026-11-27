@@ -207,6 +207,7 @@ export default function Grammar({ grammarStore, addWord, words = [], vocabSyncSt
               />
             : <GrammarPractice onStartSession={handleStartSession} batch={promptBatch} onNewBatch={newPromptBatch}
                 settings={promptSettings} onSettingsChange={setPromptSettings}
+                savedQuestions={savedQuestions}
                 corpus={corpus} stale={stale} syncStatuses={[vocabSyncStatus, syncStatus]}
                 exportSource={exportSource} exportPackage={exportPackage} onExportPrepared={setExportPackage}
                 exportLoadError={[vocabDataLoadError, dataLoadError].filter(Boolean).join(' ')} />
