@@ -56,7 +56,7 @@ ${levelPolicy(level, count)}${topic === 'Participles & Reduced Clauses' ? '\nTOP
 ${LEARNING_VALUE}
 These are study categories, NOT an official VSTEP syllabus.
 
-${buildBatchInstructions({ id: batchId, data, workbookName, ceiling: level === 'B1–B2' ? 'B1–B2' : 'B1' })}
+${buildBatchInstructions({ id: batchId, data, workbookName, ceiling: level === 'B1–B2' ? 'B1–B2' : 'B1', count })}
 
 MAIN FOCUS: ${topic} (${getTopicLabel(topic)}).
 ${topic === 'Mixed' ? 'Vary primary topics; use the actual dominant topic for each sentence.' : `Every sentence must demonstrate ${topic}; set its topic to "${topic}".`}
