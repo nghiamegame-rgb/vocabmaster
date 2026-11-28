@@ -54,7 +54,8 @@ try {
   await page.getByRole('button', { name: 'Xem prompt', exact: true }).click();
   assert.equal(await preview(), original);
   await page.getByRole('button', { name: '5', exact: true }).click();
-  await page.locator('select').selectOption('Tenses');
+  const selectTopic = async value => { await page.locator('#grammar-topic-picker').click(); await page.locator(`[data-topic="${value}"] button`).click(); };
+  await selectTopic('Tenses');
   assert.ok((await preview()).includes('MAIN FOCUS: Tenses'));
   assert.deepEqual(data(await preview()), data(original));
   const levelButton = name => page.getByRole('group', { name: 'Mức độ' }).getByRole('button', { name, exact: true });
@@ -65,7 +66,7 @@ try {
   // Changing another setting keeps the chosen level.
   await page.getByRole('button', { name: '10', exact: true }).click();
   await page.getByRole('button', { name: '5', exact: true }).click();
-  await page.locator('select').selectOption('Tenses');
+  await selectTopic('Tenses');
   assert.equal(await levelButton('B1–B2').getAttribute('aria-pressed'), 'true');
   assert.deepEqual(data(await preview()), data(original));
   const imported = [saved, ...Array.from({ length: 4 }, (_, i) => question(`They purchase item ${i}.`))];

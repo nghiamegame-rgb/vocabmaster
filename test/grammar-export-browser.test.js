@@ -85,7 +85,8 @@ try {
   await panel.getByText('Gói Excel + Prompt đã lỗi thời', { exact: false }).waitFor({ state: 'hidden' });
   // Configuration invalidates both download and copy; old prompt stays paired.
   await page.getByRole('button', { name: '5', exact: true }).click();
-  await page.locator('select').selectOption('Tenses');
+  await page.locator('#grammar-topic-picker').click();
+  await page.locator('[data-topic="Tenses"] button').click();
   await panel.getByText('Gói Excel + Prompt đã lỗi thời', { exact: false }).waitFor();
   assert.equal(await panel.getByRole('button', { name: 'Tải lại Excel', exact: true }).isDisabled(), true);
   assert.equal(await panel.getByRole('button', { name: 'Copy Prompt Excel', exact: true }).isDisabled(), true);
