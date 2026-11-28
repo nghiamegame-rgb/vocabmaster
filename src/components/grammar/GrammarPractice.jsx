@@ -6,9 +6,11 @@ import {
   normalizeGrammarLevel,
   buildGrammarPrompt,
 } from '../../utils/grammarPrompt';
-import { buildGenerationTopicOptions, groupTopicOptions } from '../../utils/grammarTopic';
+import { buildGenerationTopicOptions } from '../../utils/grammarTopic';
+import { safeTopicDoneStorage, readTopicsDone, writeTopicsDone, setTopicDone } from '../../utils/grammarTopicDone';
 import { prepareGrammarImport, completeGrammarImport, formatGrammarIssue } from '../../utils/grammarImport';
 import GrammarExportPanel from './GrammarExportPanel';
+import GrammarTopicPicker from './GrammarTopicPicker';
 
 /**
  * GrammarPractice — Step 1: Configure → Copy prompt → Paste JSON → Start quiz.
@@ -16,10 +18,17 @@ import GrammarExportPanel from './GrammarExportPanel';
 export default function GrammarPractice({ onStartSession, batch, onNewBatch, settings = { count: 10, topic: 'Mixed' }, onSettingsChange, savedQuestions = [], corpus = { data: { vocab: [], grammar: [] }, unresolved: 0, invalidWords: 0 }, stale = false, syncStatuses = [], exportSource, exportPackage, onExportPrepared, exportLoadError }) {
   const { count, topic } = settings;
   const level = normalizeGrammarLevel(settings.level);
-  const groupedTopicOptions = useMemo(
-    () => groupTopicOptions(buildGenerationTopicOptions(savedQuestions)),
-    [savedQuestions]
-  );
+  const topicOptions = useMemo(() => buildGenerationTopicOptions(savedQuestions), [savedQuestions]);
+  // Chủ đề người dùng tự tick "đã đủ câu" (lưu trên máy này, không đồng bộ cloud).
+  const [doneTopics, setDoneTopics] = useState(() => readTopicsDone(safeTopicDoneStorage()));
+  const topicLocked = topic !== 'Mixed' && doneTopics.includes(topic);
+
+  function handleToggleDone(value, done) {
+    const next = setTopicDone(doneTopics, value, done);
+    setDoneTopics(next);
+    writeTopicsDone(safeTopicDoneStorage(), next);
+    setCopied(''); setCopyError('');
+  }
   const [copiedPrompt, setCopied] = useState('');
   const [promptOpen, setPromptOpen] = useState(false);
   const [jsonInput,  setJsonInput]  = useState('');
@@ -115,22 +124,18 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
           {/* Topic */}
           <div>
             <label className="block text-[var(--sb-ink-soft)] text-xs font-semibold mb-2">Chủ đề ngữ pháp</label>
-            <select
+            <GrammarTopicPicker
+              options={topicOptions}
               value={topic}
-              onChange={e => { onSettingsChange?.({ count, topic: e.target.value, level }); resetImportReview(); }}
-              className="w-full vm-input rounded-xl px-3 py-2 text-sm"
-            >
-              {groupedTopicOptions.top.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-              {groupedTopicOptions.groups.map(([groupLabel, options]) => (
-                <optgroup key={groupLabel} label={groupLabel}>
-                  {options.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+              doneTopics={doneTopics}
+              onChange={next => { onSettingsChange?.({ count, topic: next, level }); resetImportReview(); }}
+              onToggleDone={handleToggleDone}
+            />
+            {topicLocked && (
+              <p className="mt-2 text-xs font-semibold text-[var(--sb-forest-text)]" role="status">
+                Chủ đề này đã tick đủ câu nên không tạo prompt được. Bỏ tick hoặc chọn chủ đề khác.
+              </p>
+            )}
           </div>
 
           {/* Level */}
@@ -185,7 +190,7 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
         <div className="flex flex-wrap gap-2 pt-1">
           <button
             onClick={handleCopy}
-            disabled={incomplete || stale}
+            disabled={incomplete || stale || topicLocked}
             className={`vm-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed ${
               copied
                 ? 'bg-[var(--sb-forest-btn)] text-white border-2 border-[var(--sb-ink)] shadow-[var(--sb-shadow-sm)]'
@@ -195,20 +200,21 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
             {copied ? <Check size={16} /> : <Copy size={16} />}
             {copied ? 'Đã copy!' : 'Copy Prompt'}
           </button>
-          <button disabled={incomplete} onClick={() => { onNewBatch?.(); setCopied(''); setCopyError(''); resetImportReview(); }}
+          <button disabled={incomplete || topicLocked} onClick={() => { onNewBatch?.(); setCopied(''); setCopyError(''); resetImportReview(); }}
             className="vm-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-[var(--sb-paper-card)] border-2 border-[var(--sb-ink-border)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)] disabled:opacity-40">
             <RefreshCw size={16} /> Tạo prompt mới
           </button>
           <button
             onClick={() => setPromptOpen(v => !v)}
-            className="vm-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-[var(--sb-paper-card)] border-2 border-[var(--sb-ink-border)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)]"
+            disabled={topicLocked}
+            className="vm-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-[var(--sb-paper-card)] border-2 border-[var(--sb-ink-border)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)] disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {promptOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             {promptOpen ? 'Ẩn prompt' : 'Xem prompt'}
           </button>
         </div>
 
-        {promptOpen && (
+        {promptOpen && !topicLocked && (
           <div className="bg-[var(--sb-paper-warm)] border-2 border-[var(--sb-ink-border)] rounded-xl p-4 max-h-64 overflow-y-auto animate-fade-in">
             <pre className="text-[var(--sb-ink)] text-xs whitespace-pre-wrap font-mono leading-relaxed">{prompt}</pre>
           </div>
