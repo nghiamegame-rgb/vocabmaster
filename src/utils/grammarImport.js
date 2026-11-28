@@ -63,6 +63,20 @@ export function scanJsonContainers(content) {
   return containers;
 }
 
+// Does a quote followed by `rest` end the string, given its container and role?
+function closesString(rest, container, isKey, inner) {
+  const next = rest.trimStart();
+  if (next[0] === '}' || next[0] === ']') return true;
+  const after = next.slice(1);
+  if (next[0] === ':') return isKey && /^\s*(?:["[{\d-]|(?:true|false|null)\b)/.test(after);
+  if (next[0] !== ',') return false;
+  if (/^[ \t]*[\r\n]/.test(after)) return true;
+  if (inner % 2) return false; // inside a quoted phrase, e.g. "a", "b"
+  if (/^\s*(?:[[\]{}\d-]|(?:true|false|null)\b)/.test(after)) return true;
+  return container === '{' ? /^\s*"[^"\n]*"\s*:/.test(after) : /^\s*"/.test(after);
+}
+
+// Returns the input unchanged when a quote cannot be repaired with confidence.
 export function repairLooseJson(content) {
   if (typeof content !== 'string') return '';
   const firstBracket = content.indexOf('[');
@@ -74,10 +88,20 @@ export function repairLooseJson(content) {
 
   let out = '';
   let inString = false;
+  const stack = [];
+  let last = ''; // last non-whitespace character outside strings
+  let isKey = false;
+  let inner = 0; // unescaped quotes found inside the current string
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (!inString) {
-      if (ch === '"') inString = true;
+      if (ch === '"') {
+        inString = true;
+        isKey = stack.at(-1) === '{' && (last === '{' || last === ',');
+        inner = 0;
+      } else if (ch === '[' || ch === '{') stack.push(ch);
+      else if (ch === ']' || ch === '}') stack.pop();
+      if (!/\s/.test(ch)) last = ch;
       out += ch;
       continue;
     }
@@ -109,13 +133,18 @@ export function repairLooseJson(content) {
       continue;
     }
     if (ch === '"') {
-      let j = i + 1;
-      while (j < text.length && /\s/.test(text[j])) j++;
-      const nextNonWs = text[j];
-      if (nextNonWs === ',' || nextNonWs === ':' || nextNonWs === '}' || nextNonWs === ']') {
+      const rest = text.slice(i + 1);
+      if (closesString(rest, stack.at(-1), isKey, inner)) {
+        // Inner quotes must come in pairs; otherwise strings may have been split.
+        if (inner % 2) return content;
         inString = false;
+        last = '"';
         out += '"';
       } else {
+        // An opening quote followed by a space, comma or colon is more likely a
+        // real delimiter: escaping it could merge fields, so give up.
+        if (inner % 2 === 0 && /^[\s,:]/.test(rest)) return content;
+        inner++;
         out += '\\"';
       }
       continue;
@@ -153,7 +182,12 @@ export function repairLooseJson(content) {
 
 function formatJsonErrorContext(source, errorMessage) {
   const match = String(errorMessage || '').match(/\bposition\s+(\d+)/i);
-  if (!match || typeof source !== 'string' || !source.length) return '';
+  if (!match) {
+    // "Unexpected token" messages carry a quoted excerpt instead of a position.
+    const excerpt = String(errorMessage || '').match(/, (?:\.\.\.)?"([\s\S]*)"(?:\.\.\.)? is not valid JSON/);
+    return excerpt ? ` Lỗi gần: "…${excerpt[1].replace(/[\r\n\t]+/g, ' ')}…"` : '';
+  }
+  if (typeof source !== 'string' || !source.length) return '';
   const pos = Number(match[1]);
   if (!Number.isFinite(pos) || pos < 0) return '';
   const half = 30;

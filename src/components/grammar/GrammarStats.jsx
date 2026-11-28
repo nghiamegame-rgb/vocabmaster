@@ -67,7 +67,7 @@ function LegacyGrammarStats({
         </div>
         <div>
           <h2 className="sb-heading text-xl font-bold text-[var(--sb-ink)]">Thống kê Grammar</h2>
-          <p className="text-[var(--sb-ink-soft)] text-sm">Tổng quan kết quả luyện tập ngữ pháp VSTEP B1–B2</p>
+          <p className="text-[var(--sb-ink-soft)] text-sm">Tổng quan kết quả luyện tập ngữ pháp VSTEP B1</p>
         </div>
       </div>
 

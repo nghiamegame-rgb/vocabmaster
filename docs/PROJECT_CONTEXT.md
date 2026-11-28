@@ -27,7 +27,7 @@ VocabMaster hỗ trợ người học tiếng Anh dùng tiếng Việt tự xây
 
 | Phần | Trạng thái xác minh trong mã | Nơi tra cứu |
 | --- | --- | --- |
-| Grammar luyện mới | Câu hoàn chỉnh, phân tích ngữ pháp/đọc hiểu tiếng Việt; nhắm B1–B2 (khoảng 70% B1 / 30% B2; không cố ý đưa C1) | `Grammar.jsx` → `GrammarPractice`; `grammarPrompt.js::buildGrammarPrompt` |
+| Grammar luyện mới | Câu hoàn chỉnh, phân tích ngữ pháp/đọc hiểu tiếng Việt; prompt chỉ nhắm CEFR B1 (VSTEP B1) | `Grammar.jsx` → `GrammarPractice`; `grammarPrompt.js::buildGrammarPrompt` |
 | Vocabulary, Flashcard, Listening | Công cụ từ vựng dùng chung, có thể học từ VSTEP do người dùng nhập; không thấy bộ từ VSTEP tích hợp | `Vocabulary`, `Flashcard`, `ListeningReview` |
 | Smart Quiz tiếng Việt → Anh | Bối cảnh VSTEP B1–B2 (không vượt B2) | `Quiz.jsx::buildPrompt`, nhánh `vn` |
 | Smart Quiz tiếng Anh | Câu tiếng Anh điền chỗ trống mức VSTEP B1–B2 | `Quiz.jsx::buildPrompt`, nhánh `vstep` |

@@ -5,7 +5,7 @@
 ## 0. Người dùng và cách làm việc
 
 - Chủ dự án tên **Nghĩa**, **không phải lập trình viên**, giao tiếp **tiếng Việt**. Giải thích ngắn, từng bước đơn giản, đưa lệnh chép-dán được. Tránh thuật ngữ nếu không cần.
-- Web là SPA học tiếng Anh "VocabMaster" (thư mục `C:\web toiec`, tên package `web-toiec`). Mục tiêu học hiện tại là **VSTEP B1–B2** (chữ "TOEIC" chỉ còn ở dữ liệu cũ).
+- Web là SPA học tiếng Anh "VocabMaster" (thư mục `C:\web toiec`, tên package `web-toiec`). Mục tiêu học hiện tại là **VSTEP**: prompt Grammar chỉ nhắm **B1** (từ 28/11, mục 29), Smart Quiz (kể cả Structures) vẫn **B1–B2** (chữ "TOEIC" chỉ còn ở dữ liệu cũ).
 - Quy trình quen thuộc: AI (Claude Code hoặc Gemini) sửa mã **trên một nhánh** và push nhánh đó → người dùng tự **ghép nhánh vào `main` và push** bằng terminal → Vercel tự deploy `main`. Không tự merge/push/deploy `main` nếu người dùng chưa bảo.
 - Với việc lớn, Claude (trong chat) viết **prompt cho Claude Code** (chia 2–3 giai đoạn, nhánh riêng `feat/...`, có mục "KHÔNG ĐƯỢC ĐỤNG"); người dùng gửi cho Claude Code rồi dán báo cáo lại; Claude (chat) kiểm tra bản chạy thật bằng trình duyệt tích hợp. Skill `vocabmaster-deploy` có sẵn cho việc triển khai Vercel/Apps Script.
 - Người dùng cho phép Claude thao tác Vercel/Google Sheet/Apps Script thay mình bằng trình duyệt (đã đăng nhập sẵn), **trừ việc gõ secret/mật khẩu: người dùng tự dán** (đã làm với secret Dictation). Người dùng muốn ghi chú tiến độ nằm trong các file `.md` của thư mục dự án để AI/agent phiên sau đọc tiếp.
@@ -364,7 +364,7 @@ Tách từ `main` (`51975c4`, đã chứa `feat/readability-fonts-underline`). *
 Đang sửa cục bộ trên `main` (`4de9031`), **chưa commit, chưa push, chưa deploy**.
 
 - **Chỉ sửa nội dung prompt (không đổi schema JSON, không đổi logic đếm corpus):**
-  1. `src/utils/grammarBatch.js` (`buildBatchInstructions`): chèn khối `VSTEP B1 TARGET FILTER` ngay sau câu `"Use ONLY the supplied Vocabulary as target-word candidates."` (chấm thầm 1–3 sao mức độ hữu ích VSTEP B1, chỉ chọn từ 2–3 sao làm target, loại hoàn toàn từ 1 sao / hiếm / chuyên ngành / sai chính tả kể cả khi count = 0, ưu tiên count thấp và từ 3 sao trong nhóm 2–3 sao, không fallback sang từ 1 sao). Bỏ hai câu cũ buộc giữ mọi từ học thuật/chuyên ngành làm target; sửa ví dụ `debris` thành `if "debris" IS a saved 2-3 star target, use it normally`; giữ nguyên yêu cầu khung ngữ pháp B1–B2 và từ nền A2–B1.
+  1. `src/utils/grammarBatch.js` (`buildBatchInstructions`): chèn khối `VSTEP B1 TARGET FILTER` ngay sau câu `"Use ONLY the supplied Vocabulary as target-word candidates."` (chấm thầm 1–3 sao mức độ hữu ích VSTEP B1, chỉ chọn từ 2–3 sao làm target, loại hoàn toàn từ 1 sao / hiếm / chuyên ngành / sai chính tả kể cả khi count = 0, ưu tiên count thấp và từ 3 sao trong nhóm 2–3 sao, không fallback sang từ 1 sao). Bỏ hai câu cũ buộc giữ mọi từ học thuật/chuyên ngành làm target; sửa ví dụ `debris` thành `if "debris" IS a saved 2-3 star target, use it normally`; giữ nguyên yêu cầu khung ngữ pháp B1–B2 (đã đổi sang B1, xem mục 29) và từ nền A2–B1.
   2. `src/utils/grammarPrompt.js` (`buildGrammarPrompt`): cập nhật mục `FINAL SELF-CHECK` số 6 để kiểm tra chỉ dùng từ 2–3 sao làm target, không dùng từ 1 sao/sai chính tả làm target hay từ nền, và `readingItems` không highlight từ 1 sao/sai chính tả.
   3. `test/grammar-b1-prompt.test.js`: cập nhật các chuỗi bắt buộc/cấm theo prompt mới và thêm kiểm tra khối `VSTEP B1 TARGET FILTER` xuất hiện đúng 1 lần cho cả chế độ inline và Excel (`WORKBOOK`).
 - **Đã kiểm tra:**
@@ -407,3 +407,28 @@ Tách từ `main` (`51975c4`, đã chứa `feat/readability-fonts-underline`). *
   - `npm.cmd run lint`: **0 lỗi / 31 cảnh báo** (giữ nguyên mốc).
   - `npm.cmd run build`: đạt (`dist/assets/index-DpeT9T0m.js` `579,02 kB` / gzip `170,93 kB`).
 - **Chưa kiểm tra:** thử trực tiếp trên trình duyệt với JSON lỗi thực tế từ chatbot AI (ChatGPT/Gemini/Claude).
+
+## 29. Ngày 28/11 — prompt Grammar chỉ nhắm B1, quy tắc đa dạng, quy trình đọc Excel (chưa commit)
+
+Sửa cục bộ trên `main` (`574490a` = `origin/main`; commit này đã gồm phần của mục 26–28, nên chữ "chưa commit" ở các mục đó đã cũ — chưa kiểm tra trạng thái deploy). Phần của mục 29 **chưa commit, chưa push, chưa deploy**.
+
+- **Quyết định có chủ đích của chủ dự án, thay chính sách B1–B2 cũ** (chỉ cho prompt Grammar):
+  1. `src/utils/grammarPrompt.js`: khối `LEVEL` (chỉ CEFR B1; cấm đảo ngữ, câu chẻ, điều kiện loại 3/hỗn hợp, mệnh đề rút gọn; khoảng 10–20 từ) thay hai đoạn độ khó cũ; bỏ tỉ lệ 70/30; rút gọn `FINAL SELF-CHECK` 4–5; sửa câu cấm code fence cho khớp dòng `OUTPUT` (một khối ```json).
+  2. `src/utils/grammarBatch.js`: bỏ `GRAMMAR SELECTION PRIORITY`; thêm `VARIETY RULES` (cả inline và Excel); thêm `WORKBOOK PROCEDURE` (chỉ Excel, thay đoạn đọc hai sheet cũ; dòng "Usually incorporate 1–2…" chỉ còn ở inline); bộ lọc từ đổi sang "prefer lower counts (0-2)… count 0 không làm từ hữu ích hơn". Dữ liệu tham khảo và cách đếm không đổi.
+  3. `GrammarStats.jsx`: nhãn "VSTEP B1". Không đổi dữ liệu, schema, validate.
+  4. Smart Quiz, Structures quiz, `index.html`, Dictation **giữ nguyên B1–B2**.
+  5. Tài liệu: `AGENTS.md`, file này, một dòng ở `PROJECT_CONTEXT.md` và `GRAMMAR-VSTEP.md`. Test cập nhật: `grammar-b1-prompt` (chạy cả inline và Excel cho mọi topic × count), `grammar-export`, `grammar-import`, `grammar-reading-items`, `vstep-labels`.
+- **Đã kiểm tra:** `npm.cmd test` **44/44**; `npm.cmd run lint` 0 lỗi / 31 cảnh báo; `npm.cmd run build` đạt. In thử: `WORKBOOK PROCEDURE` chỉ có ở Excel, `VARIETY RULES` và `LEVEL` có đúng 1 lần ở cả hai. Độ dài prompt (10 câu, Mixed, dữ liệu rỗng): inline 16.125 → 14.608 ký tự (−9%); Excel 16.787 → 16.446 ký tự (−2%, số từ gần như không đổi vì quy trình mới dài hơn đoạn cũ).
+- **Đã giải quyết (mục 30):** mâu thuẫn giữa khối `LEVEL` và chủ đề "Participles & Reduced Clauses".
+- **Chưa kiểm tra:** chất lượng câu AI thật sinh ra từ prompt mới; test trình duyệt (không chạy).
+
+## 30. Ngày 28/11 — ngoại lệ chủ đề mệnh đề rút gọn và viết lại phần sửa dấu nháy JSON (chưa commit)
+
+Cùng bộ thay đổi cục bộ với mục 29, **chưa commit, chưa push, chưa deploy**.
+
+- `grammarPrompt.js`: chỉ khi chủ đề là "Participles & Reduced Clauses", thêm dòng `TOPIC EXCEPTION` ngay sau khối `LEVEL` (chỉ dạng rút gọn đơn giản, câu 10–16 từ, không "Having + P2"). Chủ đề khác và Mixed không đổi.
+- `grammarImport.js::repairLooseJson` (thay mô tả quy tắc đóng chuỗi ở mục 28): dấu `"` trong chuỗi chỉ là dấu đóng khi theo sau là `}`/`]`; `:` (chuỗi là key và sau đó là giá trị JSON); hoặc `,` rồi xuống dòng / giá trị không phải chuỗi / `}`/`]` / `"key":` (trong object) / `"` (trong mảng). Còn lại được escape.
+- **Chốt chống đoán dữ liệu** (trả nguyên nội dung → báo lỗi): chuỗi đóng khi số dấu nháy bên trong là lẻ; hoặc dấu nháy "mở" bên trong có khoảng trắng, `,`, `:` ngay sau. Số lẻ cũng chặn việc coi `,` cùng dòng là dấu đóng. Hệ quả: **một dấu `"` lẻ (ví dụ `5"`) giờ báo lỗi**, trước đây được tự sửa.
+- Thông báo lỗi: khi Node không trả `position`, `Lỗi gần: "…"` lấy từ đoạn trích trong thông báo lỗi.
+- **Đã kiểm tra:** `npm.cmd test` **44/44**; `npm.cmd run lint` 0 lỗi / 31 cảnh báo; `npm.cmd run build` đạt. Thử ngẫu nhiên (script tạm, không lưu trong repo): chuỗi kiểu văn xuôi có nháy đi theo cặp — 199.586 mẫu hỏng đều khôi phục đúng nguyên văn; chuỗi cố tình rối có nhiều nháy lẻ — trong 200.000 mẫu có **121 mẫu sửa ra JSON hợp lệ nhưng sai nội dung**, phần lớn còn lại bị từ chối.
+- **Chưa kiểm tra:** JSON lỗi thật từ chatbot AI; test trình duyệt (không chạy).

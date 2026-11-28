@@ -2,7 +2,7 @@
 
 ## Điểm vào cho agent
 - **Đọc trước tiên:** [trạng thái dự án hiện tại](docs/TRANG-THAI-DU-AN.md) (git/triển khai, việc đã làm, cạm bẫy, việc còn mở). Nếu mâu thuẫn với `PROJECT_CONTEXT`/`HANDOFF` cũ thì tin file đó và mã thực tế.
-- Mục tiêu học tập của người dùng là **VSTEP**. Grammar luyện phân tích câu VSTEP B1–B2; Smart Quiz (kể cả Structures) dùng prompt VSTEP B1–B2 (mã chế độ `vstep`). Chữ TOEIC chỉ còn ở dữ liệu câu trắc nghiệm cũ và khối "Lịch sử trắc nghiệm TOEIC cũ". Không suy ra trạng thái chuyển đổi từ tên thư mục/package.
+- Mục tiêu học tập của người dùng là **VSTEP**. Grammar luyện phân tích câu VSTEP, prompt chỉ nhắm CEFR B1 (quyết định có chủ đích 28/11, thay chính sách B1–B2 cũ); Smart Quiz (kể cả Structures) vẫn dùng prompt VSTEP B1–B2 (mã chế độ `vstep`). Chữ TOEIC chỉ còn ở dữ liệu câu trắc nghiệm cũ và khối "Lịch sử trắc nghiệm TOEIC cũ". Không suy ra trạng thái chuyển đổi từ tên thư mục/package.
 - Trước khi sửa, đọc [ngữ cảnh dự án](docs/PROJECT_CONTEXT.md), [bàn giao hiện tại](docs/HANDOFF.md), rồi kiểm tra `git status`/diff và mã thực tế. Tài liệu là ảnh chụp thời điểm khảo sát, không thay thế mã nguồn.
 - Sau thay đổi ảnh hưởng kiến trúc, hành vi hoặc tiến độ công việc, cập nhật tài liệu liên quan. Chỉ ghi việc đã xác minh; đánh dấu suy luận và phần chưa kiểm tra.
 

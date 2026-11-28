@@ -1,5 +1,5 @@
 /**
- * Smart Quiz, Structures quiz and app labels target VSTEP B1–B2 instead of
+ * Smart Quiz, Structures quiz and app labels target VSTEP B1–B2 (Grammar: B1) instead of
  * TOEIC; only the archived "Lịch sử trắc nghiệm TOEIC cũ" label keeps TOEIC.
  * Run: node test/vstep-labels.test.js
  */
@@ -17,7 +17,7 @@ test('no TOEIC wording remains in the quiz prompts and labels', () => {
   const stats = read('src/components/grammar/GrammarStats.jsx');
   assert.equal((stats.match(/TOEIC/g) || []).length, 1);
   assert.ok(stats.includes('Lịch sử trắc nghiệm TOEIC cũ'));
-  assert.ok(stats.includes('VSTEP B1–B2'));
+  assert.ok(stats.includes('ngữ pháp VSTEP B1<'));
 });
 
 test('prompts ask for VSTEP B1–B2 level and keep the JSON contract', () => {
