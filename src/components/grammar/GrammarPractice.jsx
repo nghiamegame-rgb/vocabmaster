@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { Copy, Check, Zap, ChevronDown, ChevronUp, AlertCircle, Upload, RefreshCw } from 'lucide-react';
 import {
   GRAMMAR_COUNTS,
+  GRAMMAR_LEVELS,
+  normalizeGrammarLevel,
   buildGrammarPrompt,
 } from '../../utils/grammarPrompt';
 import { buildGenerationTopicOptions, groupTopicOptions } from '../../utils/grammarTopic';
@@ -13,6 +15,7 @@ import GrammarExportPanel from './GrammarExportPanel';
  */
 export default function GrammarPractice({ onStartSession, batch, onNewBatch, settings = { count: 10, topic: 'Mixed' }, onSettingsChange, savedQuestions = [], corpus = { data: { vocab: [], grammar: [] }, unresolved: 0, invalidWords: 0 }, stale = false, syncStatuses = [], exportSource, exportPackage, onExportPrepared, exportLoadError }) {
   const { count, topic } = settings;
+  const level = normalizeGrammarLevel(settings.level);
   const groupedTopicOptions = useMemo(
     () => groupTopicOptions(buildGenerationTopicOptions(savedQuestions)),
     [savedQuestions]
@@ -25,7 +28,7 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
   const [excludedItems, setExcludedItems] = useState([]);
   const [allowDuplicates, setAllowDuplicates] = useState(false);
 
-  const prompt = buildGrammarPrompt({ count, topic, batchId: batch?.id, data: batch?.data });
+  const prompt = buildGrammarPrompt({ count, topic, batchId: batch?.id, data: batch?.data, level });
   const copied = copiedPrompt === prompt && !stale;
   const incomplete = corpus.unresolved > 0 || corpus.invalidWords > 0;
   const [copyError, setCopyError] = useState('');
@@ -65,7 +68,7 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
     }
     const check = completeGrammarImport(latest, choices);
     if (!check.valid) { setError(check.errors); return; }
-    onStartSession({ questions: check.questions, config: { count, topic } });
+    onStartSession({ questions: check.questions, config: { count, topic }, warnings: latest.warnings });
   }
 
   return (
@@ -88,7 +91,7 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
           <h3 className="text-[var(--sb-ink)] font-bold">Cấu hình bài luyện</h3>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Count */}
           <div>
             <label className="block text-[var(--sb-ink-soft)] text-xs font-semibold mb-2">Số câu</label>
@@ -96,7 +99,7 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
               {GRAMMAR_COUNTS.map(n => (
                 <button
                   key={n}
-                  onClick={() => { onSettingsChange?.({ count: n, topic }); resetImportReview(); }}
+                  onClick={() => { onSettingsChange?.({ count: n, topic, level }); resetImportReview(); }}
                   className={`vm-btn px-4 py-2 rounded-xl text-sm font-semibold border ${
                     count === n
                       ? 'vm-btn-violet border-[var(--sb-ink)]'
@@ -114,7 +117,7 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
             <label className="block text-[var(--sb-ink-soft)] text-xs font-semibold mb-2">Chủ đề ngữ pháp</label>
             <select
               value={topic}
-              onChange={e => { onSettingsChange?.({ count, topic: e.target.value }); resetImportReview(); }}
+              onChange={e => { onSettingsChange?.({ count, topic: e.target.value, level }); resetImportReview(); }}
               className="w-full vm-input rounded-xl px-3 py-2 text-sm"
             >
               {groupedTopicOptions.top.map(opt => (
@@ -129,6 +132,28 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
               ))}
             </select>
           </div>
+
+          {/* Level */}
+          <div role="group" aria-labelledby="grammar-level-label">
+            <span id="grammar-level-label" className="block text-[var(--sb-ink-soft)] text-xs font-semibold mb-2">Mức độ</span>
+            <div className="flex gap-2 flex-wrap">
+              {GRAMMAR_LEVELS.map(value => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={level === value}
+                  onClick={() => { onSettingsChange?.({ count, topic, level: value }); resetImportReview(); }}
+                  className={`vm-btn px-4 py-2 rounded-xl text-sm font-semibold border ${
+                    level === value
+                      ? 'vm-btn-violet border-[var(--sb-ink)]'
+                      : 'bg-[var(--sb-paper-card)] text-[var(--sb-ink)] hover:bg-[var(--sb-paper-deep)] border-[var(--sb-ink-border)]'
+                  }`}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -142,7 +167,7 @@ export default function GrammarPractice({ onStartSession, batch, onNewBatch, set
         <p className="text-[var(--sb-ink)] text-sm">
           Dán prompt vào ChatGPT, Gemini, Claude hoặc AI khác, sau đó copy toàn bộ JSON kết quả trả về.
         </p>
-        <p className="text-[var(--sb-ink-soft)] text-xs break-all">Bộ prompt: {batch?.id || 'preview'} · Dữ liệu giữ nguyên đến khi tạo prompt mới; số câu/chủ đề theo lựa chọn hiện tại.</p>
+        <p className="text-[var(--sb-ink-soft)] text-xs break-all">Bộ prompt: {batch?.id || 'preview'} · Dữ liệu giữ nguyên đến khi tạo prompt mới; số câu/chủ đề/mức độ theo lựa chọn hiện tại.</p>
 
         <div className="text-xs text-[var(--sb-ink)] space-y-1.5" role="status">
           <p>{batch?.data.vocab.length || 0} mục Vocabulary · {batch?.data.grammar.length || 0} câu Grammar riêng biệt · {prompt.length.toLocaleString('vi-VN')} ký tự. Gửi đầy đủ, không cắt danh sách.</p>

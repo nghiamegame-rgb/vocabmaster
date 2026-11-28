@@ -60,7 +60,7 @@ export default function Grammar({ grammarStore, addWord, words = [], vocabSyncSt
   const [practiceQuestions, setPracticeQuestions] = useState([]);
   const corpus = useMemo(() => buildGrammarCorpus(words, [...savedQuestions, ...practiceQuestions]), [words, savedQuestions, practiceQuestions]);
   const [promptBatch, setPromptBatch] = useState(() => createGrammarBatch(corpus.data));
-  const [promptSettings, setPromptSettings] = useState({ count: 10, topic: 'Mixed' });
+  const [promptSettings, setPromptSettings] = useState({ count: 10, topic: 'Mixed', level: 'B1+' });
   const exportSource = useMemo(() => buildGrammarExportSource(words, savedQuestions, promptSettings), [words, savedQuestions, promptSettings]);
   const [exportPackage, setExportPackage] = useState(null);
   const stale = JSON.stringify(promptBatch.data) !== JSON.stringify(corpus.data);
@@ -189,7 +189,9 @@ export default function Grammar({ grammarStore, addWord, words = [], vocabSyncSt
         {/* Practice tab */}
         {subTab === 'practice' && (
           session
-            ? <GrammarQuiz
+            ? <>
+              {session.warnings?.length > 0 && <p role="status" data-testid="grammar-import-warnings" className="mb-3 text-sm font-medium text-[var(--sb-ochre-text)]">{session.warnings.join(' · ')}</p>}
+              <GrammarQuiz
                 questions={session.questions}
                 config={session.config}
                 isQuestionSaved={isQuestionSaved}
@@ -205,6 +207,7 @@ export default function Grammar({ grammarStore, addWord, words = [], vocabSyncSt
                 underlines={underlines}
                 sentenceNotes={sentenceNotes} onNoteChange={updateSentenceNote}
               />
+            </>
             : <GrammarPractice onStartSession={handleStartSession} batch={promptBatch} onNewBatch={newPromptBatch}
                 settings={promptSettings} onSettingsChange={setPromptSettings}
                 savedQuestions={savedQuestions}

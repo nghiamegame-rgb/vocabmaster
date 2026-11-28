@@ -40,7 +40,7 @@ test('new notes are validated on import, while old string notes remain supported
   assert.deepEqual(merged[0].readingNotes, copy.readingNotes);
   assert.deepEqual(question, copy);
   const prompt = buildGrammarPrompt({ count: 10 });
-  assert.ok(prompt.includes('aim at CEFR B1 only'));
+  assert.ok(prompt.includes('LEVEL: VSTEP B1, upper end'));
   assert.ok(prompt.includes('NO A/B/C/D'));
   assert.ok(prompt.includes('readingItems'));
 });

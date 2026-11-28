@@ -269,7 +269,7 @@ export function formatGrammarIssue(issue) {
 }
 
 export function prepareGrammarImport(input, config = {}) {
-  const result = { questions: [], errors: [], optionalIssues: [], duplicates: [], normalizations: [], config };
+  const result = { questions: [], errors: [], optionalIssues: [], duplicates: [], normalizations: [], warnings: [], config };
   let parsed;
   let repaired = false;
   try { ({ parsed, repaired } = parseGrammarInputDetailed(input)); } catch (error) {
@@ -342,6 +342,10 @@ export function prepareGrammarImport(input, config = {}) {
         return copy;
       });
     }
+    // Soft warning only: count the reading items that will survive optional exclusions.
+    const usable = Array.isArray(q.readingItems) ? q.readingItems.length - result.optionalIssues.filter(issue => issue.questionIndex === index).length : 0;
+    const hasNote = prefix => Array.isArray(q.readingNotes) && q.readingNotes.some(note => typeof note === 'string' && note.normalize('NFC').trim().startsWith(prefix));
+    if (usable < 2 || !hasNote('Lỗi hay gặp:') || !hasNote('Mẹo đọc hiểu:')) result.warnings.push(`Câu ${index + 1}: ít nội dung học`);
     const key = sentenceKey(q.sentence);
     if (inBatch.has(key)) addError('sentence', q.sentence, 'Câu bị trùng trong cùng bộ JSON.', 'Yêu cầu AI thay câu trùng; không tự xóa câu khỏi bộ.');
     inBatch.add(key);

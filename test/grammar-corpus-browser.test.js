@@ -57,6 +57,17 @@ try {
   await page.locator('select').selectOption('Tenses');
   assert.ok((await preview()).includes('MAIN FOCUS: Tenses'));
   assert.deepEqual(data(await preview()), data(original));
+  const levelButton = name => page.getByRole('group', { name: 'Mức độ' }).getByRole('button', { name, exact: true });
+  assert.equal(await levelButton('B1+').getAttribute('aria-pressed'), 'true');
+  assert.ok((await preview()).includes('LEVEL: VSTEP B1, upper end.'));
+  await levelButton('B1–B2').click();
+  assert.ok((await preview()).includes('B1–B2 DIFFICULTY POLICY'));
+  // Changing another setting keeps the chosen level.
+  await page.getByRole('button', { name: '10', exact: true }).click();
+  await page.getByRole('button', { name: '5', exact: true }).click();
+  await page.locator('select').selectOption('Tenses');
+  assert.equal(await levelButton('B1–B2').getAttribute('aria-pressed'), 'true');
+  assert.deepEqual(data(await preview()), data(original));
   const imported = [saved, ...Array.from({ length: 4 }, (_, i) => question(`They purchase item ${i}.`))];
   await page.locator('textarea').fill(JSON.stringify(imported));
   await page.getByRole('button', { name: 'Kiểm tra & bắt đầu' }).click();
@@ -71,6 +82,8 @@ try {
   assert.equal(await page.getByRole('checkbox', { name: 'Tôi vẫn muốn luyện' }).isChecked(), false);
   await page.getByRole('checkbox', { name: 'Tôi vẫn muốn luyện' }).check();
   await page.getByRole('button', { name: 'Xác nhận và bắt đầu' }).click();
+  // Thin sentences (no reading items or notes) warn without blocking the session.
+  assert.ok((await page.getByTestId('grammar-import-warnings').innerText()).includes('Câu 5: ít nội dung học'));
   await page.locator('#grammar-tab-saved').click();
   await page.locator('#grammar-tab-practice').click();
   assert.equal(await page.getByRole('button', { name: 'Copy Prompt', exact: true }).isDisabled(), true);

@@ -5,7 +5,7 @@
 ## 0. Người dùng và cách làm việc
 
 - Chủ dự án tên **Nghĩa**, **không phải lập trình viên**, giao tiếp **tiếng Việt**. Giải thích ngắn, từng bước đơn giản, đưa lệnh chép-dán được. Tránh thuật ngữ nếu không cần.
-- Web là SPA học tiếng Anh "VocabMaster" (thư mục `C:\web toiec`, tên package `web-toiec`). Mục tiêu học hiện tại là **VSTEP**: prompt Grammar chỉ nhắm **B1** (từ 28/11, mục 29), Smart Quiz (kể cả Structures) vẫn **B1–B2** (chữ "TOEIC" chỉ còn ở dữ liệu cũ).
+- Web là SPA học tiếng Anh "VocabMaster" (thư mục `C:\web toiec`, tên package `web-toiec`). Mục tiêu học hiện tại là **VSTEP**: prompt Grammar cho chọn mức **B1 / B1+ (mặc định) / B1–B2** (mục 31), Smart Quiz (kể cả Structures) vẫn **B1–B2** (chữ "TOEIC" chỉ còn ở dữ liệu cũ).
 - Quy trình quen thuộc: AI (Claude Code hoặc Gemini) sửa mã **trên một nhánh** và push nhánh đó → người dùng tự **ghép nhánh vào `main` và push** bằng terminal → Vercel tự deploy `main`. Không tự merge/push/deploy `main` nếu người dùng chưa bảo.
 - Với việc lớn, Claude (trong chat) viết **prompt cho Claude Code** (chia 2–3 giai đoạn, nhánh riêng `feat/...`, có mục "KHÔNG ĐƯỢC ĐỤNG"); người dùng gửi cho Claude Code rồi dán báo cáo lại; Claude (chat) kiểm tra bản chạy thật bằng trình duyệt tích hợp. Skill `vocabmaster-deploy` có sẵn cho việc triển khai Vercel/Apps Script.
 - Người dùng cho phép Claude thao tác Vercel/Google Sheet/Apps Script thay mình bằng trình duyệt (đã đăng nhập sẵn), **trừ việc gõ secret/mật khẩu: người dùng tự dán** (đã làm với secret Dictation). Người dùng muốn ghi chú tiến độ nằm trong các file `.md` của thư mục dự án để AI/agent phiên sau đọc tiếp.
@@ -432,3 +432,14 @@ Cùng bộ thay đổi cục bộ với mục 29, **chưa commit, chưa push, ch
 - Thông báo lỗi: khi Node không trả `position`, `Lỗi gần: "…"` lấy từ đoạn trích trong thông báo lỗi.
 - **Đã kiểm tra:** `npm.cmd test` **44/44**; `npm.cmd run lint` 0 lỗi / 31 cảnh báo; `npm.cmd run build` đạt. Thử ngẫu nhiên (script tạm, không lưu trong repo): chuỗi kiểu văn xuôi có nháy đi theo cặp — 199.586 mẫu hỏng đều khôi phục đúng nguyên văn; chuỗi cố tình rối có nhiều nháy lẻ — trong 200.000 mẫu có **121 mẫu sửa ra JSON hợp lệ nhưng sai nội dung**, phần lớn còn lại bị từ chối.
 - **Chưa kiểm tra:** JSON lỗi thật từ chatbot AI; test trình duyệt (không chạy).
+
+## 31. Ngày 28/11 — mức độ Grammar, "LEARNING VALUE", ghi chú bắt buộc (chưa commit)
+
+Mục 29–30 đã được commit trong `5e6588c` (`main` = `origin/main` khi bắt đầu mục này; chữ "chưa commit" ở đó đã cũ, chưa kiểm tra trạng thái deploy). Phần của mục 31 sửa cục bộ trên `main`, **chưa commit, chưa push, chưa deploy**. Lý do: chủ dự án thấy câu tạo ra quá dễ.
+
+- **Mức độ** (thay quyết định "chỉ B1" ở mục 29): nút `B1` / `B1+` (mặc định) / `B1–B2` cạnh Số câu và Chủ đề (`GrammarPractice.jsx`). `B1`: khối `LEVEL` cũ, câu 12–20 từ. `B1+`: 15–24 từ, được hai mệnh đề, ~30% câu có yếu tố "stretch". `B1–B2`: chính sách 70/30 lấy nguyên văn từ `574490a`. Thiếu/sai `level` → `B1+`. Mức nằm trong snapshot/key Excel nên đổi mức làm gói cũ lỗi thời. Cài đặt (số câu, chủ đề, mức) chỉ là state của màn Grammar, **không lưu qua lần mở sau** (như trước).
+- **Prompt (mọi mức):** thêm `LEARNING VALUE` sau `LEVEL` (và sau `TOPIC EXCEPTION` nếu có); `readingItems` 2–4 mục mỗi câu; `readingNotes` bắt buộc đúng 2 ghi chú (`Lỗi hay gặp:`, `Mẹo đọc hiểu:`); từ phụ đổi từ "A2–B1" sang "B1 (not only A2)". Schema và `validateGrammarJSON` không đổi.
+- **Cảnh báo mềm:** `prepareGrammarImport` trả `warnings` ("Câu N: ít nội dung học") khi câu có dưới 2 `readingItems` hợp lệ hoặc thiếu một trong hai ghi chú; không chặn, hiện phía trên bài luyện.
+- **Đã kiểm tra:** `npm.cmd test` **45/45** (thêm `grammar-learning-warnings`); `npm.cmd run lint` 0 lỗi / 31 cảnh báo; `npm.cmd run build` đạt; 7 test trình duyệt Edge headless đạt (`grammar-corpus`, `grammar-export`, `grammar-topic`, `grammar-review`, `grammar-saved-pagination`, `sentence-notes`, `underline-rendering`; hai test đầu có thêm kiểm tra nút Mức độ và dòng cảnh báo).
+- **Còn lưu ý:** ngoại lệ chủ đề "Participles & Reduced Clauses" vẫn ghi 10–16 từ ở mọi mức (ngắn hơn `B1+`); tiêu đề giao diện vẫn ghi "VSTEP B1" ở mọi mức.
+- **Chưa kiểm tra:** chất lượng câu AI thật sinh ra từ prompt mới; giao diện trên điện thoại.

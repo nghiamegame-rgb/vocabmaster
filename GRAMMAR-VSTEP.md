@@ -14,7 +14,7 @@ Khi lưu câu mới, frontend bổ sung metadata tùy chọn `analysisTopic` đ�
 
 ## Lưu ý đọc hiểu và thêm nhanh
 
-Prompt chỉ nhắm CEFR B1 (VSTEP B1): câu khoảng 10–20 từ, tối đa một mệnh đề phụ, không đảo ngữ/câu chẻ/điều kiện loại 3 hay hỗn hợp/mệnh đề rút gọn.
+Prompt có ba mức: B1 (12–20 từ, tối đa một mệnh đề phụ), B1+ mặc định (15–24 từ, được hai mệnh đề), B1–B2 (khoảng 70/30). B1 và B1+ không dùng đảo ngữ/câu chẻ/điều kiện loại 3 hay hỗn hợp/mệnh đề rút gọn (trừ ngoại lệ theo chủ đề). Mỗi câu cần ít nhất 2 readingItems và 2 readingNotes (`Lỗi hay gặp:`, `Mẹo đọc hiểu:`); thiếu thì chỉ cảnh báo khi nhập.
 
 Trường bổ sung `readingItems` là mảng mục học: `category` (vocabulary, structure, word-form, preposition, phrase, collocation hoặc pattern), `text` trích nguyên văn từ câu, `explanation` tiếng Việt; tùy chọn `meaning`, `usefulness`, `pattern` (mẫu ngữ pháp khái quát). Không ép số lượng; mảng rỗng hợp lệ. Giữ nguyên `readingNotes` dạng mảng chuỗi để tương thích câu cũ. Hai trường cùng hiển thị trong “Lưu ý đọc hiểu” sau khi mở phân tích.
 

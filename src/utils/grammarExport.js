@@ -1,6 +1,6 @@
 import { buildGrammarCorpus } from './grammarCorpus.js';
 import { createGrammarBatch } from './grammarBatch.js';
-import { buildGrammarPrompt } from './grammarPrompt.js';
+import { buildGrammarPrompt, normalizeGrammarLevel } from './grammarPrompt.js';
 
 const invalidXmlText = text => Array.from(text).some(char => {
   const point = char.codePointAt(0);
@@ -20,7 +20,7 @@ export function buildGrammarExportSource(words, savedQuestions, settings) {
   if (malformedWords || corpus.unresolved) {
     return { error: `Chưa thể xuất đầy đủ: ${malformedWords} mục Vocabulary lỗi tiếng Anh, ${corpus.unresolved} bản ghi Grammar không khôi phục được câu hoàn chỉnh. Hãy kiểm tra nguồn; không xuất một phần.` };
   }
-  const snapshot = { data: corpus.data, settings: { count: settings.count, topic: settings.topic } };
+  const snapshot = { data: corpus.data, settings: { count: settings.count, topic: settings.topic, level: normalizeGrammarLevel(settings.level) } };
   // Excel's native limits: fail explicitly instead of truncating any input.
   if (snapshot.data.vocab.length > 1048575 || snapshot.data.grammar.length > 1048575 ||
       [...snapshot.data.vocab.map(([text]) => text), ...snapshot.data.grammar].some(text =>

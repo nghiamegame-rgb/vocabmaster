@@ -77,6 +77,12 @@ try {
   assert.deepEqual(retry.workbook, first.workbook);
   await preview.focus();
   assert.equal(await preview.evaluate(el => el.selectionEnd - el.selectionStart), original.length);
+  // The level alone makes the package stale; switching back restores it.
+  const levelGroup = page.getByRole('group', { name: 'Mức độ' });
+  await levelGroup.getByRole('button', { name: 'B1', exact: true }).click();
+  await panel.getByText('Gói Excel + Prompt đã lỗi thời', { exact: false }).waitFor();
+  await levelGroup.getByRole('button', { name: 'B1+', exact: true }).click();
+  await panel.getByText('Gói Excel + Prompt đã lỗi thời', { exact: false }).waitFor({ state: 'hidden' });
   // Configuration invalidates both download and copy; old prompt stays paired.
   await page.getByRole('button', { name: '5', exact: true }).click();
   await page.locator('select').selectOption('Tenses');
